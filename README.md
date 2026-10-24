@@ -1,6 +1,6 @@
 # 👀 whatsmyagentdoing
 
-**A Claude Code / Codex skill: type `/myoffice` and see what every Claude Code, Codex and Gemini CLI agent on your machine is doing — live, in a little office.**
+**A Claude Code / Codex skill: type `/myoffice` and see what every Claude Code, Codex, Gemini CLI and Copilot agent on your machine is doing — live, in a little office.**
 
 ![The 3D office: agents at their desks, off-duty ones wandering around](docs/office-3d.gif)
 
@@ -47,9 +47,9 @@ Prefer plain cards? Switch to **List**. Either way, each session updates in real
 
 The UI speaks English, 繁體中文, 简体中文, 日本語, 한국어, Español, Français, Deutsch and Português. By default it uses the language you write your prompts in (falling back to your browser's); pick one from the 🌐 menu to override.
 
-In list view, sessions are grouped into **Needs you → Working → Finished**, with a live timer for the current turn, a copy button for the resume command (`claude --resume …` / `codex resume …`), optional browser notifications when an agent finishes, and filters for Claude / Codex / subagents. The tab title shows how many agents are working.
+In list view, sessions are grouped into **Needs you → Working → Finished**, with a live timer for the current turn, a copy button for the resume command (`claude --resume …` / `codex resume …`), optional browser notifications when an agent finishes, and filters for Claude / Codex / Copilot / subagents. The tab title shows how many agents are working.
 
-Works with Claude Code (CLI, desktop, IDE), Codex (CLI, desktop, IDE) and Gemini CLI — anything that writes session logs to disk. (Google Antigravity keeps its conversations in an undocumented binary store and isn't supported yet.)
+Works with Claude Code (CLI, desktop, IDE), Codex (CLI, desktop, IDE), Gemini CLI and Copilot / VS Code agent sessions — anything that writes session logs to disk. Copilot sessions are labeled `workspace-<foldername>` so sessions from different project folders are easy to distinguish. The dashboard also injects the current VS Code Copilot session so the active agent can appear in the office immediately. (Google Antigravity keeps its conversations in an undocumented binary store and isn't supported yet.)
 
 ## Options
 
@@ -72,6 +72,7 @@ No hooks, no config, no API keys. Both tools already append every message and to
 - Claude Code: `~/.claude/projects/<project>/<session>.jsonl` (+ `subagents/`)
 - Codex: `~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl`
 - Gemini CLI: `~/.gemini/tmp/<project>/chats/session-*.jsonl` (project paths from `~/.gemini/projects.json`)
+- Copilot / VS Code: `~/.copilot/session-state/<session>/events.jsonl`
 
 `whatsmyagentdoing` tails those files (read-only), turns the latest event into a status, and pushes it to the page over Server-Sent Events. Set `CLAUDE_CONFIG_DIR` / `CODEX_HOME` / `GEMINI_CLI_HOME` if yours live elsewhere.
 
