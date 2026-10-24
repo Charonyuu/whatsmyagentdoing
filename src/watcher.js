@@ -9,7 +9,7 @@ const os = require('os');
 const path = require('path');
 const { EventEmitter } = require('events');
 const crypto = require('crypto');
-const { newSession, applyClaude, applyCodex, applyGemini, applyGeminiDocument } = require('./parsers');
+const { newSession, applyClaude, applyCodex, applyGemini, applyGeminiDocument, applyCopilot } = require('./parsers');
 
 const HEAD_BYTES = 128 * 1024;
 const TAIL_BYTES = 768 * 1024;
@@ -26,6 +26,7 @@ const GEMINI_HOMES = [
   path.join(home, '.cache', '.gemini'),
 ];
 const GEMINI_DIR = path.join(GEMINI_HOMES[0], 'tmp');
+const COPILOT_DIR = path.join(home, '.copilot', 'session-state');
 
 function ls(dir) {
   try { return fs.readdirSync(dir, { withFileTypes: true }); } catch { return []; }
@@ -118,6 +119,16 @@ function codexFiles(sinceMs) {
   return out;
 }
 
+function copilotFiles() {
+  const out = [];
+  for (const session of ls(COPILOT_DIR)) {
+    if (!session.isDirectory()) continue;
+    const events = path.join(COPILOT_DIR, session.name, 'events.jsonl');
+    if (statSafe(events)) out.push({ agent: 'copilot', file: events, id: session.name });
+  }
+  return out;
+}
+
 class Watcher extends EventEmitter {
   constructor({ hours = 24, interval = 1000 } = {}) {
     super();
@@ -183,7 +194,7 @@ class Watcher extends EventEmitter {
     // Directory walk every 5s; stat known files every tick.
     if (now - this.lastScan > 5000) {
       this.lastScan = now;
-      this.candidates = [...claudeFiles(), ...codexFiles(since), ...geminiFiles()];
+      this.candidates = [...claudeFiles(), ...codexFiles(since), ...geminiFiles(), ...copilotFiles()];
     }
 
     for (const c of this.candidates) {
@@ -224,7 +235,7 @@ class Watcher extends EventEmitter {
     if (c.parentId) { session.parentId = c.parentId; session.subagent = true; }
     session.mtime = st.mtimeMs;
     if (c.agent === 'gemini') session.geminiProject = c.project;
-    const apply = { claude: applyClaude, codex: applyCodex, gemini: applyGemini }[c.agent];
+    const apply = { claude: applyClaude, codex: applyCodex, gemini: applyGemini, copilot: applyCopilot }[c.agent];
     const t = { session, offset: st.size, partial: '', apply, mtime: st.mtimeMs };
     if (c.agent === 'gemini' && c.file.endsWith('.json')) {
       t.whole = true;

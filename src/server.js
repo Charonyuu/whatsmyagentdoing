@@ -2,7 +2,9 @@
 
 const fs = require('fs');
 const http = require('http');
+const os = require('os');
 const { guessFromPrompts } = require('./lang');
+const { newSession, applyCopilot } = require('./parsers');
 const path = require('path');
 
 const PUBLIC = path.join(__dirname, '..', 'public');
@@ -47,7 +49,7 @@ function view(s, now, { privacy }) {
     parentId: s.parentId,
     subagent: s.subagent,
     cwd: s.cwd,
-    project: s.cwd ? path.basename(s.cwd) : null,
+    project: s.cwd ? `${s.agent === 'copilot' ? 'workspace-' : ''}${path.basename(s.cwd)}` : null,
     title: s.title,
     model: s.model,
     status,
@@ -77,12 +79,54 @@ function promptLanguage(raw) {
   return guessFromPrompts(recent);
 }
 
+function currentCopilotSession() {
+  const stateDir = path.join(os.homedir(), '.copilot', 'session-state');
+  if (!fs.existsSync(stateDir)) return null;
+  const dirs = fs.readdirSync(stateDir, { withFileTypes: true })
+    .filter((d) => d.isDirectory())
+    .map((d) => ({
+      name: d.name,
+      full: path.join(stateDir, d.name),
+      mtime: fs.statSync(path.join(stateDir, d.name)).mtimeMs,
+    }))
+    .sort((a, b) => b.mtime - a.mtime);
+  const active = dirs[0];
+  if (!active) return null;
+  const eventsFile = path.join(active.full, 'events.jsonl');
+  if (!fs.existsSync(eventsFile)) return null;
+
+  const s = newSession('copilot', active.name, eventsFile);
+  s.title = 'Current Copilot';
+  s.model = 'mai-code-1.1-flash';
+  const workspace = path.join(active.full, 'workspace.yaml');
+  if (fs.existsSync(workspace)) {
+    const text = fs.readFileSync(workspace, 'utf8');
+    const match = text.match(/^cwd:\s*(.+)$/m);
+    if (match) s.cwd = match[1].replace(/\\/g, path.sep).replace(/^c:/i, 'C:');
+  }
+
+  for (const line of fs.readFileSync(eventsFile, 'utf8').split(/\r?\n/)) {
+    if (!line.trim()) continue;
+    try {
+      applyCopilot(s, JSON.parse(line));
+    } catch {}
+  }
+  if (!s.cwd && s.agent === 'copilot') s.cwd = process.cwd();
+  s.lastEventAt = s.lastEventAt || fs.statSync(eventsFile).mtimeMs;
+  s.startedAt = s.startedAt || s.lastEventAt;
+  return s;
+}
+
 function snapshot(watcher, opts) {
   const now = Date.now();
-  const raw = watcher.sessions();
-  const sessions = raw.map((s) => view(s, now, opts));
+  const raw = [...watcher.sessions()];
+  const current = currentCopilotSession();
+  if (current) raw.push(current);
+  const dedupe = new Map();
+  for (const s of raw) dedupe.set(`${s.agent}:${s.id}`, s);
+  const sessions = [...dedupe.values()].map((s) => view(s, now, opts));
   sessions.sort((a, b) => (b.lastEventAt || 0) - (a.lastEventAt || 0));
-  return { now, lang: opts.demo ? null : promptLanguage(raw), sessions };
+  return { now, lang: opts.demo ? null : promptLanguage([...dedupe.values()]), sessions };
 }
 
 function createServer(watcher, opts, { onShutdown } = {}) {

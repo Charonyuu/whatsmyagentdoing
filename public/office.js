@@ -17,6 +17,7 @@
     claude: ['#c96442', '#d9825f', '#b4553a', '#e09a72'],
     codex: ['#10a37f', '#2bb38f', '#0d8a6b', '#4cc3a0'],
     gemini: ['#4f7cf0', '#6b8ff5', '#3d66d6', '#8aa6f8'],
+    copilot: ['#8f5cf5', '#a06af7', '#7a47d5', '#c5a4ff'],
   };
   const PANTS = ['#34405a', '#2c2c34', '#4a3f35', '#3b4a3f'];
   const PANEL = ['#7d93c4', '#d98b6a', '#7fb08a', '#c9a24c'];
