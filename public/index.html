@@ -152,6 +152,14 @@
   .empty code { background: var(--panel); padding: 2px 6px; border-radius: 4px; }
   .conn { position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%); background: var(--error); color: #fff; padding: 6px 14px; border-radius: 999px; font-size: 12.5px; display: none; }
   .conn.on { display: block; }
+
+  /* ?pip=1: the page inside the picture-in-picture window — status chips and the view only */
+  body.pip { padding: 8px; }
+  body.pip header { margin-bottom: 8px; }
+  body.pip h1, body.pip .controls, body.pip .newver, body.pip .legend, body.pip .ver { display: none; }
+  body.pip .office { height: calc(100vh - 50px); min-height: 0; }
+  body.pip section { margin-top: 12px; }
+  body.pip .grid { grid-template-columns: 1fr; }
 </style>
 </head>
 <body>
@@ -179,6 +187,7 @@
       <label class="tog"><input type="checkbox" id="showSub"> <span data-t="subagents"></span></label>
       <label class="tog" id="idleToggle"><input type="checkbox" id="showIdle"> <span data-t="showIdle"></span></label>
       <button class="btn" id="notify" data-t="notify"></button>
+      <button class="btn" id="pipBtn" hidden></button>
       <select class="btn" id="langSel" aria-label="Language"></select>
     </div>
   </header>
@@ -230,6 +239,10 @@ const store = (() => {
   return { get, set };
 })();
 
+// ?pip=1 is this page loaded inside the picture-in-picture window.
+const PIP = new URLSearchParams(location.search).has('pip');
+if (PIP) document.body.classList.add('pip');
+
 // ?view=office&quality=high&scene=pirate (what `--scene` opens) sets the prefs.
 {
   const q = new URLSearchParams(location.search);
@@ -245,6 +258,7 @@ const state = {
   agent: store.get('agent', 'all'),
   showSub: store.get('showSub', false),
   showIdle: store.get('showIdle', false),
+  pip: false,
   data: { now: Date.now(), sessions: [] },
   skew: 0,
   prev: new Map(),
@@ -349,13 +363,21 @@ function render() {
   document.getElementById('officeWrap').style.display = officeMode ? '' : 'none';
   // The office decides who sits at a desk and who wanders around.
   const officeList = all;
+  // While the pop-out window shows the office, this tab stops drawing its own.
+  const officeHere = officeMode && !state.pip;
   // Wait for the first snapshot so people start at their places instead of
   // all walking in through the door.
   if (office && state.loaded) {
-    office.setVisible(officeMode);
+    office.setVisible(officeHere);
     office.update(officeList);
   }
   document.getElementById('idleToggle').style.display = officeMode ? 'none' : '';
+  if (officeMode && state.pip) {
+    document.getElementById('officeWrap').style.display = 'none';
+    main.innerHTML = `<div class="empty">${esc(L.pipOn)}</div>`;
+    hideTip();
+    return;
+  }
   if (officeMode) {
     main.innerHTML = officeList.length ? '' : `<div class="empty">${esc(L.empty)}</div>`;
     document.getElementById('officeWrap').style.display = officeList.length ? '' : 'none';
@@ -391,7 +413,8 @@ function onData(data) {
     const before = state.prev.get(s.key);
     if (!first && before && ACTIVE.has(before) && (s.status === 'done' || s.status === 'waiting')) {
       state.flash.add(s.key);
-      if (!s.subagent && window.Notification && Notification.permission === 'granted') {
+      // the main tab notifies; the pop-out copy would only repeat it
+      if (!PIP && !s.subagent && window.Notification && Notification.permission === 'granted') {
         try { new Notification(s.status === 'done' ? L.doneNote(s.project || s.agent) : `${s.project || s.agent}: ${L.waiting}`, { body: s.reply || s.activity || '', tag: s.key }); } catch {}
       }
     }
@@ -428,6 +451,7 @@ showSub.addEventListener('change', () => { state.showSub = showSub.checked; stor
 showIdle.addEventListener('change', () => { state.showIdle = showIdle.checked; store.set('showIdle', state.showIdle); render(); });
 
 const notifyBtn = document.getElementById('notify');
+const pipBtn = document.getElementById('pipBtn');
 function syncControls() {
   document.querySelectorAll('#agentSeg button').forEach((b) => b.classList.toggle('on', b.dataset.v === state.agent));
   document.querySelectorAll('#viewSeg button').forEach((b) => b.classList.toggle('on', b.dataset.v === state.view));
@@ -439,8 +463,34 @@ function syncControls() {
   showIdle.checked = state.showIdle;
   if (!window.Notification) notifyBtn.style.display = 'none';
   else if (Notification.permission === 'granted') { notifyBtn.textContent = L.notifyOn; notifyBtn.disabled = true; }
+  pipBtn.hidden = PIP || !('documentPictureInPicture' in window);
+  pipBtn.textContent = state.pip ? L.pipClose : L.pip;
 }
 notifyBtn.addEventListener('click', () => Notification.requestPermission().then(syncControls));
+
+// Pop-out (Document Picture-in-Picture, Chrome/Edge 116+): a small always-on-top
+// window. It loads this page as ?pip=1 in an iframe, so the office animates
+// with the pop-out's own frame clock even when this tab is in the background.
+let pipWin = null;
+async function openPip() {
+  pipWin = await window.documentPictureInPicture.requestWindow({ width: 420, height: 340 });
+  const d = pipWin.document;
+  d.title = L.title;
+  const style = d.createElement('style');
+  style.textContent = 'html, body { margin: 0; height: 100%; overflow: hidden; } iframe { display: block; width: 100%; height: 100%; border: 0; }';
+  d.head.append(style);
+  const frame = d.createElement('iframe');
+  frame.src = new URL('/?pip=1', location.href).href;
+  d.body.append(frame);
+  pipWin.addEventListener('pagehide', () => { pipWin = null; state.pip = false; syncControls(); render(); });
+  state.pip = true;
+  syncControls();
+  render();
+}
+pipBtn.addEventListener('click', () => {
+  if (pipWin) pipWin.close();
+  else openPip().catch((e) => { console.error(e); pipWin = null; });
+});
 
 document.addEventListener('click', (e) => {
   const b = e.target.closest('[data-copy]'); if (!b) return;
