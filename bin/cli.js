@@ -3,7 +3,7 @@
 
 const http = require('http');
 const { spawn } = require('child_process');
-const { Watcher, CLAUDE_DIR, CODEX_DIR, GEMINI_DIR } = require('../src/watcher');
+const { Watcher, CLAUDE_DIR, CODEX_DIR, GEMINI_DIR, ompDirs } = require('../src/watcher');
 const { DemoWatcher } = require('../src/demo');
 const scenes = require('../src/scenes');
 const updater = require('../src/update');
@@ -11,13 +11,14 @@ const { createServer, snapshot } = require('../src/server');
 const pkg = require('../package.json');
 
 const HELP = `whatsmyagentdoing ${pkg.version}
-See what every Claude Code, Codex and Gemini CLI agent on this machine is doing, live.
+See what every Claude Code, Codex, Gemini CLI and OMP agent on this machine is doing, live.
 
 Usage: node bin/cli.js [options]   (or /myoffice as a skill)
 
 Options:
   -p, --port <n>    Port to serve on (default 4545)
   --hours <n>       Show sessions active in the last n hours (default 24)
+  --omp-dir <path>  OMP sessions root (or a direct --session-dir directory)
   --no-open         Don't open the browser
   --private         Hide prompts, replies and titles; show status only
   --json            Print one snapshot as JSON and exit
@@ -33,7 +34,10 @@ Reads (never writes):
   ${CLAUDE_DIR}
   ${CODEX_DIR}
   ${GEMINI_DIR}
-Override with CLAUDE_CONFIG_DIR / CODEX_HOME / GEMINI_CLI_HOME.`;
+  ${ompDirs().map(x => x.dir).join('\n  ')}
+Override with CLAUDE_CONFIG_DIR / CODEX_HOME / GEMINI_CLI_HOME /
+  WMAD_OMP_SESSIONS_DIR (or --omp-dir); OMP also honors PI_CODING_AGENT_DIR.
+OMP profiles under ~/.omp/profiles are discovered automatically.`;
 
 function parseArgs(argv) {
   const o = { port: 4545, hours: 24, open: true, privacy: false, json: false, demo: false, stop: false, scenes: false, scene: null, removeScene: null, update: false };
@@ -45,6 +49,11 @@ function parseArgs(argv) {
     else if (a.startsWith('--port=')) o.port = Number(a.slice(7));
     else if (a === '--hours') o.hours = Number(argv[++i]);
     else if (a.startsWith('--hours=')) o.hours = Number(a.slice(8));
+    else if (a === '--omp-dir') {
+      if (!argv[i + 1] || argv[i + 1].startsWith('--')) { console.error('--omp-dir requires a path'); process.exit(1); }
+      o.ompDir = argv[++i];
+    }
+    else if (a.startsWith('--omp-dir=')) o.ompDir = a.slice(10);
     else if (a === '--no-open') o.open = false;
     else if (a === '--private') o.privacy = true;
     else if (a === '--json') o.json = true;
@@ -159,7 +168,7 @@ async function main() {
   }
 
   if (o.json) {
-    const w = new Watcher({ hours: o.hours });
+    const w = new Watcher({ hours: o.hours, ompDir: o.ompDir });
     w.tick();
     w.lastScan = 0;
     w.tick();
@@ -176,7 +185,7 @@ async function main() {
     return;
   }
 
-  const watcher = (o.demo ? new DemoWatcher() : new Watcher({ hours: o.hours })).start();
+  const watcher = (o.demo ? new DemoWatcher() : new Watcher({ hours: o.hours, ompDir: o.ompDir })).start();
   const server = createServer(watcher, o, {
     onShutdown: () => { watcher.stop(); server.close(); process.exit(0); },
     // after an update from the page: start the new code on the same port

@@ -1,5 +1,8 @@
 # Provider icons
 
+`omp.svg` — созданная для этого интерфейса нейтральная монограмма OMP.
+Это не официальный логотип oh-my-pi. Файл не содержит внешних ресурсов.
+
 These official product icons identify the providers of sessions. They are served
 locally so offline use and canvas/video capture do not depend on a third party.
 Brand marks belong to their respective owners; this project is not endorsed by

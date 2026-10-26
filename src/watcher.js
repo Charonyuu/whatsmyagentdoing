@@ -9,7 +9,9 @@ const os = require('os');
 const path = require('path');
 const { EventEmitter } = require('events');
 const crypto = require('crypto');
-const { newSession, applyClaude, applyCodex, applyGemini, applyGeminiDocument } = require('./parsers');
+const { newSession, applyClaude, applyCodex, applyGemini, applyGeminiDocument, applyOMP } = require('./parsers');
+const { StringDecoder } = require('string_decoder');
+const { ompDirs } = require('./omp');
 
 const HEAD_BYTES = 128 * 1024;
 const TAIL_BYTES = 768 * 1024;
@@ -121,8 +123,29 @@ function codexFiles(sinceMs) {
   return out;
 }
 
+function ompFiles(sinceMs, roots) {
+  const out = [], seen = new Set();
+  const add = (dir, profile) => {
+    for (const e of ls(dir)) {
+      if (!e.isFile() || !e.name.endsWith('.jsonl') || e.name.includes('.bak') || e.name.startsWith('__advisor')) continue;
+      const file = path.join(dir, e.name), st = statSafe(file);
+      if (!st || st.mtimeMs < sinceMs || seen.has(file)) continue;
+      seen.add(file);
+      out.push({ agent: 'omp', file, id: null, profile });
+    }
+  };
+  for (const { dir, profile } of roots) {
+    add(dir, profile); // --session-dir может указывать прямо на каталог журналов
+    for (const e of ls(dir)) {
+      // Артефакты соседнего root-level журнала не являются каталогом проекта.
+      if (e.isDirectory() && !statSafe(path.join(dir, e.name + '.jsonl'))) add(path.join(dir, e.name), profile);
+    }
+  }
+  return out;
+}
+
 class Watcher extends EventEmitter {
-  constructor({ hours = 24, interval = 1000 } = {}) {
+  constructor({ hours = 24, interval = 1000, ompDir } = {}) {
     super();
     this.windowMs = hours * 3600 * 1000;
     this.interval = interval;
@@ -134,6 +157,7 @@ class Watcher extends EventEmitter {
     this.codexIndexMtime = 0;
     this.lastScan = 0;
     this.candidates = [];
+    this.ompDir = ompDir;
   }
 
   start() {
@@ -187,7 +211,7 @@ class Watcher extends EventEmitter {
     // Directory walk every 5s; stat known files every tick.
     if (now - this.lastScan > 5000) {
       this.lastScan = now;
-      this.candidates = [...claudeFiles(), ...codexFiles(since), ...geminiFiles()];
+      this.candidates = [...claudeFiles(), ...codexFiles(since), ...geminiFiles(), ...ompFiles(since, ompDirs(this.ompDir, process.env, home, process.platform))];
     }
 
     for (const c of this.candidates) {
@@ -203,7 +227,8 @@ class Watcher extends EventEmitter {
     }
 
     for (const [file, t] of this.trackers) {
-      if ((t.session.lastEventAt || t.session.mtime || 0) < since) { this.trackers.delete(file); changed = true; }
+      const activity = t.session.agent === 'omp' ? Math.max(t.session.lastEventAt || 0, t.session.mtime || 0) : (t.session.lastEventAt || t.session.mtime || 0);
+      if (activity < since) { this.trackers.delete(file); changed = true; }
     }
 
     if (changed) this.emit('change');
@@ -212,12 +237,29 @@ class Watcher extends EventEmitter {
   // Returns true when this file's session changed.
   track(c, since) {
     const st = statSafe(c.file);
-    if (!st) return false;
     const t = this.trackers.get(c.file);
+    if (!st) return this.trackers.delete(c.file);
     if (!t) {
       if (st.mtimeMs < since) return false;
       this.open(c, st);
       return true;
+    }
+    if (c.agent === 'omp') {
+      // Название переписывается на месте, в том числе при неизменном размере.
+      const modified = st.mtimeMs !== t.mtime || st.ctimeMs !== t.ctime || st.ino !== t.ino;
+      if (st.size < t.offset || (modified && st.size === t.offset) || st.ino !== t.ino) {
+        this.open(c, st);
+        return true;
+      }
+      if (st.size > t.offset) {
+        this.feedOMP(t, c.file, t.offset, st.size);
+        this.ompTitle(t, c.file, st.size);
+        t.offset = st.size;
+        t.mtime = t.session.mtime = st.mtimeMs;
+        t.ctime = st.ctimeMs;
+        return true;
+      }
+      return false;
     }
     let changed = false;
     if (t.whole && st.mtimeMs !== t.mtime) {
@@ -242,8 +284,20 @@ class Watcher extends EventEmitter {
     if (c.parentId) { session.parentId = c.parentId; session.subagent = true; }
     session.mtime = st.mtimeMs;
     if (c.agent === 'gemini') session.geminiProject = c.project;
-    const apply = { claude: applyClaude, codex: applyCodex, gemini: applyGemini }[c.agent];
+    const apply = { claude: applyClaude, codex: applyCodex, gemini: applyGemini, omp: applyOMP }[c.agent];
     const t = { session, offset: st.size, partial: '', apply, mtime: st.mtimeMs };
+    if (c.agent === 'omp') {
+      session.ompProfile = c.profile;
+      t.decoder = new StringDecoder('utf8');
+      t.ctime = st.ctimeMs;
+      t.ino = st.ino;
+      // Полное чтение порциями сохраняет metadata и все незакрытые toolCall.
+      // Пропуск середины большого журнала давал бы ложные состояния.
+      this.feedOMP(t, c.file, 0, st.size);
+      this.ompTitle(t, c.file, st.size);
+      this.trackers.set(c.file, t);
+      return t;
+    }
     if (c.agent === 'gemini' && c.file.endsWith('.json')) {
       t.whole = true;
       try { applyGeminiDocument(session, JSON.parse(readRange(c.file, 0, st.size))); } catch {}
@@ -260,6 +314,27 @@ class Watcher extends EventEmitter {
     }
     this.trackers.set(c.file, t);
     return t;
+  }
+
+  feedOMP(t, file, start, end) {
+    const fd = fs.openSync(file, 'r');
+    try {
+      const buf = Buffer.alloc(128 * 1024);
+      while (start < end) {
+        const n = fs.readSync(fd, buf, 0, Math.min(buf.length, end - start), start);
+        if (!n) break;
+        this.feed(t, t.decoder.write(buf.subarray(0, n)), false);
+        start += n;
+      }
+    } finally { fs.closeSync(fd); }
+  }
+
+  ompTitle(t, file, size) {
+    const first = readRange(file, 0, Math.min(size, 4096)).split('\n')[0];
+    try {
+      const slot = JSON.parse(first);
+      if (slot.type === 'title') applyOMP(t.session, slot);
+    } catch {}
   }
 
   feed(t, chunk, dropLastPartial, dropFirst = false) {
@@ -279,6 +354,11 @@ class Watcher extends EventEmitter {
     const out = [];
     for (const t of this.trackers.values()) {
       const s = t.session;
+      if (s.agent === 'omp') {
+        // Не публикуем случайные JSONL и ещё не дописанный заголовок.
+        if (!s.sessionId || !s.cwd) continue;
+        s.lastEventAt = Math.max(s.lastEventAt || 0, s.mtime || 0);
+      }
       if (s.agent === 'gemini' && !s.cwd && this.geminiProjects.has(s.geminiProject)) {
         s.cwd = this.geminiProjects.get(s.geminiProject);
       }
@@ -296,4 +376,4 @@ class Watcher extends EventEmitter {
   }
 }
 
-module.exports = { Watcher, CLAUDE_DIR, CODEX_DIR, GEMINI_DIR };
+module.exports = { Watcher, CLAUDE_DIR, CODEX_DIR, GEMINI_DIR, ompDirs };
