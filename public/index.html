@@ -23,6 +23,7 @@
     --claude: #c96442;
     --codex: #10a37f;
     --gemini: #4f7cf0;
+    --omp: #a96926;
     --shadow: 0 1px 2px rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.04);
   }
   @media (prefers-color-scheme: dark) {
@@ -246,6 +247,7 @@
               <button data-v="claude"><img class="agent-logo" src="/assets/agents/claude.png" alt="">Claude</button>
               <button data-v="codex"><img class="agent-logo" src="/assets/agents/codex.png" alt="">Codex</button>
               <button data-v="gemini"><img class="agent-logo" src="/assets/agents/gemini.png" alt="">Gemini</button>
+              <button data-v="omp"><img class="agent-logo" src="/assets/agents/omp.svg" alt="">OMP</button>
             </div>
             <div class="setting-toggles">
               <label class="tog"><input type="checkbox" id="showSub"> <span data-t="subagents"></span></label>
@@ -323,7 +325,7 @@ const store = (() => {
   return { get, set };
 })();
 
-const PREF_DEFAULTS = { view: 'office', quality: 'mid', scene: 'office', agent: 'all', showSub: false, showIdle: false, showAgent: true, lang: 'auto' };
+const PREF_DEFAULTS = { view: 'office', quality: 'mid', scene: 'office', agent: 'all', showSub: true, showIdle: false, showAgent: true, lang: 'auto' };
 function validPreference(k, v) {
   if (!Object.hasOwn(PREF_DEFAULTS, k)) return false;
   if (typeof PREF_DEFAULTS[k] === 'boolean') return typeof v === 'boolean';
@@ -365,7 +367,7 @@ const state = {
 let popout = null;
 
 const ACTIVE = new Set(['thinking', 'tool', 'typing']);
-const AGENT_NAME = { claude: 'Claude', codex: 'Codex', gemini: 'Gemini' };
+const AGENT_NAME = { claude: 'Claude', codex: 'Codex', gemini: 'Gemini', omp: 'OMP' };
 const GROUPS = [
   { key: 'needsYou', match: (s) => s === 'waiting' || s === 'error' },
   { key: 'working', match: (s) => ACTIVE.has(s) },
@@ -405,6 +407,7 @@ function timeLabel(s, now) {
 // is expanded, so a folder or session name can't run anything when pasted.
 const shq = (v) => `'${String(v).replace(/'/g, `'\\''`)}'`;
 function resumeCmd(s) {
+  if (s.agent === 'omp') return s.resumeCommand || '';
   const cd = s.cwd ? `cd ${shq(s.cwd)} && ` : '';
   if (s.agent === 'claude') return `${cd}claude --resume ${shq(s.id)}`;
   if (s.agent === 'gemini') return `${cd}gemini --resume ${shq(s.sessionId || s.id)}`;
@@ -435,7 +438,7 @@ function card(s, now) {
     ${title}
     <div class="status"><span class="ind"><i></i><i></i><i></i></span><span class="lbl">${esc(L[s.status] || s.status)}</span>${act}</div>
     ${err}${q}${r}
-    <div class="foot"><span class="model">${esc((s.model || '') + sub)}</span><button class="copy" data-copy="${esc(resumeCmd(s))}">${L.copy}</button></div>
+    <div class="foot"><span class="model">${esc((s.model || '') + sub)}</span>${s.agent === 'omp' && s.subagent ? '' : `<button class="copy" data-copy="${esc(resumeCmd(s))}">${L.copy}</button>`}</div>
   </div>`;
 }
 
@@ -620,7 +623,7 @@ function hideTip() { tipKey = null; tipPinned = false; tip.style.display = 'none
 const officeOpts = {
   compact: PIP,
   onFrame: (renderer) => popout?.drawPreview(renderer),
-  label: (s) => s.project || AGENT_NAME[s.agent] || s.agent,
+  label: (s) => (s.agent === 'omp' && s.subagent && s.title) || s.project || AGENT_NAME[s.agent] || s.agent,
   onHover(s, at, click) {
     if (click) {
       if (!s) return hideTip();

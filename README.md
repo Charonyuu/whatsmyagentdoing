@@ -1,6 +1,8 @@
 # 👀 whatsmyagentdoing
 
-**A Claude Code / Codex skill: type `/myoffice` and see what every Claude Code, Codex and Gemini CLI agent on your machine is doing — live, in a little office.**
+**A Claude Code / Codex skill: type `/myoffice` and see what every Claude Code, Codex, Gemini CLI and OMP (oh-my-pi) agent on your machine is doing — live, in a little office.**
+
+OMP support: [paths, profiles, Resume, and limitations](docs/omp.md).
 
 ![The 3D office: agents at their desks, off-duty ones wandering around](docs/office-3d.gif)
 
@@ -66,6 +68,7 @@ Works with Claude Code (CLI, desktop, IDE), Codex (CLI, desktop, IDE) and Gemini
 ```
 -p, --port <n>    Port (default 4545; next free one if taken)
 --hours <n>       Sessions active in the last n hours (default 24)
+--omp-dir <path>  OMP sessions root or direct omp --session-dir directory
 --no-open         Don't open the browser
 --private         Hide prompts, replies and titles — status only (screen-share safe)
 --json            Print one snapshot as JSON and exit
@@ -87,6 +90,7 @@ No hooks, no config, no API keys. Both tools already append every message and to
 - Claude Code: `~/.claude/projects/<project>/<session>.jsonl` (+ `subagents/`)
 - Codex: `~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl`. Date folders record when a chat started; discovery checks all dates and uses log modification times to find recently active chats, including months-old conversations. Inactive log contents are not read.
 - Gemini CLI: `~/.gemini/tmp/<project>/chats/session-*.jsonl` (project paths from `~/.gemini/projects.json`)
+- OMP: `~/.omp/agent/sessions/<project>/*.jsonl` and named profiles. Override: `WMAD_OMP_SESSIONS_DIR` or `--omp-dir`. Details: [OMP](docs/omp.md).
 
 `whatsmyagentdoing` tails those files (read-only), turns the latest event into a status, and pushes it to the page over Server-Sent Events. Set `CLAUDE_CONFIG_DIR` / `CODEX_HOME` / `GEMINI_CLI_HOME` if yours live elsewhere.
 

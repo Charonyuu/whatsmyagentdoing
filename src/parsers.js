@@ -419,4 +419,108 @@ function applyGeminiDocument(s, doc) {
   applyGemini(s, { $set: doc });
 }
 
-module.exports = { newSession, applyClaude, applyCodex, applyGemini, applyGeminiDocument, clean };
+// ----------------------------------------------------------------------- OMP
+// Internal collections stay out of the JSON API and do not retain closed sessions.
+const ompState = new WeakMap();
+function ompPending(s) {
+  let state = ompState.get(s);
+  if (!state) { state = { pending: new Map() }; ompState.set(s, state); }
+  return state.pending;
+}
+
+function describeOMPTool(name, args = {}) {
+  if (name === 'ask') return 'Waiting for your answer';
+  const file = args.path || args.file_path;
+  if (name === 'bash') return `bash: ${short(args.command || args.description)}`;
+  if (['read', 'edit', 'write', 'notebook'].includes(name)) return `${name} ${short(file || '')}`.trim();
+  if (args.pattern || args.query) return `${name}: ${short(args.pattern || args.query, 60)}`;
+  return short(name || 'tool');
+}
+
+function ompToolStatus(s) {
+  const calls = Array.from(ompPending(s).values());
+  const waiting = calls.find(c => c.name === 'ask');
+  const current = waiting || calls[calls.length - 1];
+  set(s, waiting ? 'waiting' : current ? 'tool' : 'thinking', current ? current.description : null);
+}
+
+function applyOMP(s, d) {
+  if (!d || typeof d !== 'object') return;
+  const pending = ompPending(s);
+  if (d.type === 'title') {
+    // The slot contains the current title; the watcher reapplies it after reading.
+    if (typeof d.title === 'string') s.title = clean(d.title, 120);
+    return;
+  }
+  if (d.type === 'session') {
+    if (typeof d.id === 'string' && d.id) s.id = s.sessionId = d.id;
+    if (typeof d.cwd === 'string') s.cwd = d.cwd;
+    if (!s.title && d.title) s.title = clean(d.title, 120);
+    if (d.parentSession) s.parentSession = d.parentSession; // lineage, not necessarily a subagent
+    stamp(s, d.timestamp);
+    return;
+  }
+  if (d.type === 'title_change') {
+    if (typeof d.title === 'string') s.title = clean(d.title, 120);
+    return;
+  }
+  if (d.type === 'model_change') {
+    if ((!d.role || d.role === 'default') && d.model) s.model = d.model;
+    return;
+  }
+  if (d.type === 'custom') {
+    const data = d.data || {};
+    if (d.customType === 'tool_execution_start' && data.toolCallId && data.toolName) {
+      stamp(s, d.timestamp || data.startedAt);
+      const previous = pending.get(data.toolCallId);
+      pending.set(data.toolCallId, previous || { name: data.toolName, description: describeOMPTool(data.toolName, data.args) });
+      ompToolStatus(s);
+    } else if (d.customType === 'session_exit') {
+      stamp(s, d.timestamp || data.recordedAt);
+      if (data.kind === 'fatal') {
+        pending.clear(); set(s, 'error', null); s.error = short(data.reason || 'OMP exited with an error', 120);
+      } else if ((data.kind && data.kind !== 'normal') || pending.size || data.pendingToolCalls?.length) {
+        pending.clear(); set(s, 'interrupted', null);
+      } else if (['thinking', 'typing', 'tool', 'waiting'].includes(s.status)) set(s, 'idle', null);
+    }
+    return;
+  }
+  if (d.type !== 'message' || !d.message) return;
+  const m = d.message;
+  if (!['user', 'assistant', 'toolResult'].includes(m.role)) return;
+  const ts = stamp(s, d.timestamp || (typeof m.timestamp === 'number' ? new Date(m.timestamp).toISOString() : m.timestamp));
+  if (m.role === 'user') {
+    if (!m.steering) pending.clear();
+    s.prompt = clean(codexText(m.content));
+    s.reply = null;
+    s.turnStartedAt = ts;
+    set(s, 'thinking', null);
+    return;
+  }
+  if (m.role === 'toolResult') {
+    pending.delete(m.toolCallId);
+    ompToolStatus(s);
+    if (m.isError && !pending.size) {
+      set(s, 'error', null); s.error = clean(codexText(m.content), 120) || 'Tool error';
+    }
+    return;
+  }
+  if (m.model) s.model = m.provider && !m.model.startsWith(m.provider + '/') ? `${m.provider}/${m.model}` : m.model;
+  const blocks = Array.isArray(m.content) ? m.content : [];
+  const text = clean(codexText(m.content));
+  if (text) s.reply = text;
+  if (m.stopReason === 'error' || m.stopReason === 'aborted') {
+    pending.clear();
+    set(s, m.stopReason === 'error' ? 'error' : 'interrupted', null);
+    if (m.stopReason === 'error') s.error = short(m.errorMessage || text || 'OMP error', 120);
+    return;
+  }
+  for (const b of blocks) {
+    if (b.type === 'toolCall' && b.id && b.name) pending.set(b.id, { name: b.name, description: describeOMPTool(b.name, b.arguments) });
+  }
+  if (pending.size) ompToolStatus(s);
+  else if (m.stopReason === 'stop' || m.stopReason === 'length') set(s, 'done', null);
+  else set(s, 'thinking', null);
+}
+
+module.exports = { newSession, applyClaude, applyCodex, applyGemini, applyGeminiDocument, applyOMP, clean };

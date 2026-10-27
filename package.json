@@ -1,7 +1,7 @@
 {
   "name": "whatsmyagentdoing",
   "version": "0.3.1",
-  "description": "See what every Claude Code and Codex agent on your machine is doing, live in your browser.",
+  "description": "Live office for Claude Code, Codex, Gemini CLI and OMP sessions.",
   "bin": {
     "whatsmyagentdoing": "bin/cli.js"
   },
@@ -42,7 +42,7 @@
     "build": "esbuild web/office3d.js --bundle --format=esm --minify --target=es2020 --outfile=public/office3d.js --legal-comments=eof",
     "start": "node bin/cli.js",
     "test:ui": "node tests/ui.cjs",
-    "test:watcher": "node --test tests/watcher.cjs",
+    "test:watcher": "node --test tests/watcher.cjs tests/omp.cjs",
     "test:server": "node --test tests/server.cjs"
   }
 }
