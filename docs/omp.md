@@ -37,11 +37,20 @@ shown by default (`--hours` changes the window). Known files are checked every
 second. Closing an OMP window without writing an event can't be detected from
 the log; the usual UI timeouts apply.
 
-Only JSONL files directly in the root or one level of project directories are
-read. Sibling artifact directories `<session-file-stem>/`, including nested
-subagents and `__advisor*.jsonl`, are skipped, so OMP subagents/advisors don't
-appear as separate people yet. `parentSession` records where a chat came from;
-it does not mean a running subagent.
+Main sessions are JSONL files directly in the root or one level of project
+directories. Nested agents live in the sibling artifact directory
+`<session-file-stem>/`, up to 20 levels deep, and appear as subagents of their
+parent. A child counts only when its `parentSession` points at the log whose
+directory it was found in (compared by real path, so symlinked homes work);
+`__advisor*.jsonl` files there are shown as advisors. A regular session with
+`parentSession` elsewhere is a separate conversation, not a subagent.
+Symlinked directories are not followed. To keep scans cheap, the artifact
+directory of a parent that is outside the activity window is only walked if it
+gained entries inside the window.
+
+Subagents follow the existing Subagents setting (off by default). They are
+labeled with their agent name and have no Resume command, since OMP can't
+resume a subagent on its own.
 
 The real ID and cwd come from the `type: "session"` record, not the file name.
 A JSONL without that header is not shown. Supported: a leading `type: "title"`

@@ -147,13 +147,29 @@ function copilotFiles() {
 
 function ompFiles(sinceMs, roots) {
   const out = [], seen = new Set();
-  const add = (dir, profile) => {
-    for (const e of ls(dir)) {
-      if (!e.isFile() || !e.name.endsWith('.jsonl') || e.name.includes('.bak') || e.name.startsWith('__advisor')) continue;
+  const add = (dir, profile, parentFile = null, depth = 0) => {
+    if (depth > 20) return;
+    const entries = ls(dir);
+    // OMP keeps each agent's children in a directory named after its own log.
+    // Dirents don't follow symlinks, so a linked directory is never walked.
+    const dirs = new Set(entries.filter((e) => e.isDirectory()).map((e) => e.name));
+    for (const e of entries) {
+      if (!e.isFile() || !e.name.endsWith('.jsonl') || e.name.includes('.bak')) continue;
+      if (!parentFile && e.name.startsWith('__advisor')) continue;
       const file = path.join(dir, e.name), st = statSafe(file);
-      if (!st || st.mtimeMs < sinceMs || seen.has(file)) continue;
-      seen.add(file);
-      out.push({ agent: 'omp', file, id: null, profile });
+      if (!st) continue;
+      const fresh = st.mtimeMs >= sinceMs;
+      if (fresh && !seen.has(file)) {
+        seen.add(file);
+        out.push({ agent: 'omp', file, id: null, profile, parentFile });
+      }
+      const stem = e.name.slice(0, -6);
+      if (!dirs.has(stem)) continue;
+      const children = path.join(dir, stem);
+      // A quiet parent whose child directory gained no entries in the window
+      // has no new children, so old history isn't walked on every scan.
+      if (!fresh && (statSafe(children)?.mtimeMs || 0) < sinceMs) continue;
+      add(children, profile, file, depth + 1);
     }
   };
   for (const { dir, profile } of roots) {
@@ -164,6 +180,17 @@ function ompFiles(sinceMs, roots) {
     }
   }
   return out;
+}
+
+// OMP may record a parent through a symlink (macOS /var, a linked ~/.omp) or,
+// on Windows, with different case; compare real paths. Cached per session.
+function sameOMPPath(s, a, b) {
+  const key = `${a}\0${b}`;
+  if (s._ompPathKey === key) return s._ompPathSame;
+  const real = (p) => { try { return fs.realpathSync.native(p); } catch { return path.resolve(p); } };
+  s._ompPathKey = key;
+  s._ompPathSame = path.resolve(a) === path.resolve(b) || real(a) === real(b);
+  return s._ompPathSame;
 }
 
 class Watcher extends EventEmitter {
@@ -195,6 +222,7 @@ class Watcher extends EventEmitter {
       return source;
     });
     this.ompDir = ompDir;
+    this.ompParentIds = new Map(); // parent log -> { mtime, size, id }
   }
 
   start() {
@@ -357,6 +385,11 @@ class Watcher extends EventEmitter {
     }
     if (c.agent === 'omp') {
       session.ompProfile = c.profile;
+      if (c.parentFile) {
+        session.subagent = true;
+        session.ompParentFile = c.parentFile;
+        session.ompAgentName = path.basename(c.file, '.jsonl');
+      }
       t.decoder = new StringDecoder('utf8');
       t.ctime = st.ctimeMs;
       t.ino = st.ino;
@@ -443,6 +476,25 @@ class Watcher extends EventEmitter {
     }
   }
 
+  // The parent's session ID, from its tracker or (when it is outside the
+  // window) from its header, cached until the parent log changes.
+  ompParentId(file) {
+    const tracked = this.trackers.get(file)?.session?.sessionId;
+    if (tracked) return tracked;
+    const st = statSafe(file);
+    if (!st) return null;
+    const cached = this.ompParentIds.get(file);
+    if (cached && cached.mtime === st.mtimeMs && cached.size === st.size) return cached.id;
+    let id = null;
+    try {
+      for (const line of readRange(file, 0, Math.min(st.size, HEAD_BYTES)).split('\n')) {
+        try { const d = JSON.parse(line); if (d.type === 'session' && typeof d.id === 'string' && d.id) { id = d.id; break; } } catch {}
+      }
+    } catch {}
+    this.ompParentIds.set(file, { mtime: st.mtimeMs, size: st.size, id });
+    return id;
+  }
+
   sessions() {
     const out = [];
     for (const t of this.trackers.values()) {
@@ -450,6 +502,15 @@ class Watcher extends EventEmitter {
       if (s.agent === 'omp') {
         // Skip stray JSONL files and logs whose header isn't written yet.
         if (!s.sessionId || !s.cwd) continue;
+        if (s.subagent && s.ompParentFile) {
+          // parentSession alone also describes ordinary branched conversations;
+          // require the artifact directory it was found in to match its parent.
+          const advisor = /^__advisor(?:[._-].*)?$/.test(s.ompAgentName);
+          if (s.parentSession && !sameOMPPath(s, s.parentSession, s.ompParentFile)) continue;
+          if (!s.parentSession && !advisor) continue;
+          s.parentId = this.ompParentId(s.ompParentFile);
+          if (!s.title) s.title = advisor ? 'Advisor' : s.ompAgentName.replace(/\./g, ' > ');
+        }
         s.lastEventAt = Math.max(s.lastEventAt || 0, s.mtime || 0);
       }
       if (s.agent === 'gemini' && !s.cwd && this.geminiProjects.has(s.geminiProject)) {

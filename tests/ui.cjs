@@ -74,6 +74,17 @@ async function drawnLogos(target) {
   context.on('page',p=>p.on('pageerror',e=>errors.push(String(e))));
   const page=await context.newPage();await page.goto(base);await stable(page);
   assert.equal(await page.locator('h1 [data-t]').innerText(),"What's my agent doing");
+  assert.equal(await page.evaluate(()=>state.showSub),false,'subagents stay hidden by default for every provider');
+  await openSettings(page);await page.check('#showSub');await page.keyboard.press('Escape');
+  const ompChild={key:'omp:child',id:'child',agent:'omp',project:'omp-project',cwd:'/demo/omp-project',title:'Worker > Child',status:'thinking',subagent:true,parentId:'real-omp-id',resumeCommand:null,lastEventAt:Date.now(),turnStartedAt:Date.now()};
+  await page.evaluate(s=>onData({now:Date.now(),sessions:s}),[...sessions,ompChild]);
+  await page.click('#viewSeg [data-v=list]');
+  assert.equal(await page.locator('.card[data-key="omp:child"] .title').innerText(),'Worker > Child');
+  assert.equal(await page.locator('.card[data-key="omp:child"] .copy').count(),0);
+  assert.equal(await page.evaluate(()=>officeOpts.label(state.data.sessions.find(s=>s.key==='omp:child'))),'Worker > Child');
+  await page.click('#viewSeg [data-v=office]');await page.evaluate(s=>onData({now:Date.now(),sessions:s}),sessions);
+  await openSettings(page);await page.uncheck('#showSub');await page.keyboard.press('Escape');
+  check('OMP subagents show their name without an invalid Resume command');
   assert.equal(await page.locator('#showAgent').isChecked(),true);
   assert.deepEqual([...new Set(await badges(page))].sort(),['Cl','Cx','G','OMP']);
   assert.deepEqual(await drawnLogos(page),['claude','codex','gemini','omp']);

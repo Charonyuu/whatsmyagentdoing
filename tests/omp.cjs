@@ -142,6 +142,59 @@ test('OMP: explicit custom root and direct --session-dir',t=>{
   f.watcher.tick();assert.deepEqual(Array.from(f.watcher.sessions(),s=>s.id),['custom-id']);
  }
 });
+test('OMP: nested agents and advisors link to their parents across levels',t=>{
+ const f=fixture(t),dir='.omp/agent/sessions/project/';
+ const parent=f.write(dir+'main.jsonl',[f.header('parent'),user()]);
+ const child=f.write(dir+'main/Worker.jsonl',[entry('session',{id:'worker',cwd:'/fixture/project',parentSession:parent}),user()]);
+ f.write(dir+'main/Worker/Worker.Child.jsonl',[entry('session',{id:'grandchild',cwd:'/fixture/project',parentSession:child}),user()]);
+ f.write(dir+'main/__advisor.jsonl',[entry('session',{id:'advisor',cwd:'/fixture/project'}),user()]);
+ f.write(dir+'main/not-an-agent.jsonl',[entry('session',{id:'unrelated',cwd:'/fixture/project',parentSession:'other'}),user()]);
+ f.write(dir+'__advisor.jsonl',[entry('session',{id:'top-advisor',cwd:'/fixture/project'}),user()]);
+ f.watcher.tick();let sessions=f.watcher.sessions();
+ assert.deepEqual(Array.from(sessions,s=>s.id).sort(),['advisor','grandchild','parent','worker']);
+ assert.equal(sessions.find(s=>s.id==='parent').subagent,false);
+ assert.equal(sessions.find(s=>s.id==='worker').parentId,'parent');
+ assert.equal(sessions.find(s=>s.id==='worker').title,'Worker');
+ assert.equal(sessions.find(s=>s.id==='grandchild').parentId,'worker');
+ assert.equal(sessions.find(s=>s.id==='grandchild').title,'Worker > Child');
+ assert.equal(sessions.find(s=>s.id==='advisor').title,'Advisor');
+ const snap=snapshot(f.watcher,{privacy:false}).sessions;
+ assert.equal(snap.find(s=>s.id==='worker').resumeCommand,null,'subagents have no standalone Resume');
+ assert.ok(snap.find(s=>s.id==='parent').resumeCommand);
+ assert.equal(snap.find(s=>s.id==='worker')._ompPathKey,undefined,'internal fields stay out of the API');
+ f.append(child,[assistant([{type:'text',text:'Done'}],'stop')]);f.advance(1000);f.watcher.tick();
+ assert.equal(f.watcher.sessions().find(s=>s.id==='worker').status,'done');
+});
+test('OMP: a child links to a parent outside the activity window',t=>{
+ const f=fixture(t),dir='.omp/agent/sessions/project/';
+ const parent=f.write(dir+'main.jsonl',[f.header('old-parent'),user()],NOW-48*HOUR);
+ f.write(dir+'main/Worker.jsonl',[entry('session',{id:'worker',cwd:'/fixture/project',parentSession:parent}),user()]);
+ f.watcher.tick();const sessions=f.watcher.sessions();
+ assert.equal(sessions.length,1);assert.equal(sessions[0].parentId,'old-parent');assert.equal(sessions[0].subagent,true);
+});
+test('OMP: a parent recorded through a symlinked path still matches',t=>{
+ const f=fixture(t),dir='.omp/agent/sessions/project/';
+ const parent=f.write(dir+'main.jsonl',[f.header('parent'),user()]);
+ const link=path.join(f.root,'linked-omp');fs.symlinkSync(path.join(f.root,'.omp'),link);
+ const viaLink=path.join(link,'agent/sessions/project/main.jsonl');
+ f.write(dir+'main/Worker.jsonl',[entry('session',{id:'worker',cwd:'/fixture/project',parentSession:viaLink}),user()]);
+ f.watcher.tick();
+ assert.equal(f.watcher.sessions().find(s=>s.id==='worker')?.parentId,'parent');
+ assert.ok(parent);
+});
+test('OMP: quiet old history is not walked, and symlinked child directories are never followed',t=>{
+ const f=fixture(t),dir='.omp/agent/sessions/project/';
+ const old=f.write(dir+'old.jsonl',[f.header('old'),user()],NOW-48*HOUR);
+ // The child log itself is fresh, but its directory gained no entries in the window: it is not walked.
+ f.write(dir+'old/Worker.jsonl',[entry('session',{id:'stale-child',cwd:'/fixture/project',parentSession:old}),user()]);
+ const quiet=new Date(NOW-48*HOUR);fs.utimesSync(path.join(f.root,dir,'old'),quiet,quiet);
+ const outside=path.join(f.root,'outside');fs.mkdirSync(outside);
+ const linkParent=f.write(dir+'linked.jsonl',[f.header('linked'),user()]);
+ fs.writeFileSync(path.join(outside,'Worker.jsonl'),lines([entry('session',{id:'escaped',cwd:'/fixture/project',parentSession:linkParent}),user()]));
+ fs.symlinkSync(outside,path.join(f.root,dir,'linked'));
+ f.watcher.tick();
+ assert.deepEqual(Array.from(f.watcher.sessions(),s=>s.id).sort(),['linked']);
+});
 test('OMP: profiles and store env override',t=>{
  const f=fixture(t);f.write('.omp/profiles/work/agent/sessions/project/x.jsonl',[f.header('profile-id'),user()]);
  f.watcher.tick();assert.equal(f.watcher.sessions()[0].ompProfile,'work');
