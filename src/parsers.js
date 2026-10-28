@@ -362,6 +362,78 @@ function describeGeminiTool(tc) {
   }
 }
 
+function extractCopilotText(value, depth = 0) {
+  if (value == null || depth > 4) return '';
+  if (typeof value === 'string') return value;
+  if (Array.isArray(value)) return value.map((v) => extractCopilotText(v, depth + 1)).join('\n');
+  if (typeof value === 'object') {
+    if (typeof value.text === 'string') return value.text;
+    if (typeof value.content === 'string') return value.content;
+    if (Array.isArray(value.content)) return extractCopilotText(value.content, depth + 1);
+    if (typeof value.message === 'string') return value.message;
+  }
+  return '';
+}
+
+function describeCopilotTool(tool, args = {}) {
+  const name = tool || 'tool';
+  if (args && typeof args === 'object') {
+    if (args.pattern) return `Search: ${short(args.pattern, 60)}`;
+    if (args.command) return `Shell: ${short(Array.isArray(args.command) ? args.command.join(' ') : String(args.command), 60)}`;
+    if (args.path || args.file_path) return `${name} ${path.basename(String(args.path || args.file_path || '')) || name}`;
+  }
+  return name;
+}
+
+function applyCopilot(s, d) {
+  if (!d || typeof d !== 'object') return;
+  const data = d.data || d;
+  if (d.timestamp) stamp(s, d.timestamp);
+  switch (d.type) {
+    case 'session.start': {
+      if (data.sessionId) s.sessionId = data.sessionId;
+      if (data.context?.cwd) s.cwd = data.context.cwd;
+      else if (data.context?.gitRoot) s.cwd = data.context.gitRoot;
+      if (data.selectedModel) s.model = data.selectedModel;
+      if (data.startTime) stamp(s, data.startTime);
+      return;
+    }
+    case 'user.message': {
+      const text = clean(extractCopilotText(data.content ?? data.transformedContent ?? data.prompt));
+      if (text) s.prompt = text;
+      s.turnStartedAt = d.timestamp ? Date.parse(d.timestamp) : s.turnStartedAt;
+      set(s, 'thinking', null);
+      return;
+    }
+    case 'assistant.message': {
+      const text = clean(extractCopilotText(data.content ?? data.message));
+      if (text) s.reply = text;
+      if (data.model) s.model = data.model;
+      set(s, 'typing', null);
+      return;
+    }
+    case 'tool.execution_start': {
+      const name = data.toolName || data.tool_name || 'tool';
+      set(s, 'tool', describeCopilotTool(name, data.arguments || data.args || {}));
+      return;
+    }
+    case 'tool.execution_complete': {
+      if (data.model) s.model = data.model;
+      set(s, 'thinking', null);
+      return;
+    }
+    case 'tool.execution_error':
+      set(s, 'error', null);
+      s.error = short(data.message || 'Tool error', 120);
+      return;
+    case 'session.end':
+      set(s, 'done', null);
+      return;
+    default:
+      return;
+  }
+}
+
 function applyGemini(s, d) {
   if (!d || typeof d !== 'object') return;
   // metadata line / $set updates
@@ -523,4 +595,4 @@ function applyOMP(s, d) {
   else set(s, 'thinking', null);
 }
 
-module.exports = { newSession, applyClaude, applyCodex, applyGemini, applyGeminiDocument, applyOMP, clean };
+module.exports = { newSession, applyClaude, applyCodex, applyGemini, applyGeminiDocument, applyCopilot, applyOMP, clean };

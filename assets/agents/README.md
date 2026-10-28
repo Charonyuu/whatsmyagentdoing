@@ -17,6 +17,9 @@ Retrieved 2026-10-25, artwork unchanged:
   OpenAI desktop app, `ChatGPT.app/Contents/Resources/app.asar` →
   `webview/assets/codex-app-ga-logo-3e5209898ca3.png`.
   Brand reference: https://openai.com/brand/.
+- `copilot.svg`: the GitHub Copilot mark, retrieved 2026-10-29 from
+  Simple Icons (https://cdn.jsdelivr.net/npm/simple-icons@13.21.0/icons/githubcopilot.svg).
+  Brand reference: https://github.com/logos.
 - `gemini.png`: Google's official Gemini product icon, downloaded from
   https://www.gstatic.com/lamda/images/gemini_sparkle_4g_512_lt_f94943af3be039176192d.png
   (linked by https://gemini.google.com/).

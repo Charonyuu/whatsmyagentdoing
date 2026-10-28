@@ -1,6 +1,6 @@
 # 👀 whatsmyagentdoing
 
-**A Claude Code / Codex skill: type `/myoffice` and see what every Claude Code, Codex, Gemini CLI and OMP (oh-my-pi) agent on your machine is doing — live, in a little office.**
+**A Claude Code / Codex skill: type `/myoffice` and see what every Claude Code, Codex, Gemini CLI, Copilot CLI and OMP (oh-my-pi) agent on your machine is doing — live, in a little office.**
 
 OMP support: [paths, profiles, Resume and limitations](docs/omp.md).
 
@@ -51,7 +51,7 @@ Prefer plain cards? Switch to **List**. Either way, each session updates in real
 
 The UI speaks English, 繁體中文, 简体中文, 日本語, 한국어, Español, Français, Deutsch and Português. By default it uses the language you write your prompts in (falling back to your browser's); pick one from the 🌐 menu to override.
 
-In list view, sessions are grouped into **Needs you → Working → Finished**, with a live timer for the current turn, a copy button for the resume command (`claude --resume …` / `codex resume …`), optional browser notifications when an agent finishes, and filters for Claude / Codex / subagents. The tab title shows how many agents are working.
+In list view, sessions are grouped into **Needs you → Working → Finished**, with a live timer for the current turn, a copy button for the resume command (`claude --resume …` / `codex resume …` / `copilot --resume …`), optional browser notifications when an agent finishes, and filters for Claude / Codex / Copilot / subagents. The tab title shows how many agents are working.
 
 **Agent badges:** in both 2D and 3D, transparent official Claude, Codex and Gemini logos identify each agent beside its name, including subagents. The same icons appear in the legend, list cards and filters. Open **Settings → Agent badges** to hide the office markers and legend; your choice is saved. Icons are bundled locally, with initials as a fallback if an image cannot load. See [icon sources and attribution](assets/agents/README.md).
 
@@ -61,7 +61,7 @@ The toolbar keeps the view, 2D/3D and pop-out controls visible. Scene selection,
 
 When Document PiP isn't available, **Pop out** in office view starts a local, view-only video preview of the 2D or 3D office. Use its video PiP button, or the browser's own video controls/context menu (such as Firefox's), to float it. Stop the preview when finished. No screen-sharing permission is needed and no video is uploaded. Background animation may run at a lower frame rate, depending on browser throttling; this fallback doesn't support list cards or clicking agents.
 
-Works with Claude Code (CLI, desktop, IDE), Codex (CLI, desktop, IDE), Gemini CLI,
+Works with Claude Code (CLI, desktop, IDE), Codex (CLI, desktop, IDE), Gemini CLI, Copilot CLI,
 OMP, Kimi Code, DeepSeek Harness (DSH) and Grok Build through their local session
 logs. (Google Antigravity keeps its conversations in an undocumented binary
 store and isn't supported yet.)
@@ -93,6 +93,7 @@ No hooks, no config, no API keys. Both tools already append every message and to
 - Claude Code: `~/.claude/projects/<project>/<session>.jsonl` (+ `subagents/`)
 - Codex: `~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl`. Date folders record when a chat started; discovery checks all dates and uses log modification times to find recently active chats, including months-old conversations. Inactive log contents are not read.
 - Gemini CLI: `~/.gemini/tmp/<project>/chats/session-*.jsonl` (project paths from `~/.gemini/projects.json`)
+- Copilot CLI: `~/.copilot/session-state/<session>/events.jsonl`
 - Kimi Code: `~/.kimi-code/sessions/<project>/<session>/agents/<agent>/wire.jsonl`, with names and folders from `state.json`
 - DSH: `~/.dsh/sessions/<project>/<session>/session[.vN].jsonl[.zstd]`; only the latest format in a session folder is read
 - Grok Build: `~/.grok/sessions/<project>/<session>/updates.jsonl`, with metadata from `summary.json`

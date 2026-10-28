@@ -54,7 +54,7 @@ function view(s, now, { privacy }) {
     parentId: s.parentId,
     subagent: s.subagent,
     cwd: s.cwd,
-    project: s.cwd ? path.basename(s.cwd) : null,
+    project: s.cwd ? `${s.agent === 'copilot' ? 'workspace-' : ''}${path.basename(s.cwd)}` : null,
     title: s.title,
     model: s.model,
     status,

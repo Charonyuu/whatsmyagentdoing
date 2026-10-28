@@ -8,6 +8,7 @@ const { EventEmitter } = require('events');
 const TEAM = [
   ['claude', 'api-server', 'Add rate limiting to /v1/orders'],
   ['codex', 'landing-page', 'Make the hero section responsive'],
+  ['copilot', 'cli-tools', 'Add a --verbose flag'],
   ['claude', 'mobile-app', 'Fix the crash on the settings screen'],
   ['gemini', 'data-pipeline', 'Backfill last week of events'],
   ['claude', 'design-system', 'Add a dark variant to Button'],
@@ -22,6 +23,7 @@ const TOOLS = {
   claude: ['Bash: npm test', 'Edit routes.ts', 'Read schema.prisma', 'Grep "retry"', 'Bash: git diff', 'Write README.md', 'WebSearch “Postgres upgrade”', 'github · create_pull_request'],
   gemini: ['Shell: npm run lint', 'ReadFile schema.sql', 'WebSearch “pg_upgrade”', 'Edit pipeline.py'],
   codex: ['Shell: pnpm test', 'Shell: rg TODO src', 'Editing app.tsx', 'Shell: npx tsc --noEmit', 'Shell: git status'],
+  copilot: ['grep AGENT|agent', 'edit dashboard.js', 'read README.md', 'search codebase', 'run tests'],
 };
 
 const REPLIES = [
@@ -46,7 +48,7 @@ class DemoWatcher extends EventEmitter {
       file: null,
       cwd: `/home/dev/${project}`,
       title: prompt,
-      model: { claude: 'claude-opus-5-5', codex: 'gpt-5-codex', gemini: 'gemini-3-pro' }[agent],
+      model: { claude: 'claude-opus-5-5', codex: 'gpt-5-codex', gemini: 'gemini-3-pro', copilot: 'mai-code-1.1-flash' }[agent],
       subagent: false,
       parentId: null,
       status: 'idle',

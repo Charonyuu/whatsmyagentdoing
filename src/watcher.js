@@ -10,7 +10,7 @@ const path = require('path');
 const { EventEmitter } = require('events');
 const { StringDecoder } = require('string_decoder');
 const crypto = require('crypto');
-const { newSession, applyClaude, applyCodex, applyGemini, applyGeminiDocument, applyOMP } = require('./parsers');
+const { newSession, applyClaude, applyCodex, applyGemini, applyGeminiDocument, applyCopilot, applyOMP } = require('./parsers');
 const { Magpie } = require('./magpie');
 const { clientFiles, metadata, applyKimi, applyDsh, applyGrok, readDsh } = require('./clients');
 const { ompDirs } = require('./omp');
@@ -34,6 +34,7 @@ const GEMINI_HOMES = [
   path.join(home, '.cache', '.gemini'),
 ];
 const GEMINI_DIR = path.join(GEMINI_HOMES[0], 'tmp');
+const COPILOT_DIR = path.join(home, '.copilot', 'session-state');
 const CLIENT_DIRS = {
   kimi: path.join(process.env.KIMI_CODE_HOME || path.join(home, '.kimi-code'), 'sessions'),
   dsh: path.join(process.env.DSH_HOME || path.join(home, '.dsh'), 'sessions'),
@@ -130,6 +131,16 @@ function codexFiles(sinceMs) {
         }
       }
     }
+  }
+  return out;
+}
+
+function copilotFiles() {
+  const out = [];
+  for (const session of ls(COPILOT_DIR)) {
+    if (!session.isDirectory()) continue;
+    const events = path.join(COPILOT_DIR, session.name, 'events.jsonl');
+    if (statSafe(events)) out.push({ agent: 'copilot', file: events, id: session.name });
   }
   return out;
 }
@@ -238,7 +249,7 @@ class Watcher extends EventEmitter {
     // Directory walk every 5s; stat known files every tick.
     if (now - this.lastScan > 5000) {
       this.lastScan = now;
-      this.candidates = [...claudeFiles(), ...codexFiles(since), ...geminiFiles(),
+      this.candidates = [...claudeFiles(), ...codexFiles(since), ...geminiFiles(), ...copilotFiles(),
         ...clientFiles(CLIENT_DIRS, since), ...ompFiles(since, ompDirs(this.ompDir, process.env, home, process.platform))];
     }
 
@@ -331,7 +342,7 @@ class Watcher extends EventEmitter {
     if (c.parentId) { session.parentId = c.parentId; session.subagent = true; }
     session.mtime = st.mtimeMs;
     if (c.agent === 'gemini') session.geminiProject = c.project;
-    const apply = { claude: applyClaude, codex: applyCodex, gemini: applyGemini, kimi: applyKimi, dsh: applyDsh, grok: applyGrok, omp: applyOMP }[c.agent];
+    const apply = { claude: applyClaude, codex: applyCodex, gemini: applyGemini, copilot: applyCopilot, kimi: applyKimi, dsh: applyDsh, grok: applyGrok, omp: applyOMP }[c.agent];
     const t = { session, offset: st.size, partial: '', apply, mtime: st.mtimeMs };
     if (c.agent === 'dsh') {
       t.whole = true;
