@@ -424,7 +424,8 @@ function applyCopilot(s, d) {
       return;
     }
     case 'tool.execution_error':
-      set(s, 'error', short(data.message || 'Tool error', 120));
+      set(s, 'error', null);
+      s.error = short(data.message || 'Tool error', 120);
       return;
     case 'session.end':
       set(s, 'done', null);

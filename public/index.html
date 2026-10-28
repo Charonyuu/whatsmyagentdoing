@@ -273,7 +273,7 @@ function resumeCmd(s) {
   const cd = s.cwd ? `cd ${JSON.stringify(s.cwd)} && ` : '';
   if (s.agent === 'claude') return `${cd}claude --resume ${s.id}`;
   if (s.agent === 'gemini') return `${cd}gemini --resume ${s.sessionId || s.id}`;
-  if (s.agent === 'copilot') return `${cd}code ${JSON.stringify(s.cwd || '.')}`;
+  if (s.agent === 'copilot') return `copilot --resume ${s.sessionId || s.id}`;
   return `${cd}codex resume ${s.id}`;
 }
 
