@@ -14,6 +14,7 @@ const { newSession, applyClaude, applyCodex, applyGemini, applyGeminiDocument, a
 const { Magpie } = require('./magpie');
 const { clientFiles, metadata, applyKimi, applyDsh, applyGrok, readDsh } = require('./clients');
 const { ompDirs } = require('./omp');
+const hook = require('./hook');
 
 const HEAD_BYTES = 128 * 1024;
 const TAIL_BYTES = 768 * 1024;
@@ -223,6 +224,7 @@ class Watcher extends EventEmitter {
     });
     this.ompDir = ompDir;
     this.ompParentIds = new Map(); // parent log -> { mtime, size, id }
+    this.waiting = new Map(); // Claude session ID -> { at, message } from the optional hook
   }
 
   start() {
@@ -272,6 +274,7 @@ class Watcher extends EventEmitter {
     const now = Date.now();
     const since = now - this.windowMs;
     let changed = this.loadCodexIndex();
+    if (this.loadWaiting(since)) changed = true;
     if (this.loadGeminiProjects()) changed = true;
 
     // Directory walk every 5s; stat known files every tick.
@@ -495,6 +498,15 @@ class Watcher extends EventEmitter {
     return id;
   }
 
+  // Markers written by `cli.js --hook`; returns true when they changed.
+  loadWaiting(since) {
+    const next = hook.markers(since);
+    const key = (m) => [...m].map(([id, w]) => `${id}:${w.at}`).sort().join();
+    const changed = key(next) !== key(this.waiting);
+    this.waiting = next;
+    return changed;
+  }
+
   sessions() {
     const out = [];
     for (const t of this.trackers.values()) {
@@ -523,6 +535,12 @@ class Watcher extends EventEmitter {
       if (s.agent === 'codex' && !s.title) {
         const name = this.codexNames.get(s.id);
         if (name) s.title = name;
+      }
+      // A permission prompt from the optional Claude Code hook, until the log moves on.
+      const wait = s.agent === 'claude' && !s.subagent && this.waiting.get(s.id);
+      if (wait && wait.at > (s.lastEventAt || 0)) {
+        out.push({ ...s, status: 'waiting', activity: wait.message || null, lastEventAt: wait.at });
+        continue;
       }
       out.push(s);
     }

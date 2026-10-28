@@ -138,6 +138,23 @@
   .r { color: var(--ink); opacity: .85; }
   .r::before { content: "← "; color: var(--faint); }
   .err { font-size: 12.5px; color: var(--error); }
+  .today-tokens { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .today-panel { width: min(340px, calc(100vw - 32px)); }
+  .today-big { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+  .today-big div { padding: 10px; border: 1px solid var(--line); border-radius: 10px; }
+  .today-big b { display: block; font-size: 20px; font-variant-numeric: tabular-nums; }
+  .today-big span, .today-note, .today-head { font-size: 12px; color: var(--muted); }
+  .today-head { margin: 12px 0 6px; font-weight: 600; }
+  .today-row { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 4px 0; }
+  .today-row .n { margin-left: auto; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .today-note { margin-top: 12px; line-height: 1.5; }
+  .ctx { display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: var(--faint); }
+  .ctx .bar { flex: 1; height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
+  .ctx .bar i { display: block; height: 100%; border-radius: 2px; background: var(--done); }
+  .ctx.warn .bar i { background: var(--waiting); }
+  .ctx.full .bar i { background: var(--error); }
+  .stuck { font-size: 12px; color: var(--error); white-space: nowrap; }
+  .card.is-stuck { border-color: color-mix(in srgb, var(--error) 45%, var(--line)); }
   .foot { display: flex; gap: 8px; align-items: center; color: var(--faint); font-size: 11.5px; min-width: 0; }
   .foot .model { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .copy { margin-left: auto; border: 0; background: none; color: var(--faint); font: inherit; font-size: 11.5px; cursor: pointer; padding: 0; flex: none; }
@@ -237,6 +254,10 @@
       </div>
       <span class="toolbar-space" aria-hidden="true"></span>
       <button class="btn" id="pipBtn" hidden></button>
+      <details class="settings" id="todayMenu">
+        <summary class="btn" aria-controls="todayPanel">📊 <span data-t="today"></span> <span class="today-tokens" id="todayTokens"></span></summary>
+        <div class="settings-panel today-panel" id="todayPanel"></div>
+      </details>
       <details class="settings" id="settingsMenu">
         <summary class="btn" aria-controls="settingsPanel"><span data-t="settings"></span><span class="filter-active" id="activeFilter" hidden></span></summary>
         <div class="settings-panel" id="settingsPanel">
@@ -253,6 +274,7 @@
               <label class="tog"><input type="checkbox" id="showSub"> <span data-t="subagents"></span></label>
               <label class="tog" id="idleToggle"><input type="checkbox" id="showIdle"> <span data-t="showIdle"></span></label>
               <label class="tog" id="agentBadgeToggle"><input type="checkbox" id="showAgent"> <span data-t="showAgent"></span></label>
+              <label class="tog" id="soundToggle"><input type="checkbox" id="sound"> <span data-t="sound"></span></label>
             </div>
           </div>
           <div class="setting-group">
@@ -325,7 +347,7 @@ const store = (() => {
   return { get, set };
 })();
 
-const PREF_DEFAULTS = { view: 'office', quality: 'mid', scene: 'office', agent: 'all', showSub: false, showIdle: false, showAgent: true, lang: 'auto' };
+const PREF_DEFAULTS = { view: 'office', quality: 'mid', scene: 'office', agent: 'all', showSub: false, showIdle: false, showAgent: true, sound: false, lang: 'auto' };
 function validPreference(k, v) {
   if (!Object.hasOwn(PREF_DEFAULTS, k)) return false;
   if (typeof PREF_DEFAULTS[k] === 'boolean') return typeof v === 'boolean';
@@ -362,6 +384,7 @@ const state = {
   data: { now: Date.now(), sessions: [] },
   skew: 0,
   prev: new Map(),
+  prevStuck: new Set(),
   flash: new Set(),
 };
 let popout = null;
@@ -431,6 +454,39 @@ function addAgentFilter(agent, name = AGENT_NAME[agent] || agent) {
   document.getElementById('agentSeg').append(button);
 }
 
+function fmtTokens(n) {
+  if (n < 1000) return String(n);
+  if (n < 1e6) return `${(n / 1e3).toFixed(n < 1e4 ? 1 : 0)}k`;
+  return `${(n / 1e6).toFixed(n < 1e7 ? 2 : 1)}M`;
+}
+
+// How full the model's context window is, from the latest request in the log.
+function contextBar(c) {
+  if (!c || !c.window) return '';
+  const pct = Math.min(100, Math.round((c.used / c.window) * 100));
+  const tip = `${L.context} ${fmtTokens(c.used)} / ${fmtTokens(c.window)}`;
+  return `<div class="ctx${pct >= 85 ? ' full' : pct >= 60 ? ' warn' : ''}" title="${esc(tip)}"><span>${esc(L.context)}</span><span class="bar"><i style="width:${pct}%"></i></span><span>${pct}%</span></div>`;
+}
+
+function renderToday() {
+  const t = state.data.summary;
+  document.getElementById('todayTokens').textContent = t && t.tokens ? fmtTokens(t.tokens) : '';
+  const panel = document.getElementById('todayPanel');
+  if (!t || !t.agents) { panel.innerHTML = `<div class="today-note">${esc(L.noUsage)}</div>`; return; }
+  const agents = Object.entries(t.byAgent).sort((a, b) => b[1].turns - a[1].turns || b[1].tokens - a[1].tokens);
+  const projects = Object.entries(t.projects).filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  panel.innerHTML = `
+    <div class="today-big">
+      <div><b>${t.turns}</b><span>${esc(L.turnsL)}</span></div>
+      <div><b>${fmtTokens(t.tokens)}</b><span>${esc(L.tokensL)}</span></div>
+      <div><b>${t.agents}</b><span>${esc(L.agentsL)}</span></div>
+    </div>
+    ${agents.map(([a, v]) => `<div class="today-row">${agentLogo(a)}${esc(AGENT_NAME[a] || a)}<span class="n">${v.turns} ${esc(L.turnsL)} · ${fmtTokens(v.tokens)}</span></div>`).join('')}
+    ${projects.length ? `<div class="today-head">${esc(L.topProjects)}</div>` : ''}
+    ${projects.map(([p, n]) => `<div class="today-row">${esc(p)}<span class="n">${n} ${esc(L.turnsL)}</span></div>`).join('')}
+    <div class="today-note">${esc(L.summaryNote)}</div>`;
+}
+
 function card(s, now) {
   const project = s.project || (s.cwd ? s.cwd : '—');
   const title = s.title && s.title !== project ? `<div class="title" title="${esc(s.title)}">${esc(s.title)}</div>` : '';
@@ -440,16 +496,18 @@ function card(s, now) {
   const r = showText && s.reply && !ACTIVE.has(s.status) ? `<div class="r" title="${esc(s.reply)}">${esc(s.reply)}</div>` : '';
   const err = s.error ? `<div class="err">${esc(s.error)}</div>` : '';
   const sub = s.subagent ? ` · ${L.sub}` : '';
+  const stuck = s.stuck ? `<span class="stuck">⚠ ${esc(L.stuck(s.stuck))}</span>` : '';
+  const ctx = contextBar(s.context);
   return `
-  <div class="card${s.subagent ? ' sub' : ''}${state.flash.has(s.key) ? ' flash' : ''}" data-s="${s.status}" data-key="${esc(s.key)}">
+  <div class="card${s.subagent ? ' sub' : ''}${s.stuck ? ' is-stuck' : ''}${state.flash.has(s.key) ? ' flash' : ''}" data-s="${s.status}" data-key="${esc(s.key)}">
     <div class="top">
       <span class="agent ${esc(s.agent)}">${agentLogo(s.agent)}${esc(s.agentName || AGENT_NAME[s.agent] || s.agent)}</span>
       <span class="project" title="${esc(s.cwd)}">${esc(project)}</span>
       <span class="time" data-time="${esc(s.key)}">${esc(timeLabel(s, now))}</span>
     </div>
     ${title}
-    <div class="status"><span class="ind"><i></i><i></i><i></i></span><span class="lbl">${esc(L[s.status] || s.status)}</span>${act}</div>
-    ${err}${q}${r}
+    <div class="status"><span class="ind"><i></i><i></i><i></i></span><span class="lbl">${esc(L[s.status] || s.status)}</span>${act}${stuck}</div>
+    ${err}${q}${r}${ctx}
     <div class="foot"><span class="model">${esc((s.model || '') + sub)}</span>${resumeCmd(s) ? `<button class="copy" data-copy="${esc(resumeCmd(s))}">${L.copy}</button>` : ''}</div>
   </div>`;
 }
@@ -473,6 +531,7 @@ function render() {
     return `<span class="chip"><span class="dot" style="color:${color}"></span>${L[g.key]} <b>${n}</b></span>`;
   }).join('');
 
+  renderToday();
   const working = count((s) => ACTIVE.has(s));
   const needs = count(GROUPS[0].match);
   document.title = (needs ? `(${needs}!) ` : working ? `(${working}) ` : '') + L.title;
@@ -544,19 +603,51 @@ function onData(data) {
   state.flash.clear();
   for (const s of data.sessions) {
     const before = state.prev.get(s.key);
-    if (!first && before && ACTIVE.has(before) && (s.status === 'done' || s.status === 'waiting')) {
+    const wasStuck = state.prevStuck.has(s.key);
+    const needsYou = s.status === 'waiting' || s.status === 'error';
+    let alert = null;
+    if (!first && before && before !== s.status && (needsYou || (s.status === 'done' && ACTIVE.has(before)))) {
+      alert = s.status === 'done' ? L.doneNote(s.project || s.agent) : `${s.project || s.agent}: ${L[s.status]}`;
+    } else if (!first && s.stuck && !wasStuck) {
+      alert = `${s.project || s.agent}: ${L.stuck(s.stuck)}`;
+    }
+    if (alert) {
       state.flash.add(s.key);
-      if (!PIP && !s.subagent && window.Notification && Notification.permission === 'granted') {
-        try { new Notification(s.status === 'done' ? L.doneNote(s.project || s.agent) : `${s.project || s.agent}: ${L.waiting}`, { body: s.reply || s.activity || '', tag: s.key }); } catch {}
+      if (!PIP && !s.subagent) {
+        if (window.Notification && Notification.permission === 'granted') {
+          try { new Notification(alert, { body: s.reply || s.activity || '', tag: s.key }); } catch {}
+        }
+        if (state.sound) chime(s.status === 'done' && !s.stuck ? 'done' : 'attention');
       }
     }
     state.prev.set(s.key, s.status);
+    if (s.stuck) state.prevStuck.add(s.key); else state.prevStuck.delete(s.key);
   }
   state.data = data;
   state.loaded = true;
   syncControls();
   applyLang(chooseLang(data.lang));
   render();
+}
+
+// A short synthesized chime, so no audio file is bundled: one tone when a turn
+// finishes, two rising tones when an agent needs you or looks stuck.
+let audio = null;
+function chime(kind) {
+  try {
+    audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+    if (audio.state === 'suspended') audio.resume();
+    const notes = kind === 'done' ? [660] : [587, 880];
+    notes.forEach((f, i) => {
+      const t = audio.currentTime + i * 0.16, o = audio.createOscillator(), g = audio.createGain();
+      o.type = 'sine'; o.frequency.value = f;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.18, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
+      o.connect(g).connect(audio.destination);
+      o.start(t); o.stop(t + 0.4);
+    });
+  } catch {}
 }
 
 function connect() {
@@ -568,13 +659,21 @@ function connect() {
 
 // Native disclosure keeps settings keyboard-accessible without a modal focus trap.
 const settingsMenu = document.getElementById('settingsMenu');
+const todayMenu = document.getElementById('todayMenu');
+todayMenu.addEventListener('toggle', () => { if (todayMenu.open) settingsMenu.open = false; });
+settingsMenu.addEventListener('toggle', () => { if (settingsMenu.open) todayMenu.open = false; });
 document.addEventListener('click', (e) => {
   if (!settingsMenu.contains(e.target)) settingsMenu.open = false;
+  if (!todayMenu.contains(e.target)) todayMenu.open = false;
 });
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && settingsMenu.open) {
     settingsMenu.open = false;
     settingsMenu.querySelector('summary').focus();
+  }
+  if (e.key === 'Escape' && todayMenu.open) {
+    todayMenu.open = false;
+    todayMenu.querySelector('summary').focus();
   }
 });
 settingsMenu.addEventListener('toggle', () => { if (settingsMenu.open) hideTip(); });
@@ -596,6 +695,11 @@ const showIdle = document.getElementById('showIdle');
 const showAgent = document.getElementById('showAgent');
 showSub.addEventListener('change', () => { state.showSub = showSub.checked; store.set('showSub', state.showSub); render(); });
 showIdle.addEventListener('change', () => { state.showIdle = showIdle.checked; store.set('showIdle', state.showIdle); render(); });
+const soundBox = document.getElementById('sound');
+soundBox.addEventListener('change', () => {
+  state.sound = soundBox.checked; store.set('sound', state.sound);
+  if (state.sound) chime('done'); // a preview, and the click unlocks audio for later alerts
+});
 showAgent.addEventListener('change', () => { state.showAgent = showAgent.checked; store.set('showAgent', state.showAgent); syncControls(); render(); });
 
 const notifyBtn = document.getElementById('notify');
@@ -611,6 +715,7 @@ function syncControls() {
   document.querySelectorAll('.seg button').forEach(b => b.setAttribute('aria-pressed', b.classList.contains('on')));
   showSub.checked = state.showSub;
   showIdle.checked = state.showIdle;
+  soundBox.checked = state.sound;
   showAgent.checked = state.showAgent;
   document.getElementById('agentBadgeToggle').style.display = state.view === 'office' ? '' : 'none';
   popout?.sync(PIP, state.view);

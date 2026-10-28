@@ -7,6 +7,7 @@ const { Watcher, CLAUDE_DIR, CODEX_DIR, GEMINI_DIR, CLIENT_DIRS, ompDirs } = req
 const { DemoWatcher } = require('../src/demo');
 const scenes = require('../src/scenes');
 const updater = require('../src/update');
+const hook = require('../src/hook');
 const { createServer, snapshot } = require('../src/server');
 const pkg = require('../package.json');
 
@@ -28,6 +29,8 @@ Options:
   --scenes          List 3D scenes (installed and downloadable)
   --scene <id>      Download a scene if needed and open the office in it
   --remove-scene <id>  Delete a downloaded scene
+  --install-hook    Optional: add a Claude Code hook so permission prompts show "Waiting for you"
+  --uninstall-hook  Remove that hook again
   -h, --help        Show this help
 
 Reads (never writes):
@@ -70,6 +73,9 @@ function parseArgs(argv) {
     else if (a === '--scene') o.scene = argv[++i];
     else if (a.startsWith('--scene=')) o.scene = a.slice(8);
     else if (a === '--remove-scene') o.removeScene = argv[++i];
+    else if (a === '--hook') o.hook = true;
+    else if (a === '--install-hook') o.installHook = true;
+    else if (a === '--uninstall-hook') o.uninstallHook = true;
     else { console.error(`Unknown option: ${a}\n\n${HELP}`); process.exit(1); }
   }
   if (!Number.isFinite(o.port) || !Number.isFinite(o.hours)) { console.error(HELP); process.exit(1); }
@@ -119,6 +125,26 @@ async function printUpdateHint() {
 
 async function main() {
   const o = parseArgs(process.argv.slice(2));
+
+  if (o.hook) {
+    // Run by Claude Code on every Notification. Never fail or print: it must not disturb the session.
+    let input = '';
+    process.stdin.setEncoding('utf8');
+    process.stdin.on('data', (c) => { if (input.length < 65536) input += c; });
+    process.stdin.on('end', () => { try { hook.record(input); } catch {} });
+    return;
+  }
+
+  if (o.installHook || o.uninstallHook) {
+    try {
+      if (o.installHook) console.log(`Installed the approval hook in ${hook.install()}. New and restarted Claude Code sessions will show "Waiting for you" on permission prompts.`);
+      else console.log(hook.uninstall() ? `Removed the approval hook from ${hook.SETTINGS()}.` : 'The approval hook is not installed.');
+    } catch (e) {
+      console.error(`Could not update ${hook.SETTINGS()}: ${e.message}`);
+      process.exitCode = 1;
+    }
+    return;
+  }
 
   if (o.update) {
     const before = updater.localVersion();

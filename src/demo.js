@@ -4,6 +4,7 @@
 // trying the UI on a machine with no sessions. Same interface as Watcher.
 
 const { EventEmitter } = require('events');
+const { dayKey } = require('./parsers');
 
 const TEAM = [
   ['claude', 'api-server', 'Add rate limiting to /v1/orders'],
@@ -63,6 +64,10 @@ class DemoWatcher extends EventEmitter {
       offset: (i * 7.3) % 37,
       // A couple of them sometimes stop to ask you something.
       asks: i === 2 || i === 6,
+      // Made-up usage for the Today panel and context bars.
+      daily: { day: dayKey(now), turns: 3 + ((i * 5) % 11), tokens: 40_000 + ((i * 73_919) % 410_000) },
+      context: 30_000 + ((i * 41_017) % 165_000),
+      contextWindow: agent === 'codex' ? 400_000 : 200_000,
     }));
   }
 

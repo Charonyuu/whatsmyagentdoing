@@ -45,6 +45,7 @@
     "test:watcher": "node --test tests/watcher.cjs tests/omp.cjs",
     "test:magpie": "node --test tests/magpie.cjs",
     "test:copilot": "node --test tests/copilot.cjs",
+    "test:hook": "node --test tests/hook.cjs tests/usage.cjs",
     "test:server": "node --test tests/server.cjs",
     "test:clients": "node --test tests/clients.cjs",
     "test:ui:clients": "node tests/ui-clients.cjs"

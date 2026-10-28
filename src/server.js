@@ -19,6 +19,7 @@ const MOUNTS = { '/assets/': path.join(__dirname, '..', 'assets') };
 const scenes = require('./scenes');
 const updater = require('./update');
 const { ompResumeCommand } = require('./omp');
+const { dayKey } = require('./parsers');
 
 function serveFile(res, root, rel) {
   const file = path.normalize(path.join(root, rel));
@@ -44,6 +45,9 @@ function view(s, now, { privacy }) {
   if (status === 'thinking' && s.source !== 'magpie' && quiet > 15 * 60_000) status = 'idle';
   if (status === 'tool' && quiet > 45 * 60_000) status = 'idle';
   if ((status === 'waiting' || status === 'error') && quiet > 2 * 3600_000) status = 'idle';
+  // Still "active" but silent for a while: likely stuck (a hung tool, a lost prompt).
+  const stuckAfter = status === 'tool' ? 10 * 60_000 : status === 'thinking' ? 8 * 60_000 : Infinity;
+  const stuck = quiet > stuckAfter ? Math.floor(quiet / 60_000) : 0;
 
   const out = {
     key: `${s.agent}:${s.id}`,
@@ -58,6 +62,9 @@ function view(s, now, { privacy }) {
     title: s.title,
     model: s.model,
     status,
+    stuck,
+    context: s.context ? { used: s.context, window: s.contextWindow || null } : null,
+    today: s.daily && s.daily.day === dayKey(now) ? { turns: s.daily.turns, tokens: s.daily.tokens } : null,
     activity: status === 'tool' || status === 'waiting' ? s.activity : null,
     prompt: s.prompt,
     reply: s.reply,
@@ -89,12 +96,28 @@ function promptLanguage(raw) {
   return guessFromPrompts(recent);
 }
 
+// Today's totals across every session seen today, main sessions and subagents alike.
+function summary(sessions, now) {
+  // Folder names are keys here, so no prototype: a project called __proto__ stays a project.
+  const out = { day: dayKey(now), turns: 0, tokens: 0, agents: 0, byAgent: Object.create(null), projects: Object.create(null) };
+  for (const s of sessions) {
+    if (!s.today) continue;
+    out.agents += 1;
+    out.turns += s.today.turns;
+    out.tokens += s.today.tokens;
+    const a = (out.byAgent[s.agent] ||= { sessions: 0, turns: 0, tokens: 0 });
+    a.sessions += 1; a.turns += s.today.turns; a.tokens += s.today.tokens;
+    if (s.project) out.projects[s.project] = (out.projects[s.project] || 0) + s.today.turns;
+  }
+  return out;
+}
+
 function snapshot(watcher, opts) {
   const now = Date.now();
   const raw = watcher.sessions();
   const sessions = raw.map((s) => view(s, now, opts));
   sessions.sort((a, b) => (b.lastEventAt || 0) - (a.lastEventAt || 0));
-  return { now, lang: opts.demo ? null : promptLanguage(raw), sessions };
+  return { now, lang: opts.demo ? null : promptLanguage(raw), sessions, summary: summary(sessions, now) };
 }
 
 function createServer(watcher, opts, { onShutdown, onRestart } = {}) {

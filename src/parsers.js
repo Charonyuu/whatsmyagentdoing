@@ -37,6 +37,35 @@ function newSession(agent, id, file) {
   };
 }
 
+// Local calendar day, as a sortable YYYY-MM-DD key.
+function dayKey(ms) {
+  const d = new Date(ms);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+// Today's turns and tokens, as far as the log records them. A large log read
+// head + tail only counts what was read.
+function today(s, ts) {
+  if (!ts) return null;
+  const day = dayKey(ts);
+  if (!s.daily || s.daily.day < day) s.daily = { day, turns: 0, tokens: 0 };
+  return s.daily.day === day ? s.daily : null;
+}
+
+function usage(s, ts, { context, window, tokens }) {
+  if (Number.isFinite(context) && context > 0) {
+    s.context = context;
+    s.contextWindow = Number.isFinite(window) && window > 0 ? window : null;
+  }
+  const d = Number.isFinite(tokens) && tokens > 0 && today(s, ts);
+  if (d) d.tokens += tokens;
+}
+
+function countTurn(s, ts) {
+  const d = today(s, ts);
+  if (d) d.turns += 1;
+}
+
 function clean(text, max = 220) {
   if (!text) return null;
   let t = String(text);
@@ -155,12 +184,22 @@ function applyClaude(s, d) {
         s.reply = null;
       }
       s.turnStartedAt = ts;
+      if (!isNotification && !d.isSidechain) countTurn(s, ts);
       set(s, 'thinking', null);
       return;
     }
     case 'assistant': {
       const m = d.message || {};
       if (m.model && m.model !== '<synthetic>') s.model = m.model;
+      // One API response is logged once per content block with the same usage.
+      const u = m.usage;
+      if (u && typeof u === 'object' && m.id !== s._usageId) {
+        s._usageId = m.id;
+        const n = (k) => (Number.isFinite(u[k]) ? u[k] : 0);
+        const prompt = n('input_tokens') + n('cache_creation_input_tokens') + n('cache_read_input_tokens');
+        usage(s, ts, { context: prompt + n('output_tokens'), window: prompt + n('output_tokens') > 200_000 ? 1_000_000 : 200_000,
+          tokens: n('input_tokens') + n('cache_creation_input_tokens') + n('output_tokens') });
+      }
       const blocks = Array.isArray(m.content) ? m.content : [];
       for (const b of blocks) {
         if (b.type === 'thinking' || b.type === 'redacted_thinking') set(s, 'thinking');
@@ -227,6 +266,8 @@ function applyCodex(s, d) {
     case 'event_msg':
       switch (p.type) {
         case 'task_started':
+          // Old and new log formats both start every turn with this event.
+          countTurn(s, ts);
           s.turnStartedAt = ts;
           s.reply = null;
           set(s, 'thinking', null);
@@ -246,6 +287,14 @@ function applyCodex(s, d) {
           s.prompt = clean(p.message);
           set(s, 'thinking', null);
           return;
+        case 'token_count': {
+          const last = p.info?.last_token_usage;
+          if (!last || typeof last !== 'object') return;
+          const n = (k) => (Number.isFinite(last[k]) ? last[k] : 0);
+          usage(s, ts, { context: n('input_tokens') + n('output_tokens'), window: p.info.model_context_window,
+            tokens: n('input_tokens') - n('cached_input_tokens') + n('output_tokens') });
+          return;
+        }
         case 'agent_message':
           s.reply = clean(p.message) || s.reply;
           set(s, 'typing', null);
@@ -595,4 +644,4 @@ function applyOMP(s, d) {
   else set(s, 'thinking', null);
 }
 
-module.exports = { newSession, applyClaude, applyCodex, applyGemini, applyGeminiDocument, applyCopilot, applyOMP, clean };
+module.exports = { dayKey, newSession, applyClaude, applyCodex, applyGemini, applyGeminiDocument, applyCopilot, applyOMP, clean };
