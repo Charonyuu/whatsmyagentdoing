@@ -9,7 +9,7 @@
 <meta property="og:description" content="A Claude Code / Codex skill: a live office of every agent on your machine.">
 <meta property="og:image" content="https://charonyuu.github.io/whatsmyagentdoing/site/img/scene-office.jpg">
 <meta name="theme-color" content="#0b0c0e">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👀</text></svg>">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%23ff6a4d'/%3E%3Cellipse cx='11' cy='16' rx='4.6' ry='5.8' fill='%23fff'/%3E%3Cellipse cx='21' cy='16' rx='4.6' ry='5.8' fill='%23fff'/%3E%3Ccircle cx='12.6' cy='17.4' r='2.1' fill='%231a1a1a'/%3E%3Ccircle cx='22.6' cy='17.4' r='2.1' fill='%231a1a1a'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400..700&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -39,7 +39,12 @@
   nav { position: sticky; top: 0; z-index: 30; background: rgba(11, 12, 14, .88); backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
   nav .wrap { display: flex; align-items: center; gap: 20px; height: 60px; }
   .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; text-decoration: none; }
-  .brand .mark { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; background: var(--accent); font-size: 16px; box-shadow: 0 0 18px rgba(255, 106, 77, .35); }
+  .brand .mark { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; background: var(--accent); box-shadow: 0 0 18px rgba(255, 106, 77, .35); }
+  .mark-svg { width: 22px; height: 22px; }
+  svg.ic-svg, svg.cap-svg, svg.btn-svg { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  .ic-svg { width: 20px; height: 20px; }
+  .cap-svg { width: 17px; height: 17px; color: var(--ink); }
+  .btn-svg { width: 15px; height: 15px; }
   .brand code { font-size: 12px; font-weight: 500; color: var(--muted); background: var(--panel); border: 1px solid var(--line); padding: 1px 8px; border-radius: 999px; }
   .links { display: flex; gap: 6px; margin-left: auto; align-items: center; font-size: 14px; }
   .links a.nl { text-decoration: none; color: var(--muted); padding: 6px 12px; border-radius: 999px; }
@@ -94,8 +99,28 @@
   .bar { display: flex; align-items: center; gap: 7px; padding: 4px 8px 10px; }
   .bar i { width: 10px; height: 10px; border-radius: 50%; background: var(--line2); }
   .bar span { margin-left: 10px; font: 12px var(--mono); color: var(--faint); }
-  .show img { border-radius: 16px; width: 100%; aspect-ratio: 1600 / 861; object-fit: cover; background: var(--inset); }
-  @media (max-width: 640px) { .hero { padding-top: 56px; } .show { margin-top: 44px; padding: 6px; border-radius: 18px; } .show img { border-radius: 12px; } }
+  .stage { cursor: zoom-in; position: relative; border-radius: 16px; overflow: hidden; aspect-ratio: 1600 / 861; background: var(--inset); outline: none; touch-action: pan-y; }
+  .stage:focus-visible { box-shadow: 0 0 0 2px var(--accent); }
+  .slide { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .8s ease; }
+  .slide { pointer-events: none; }
+  .slide.on { opacity: 1; pointer-events: auto; z-index: 1; }
+  .snav { z-index: 2; }
+  .snav { position: absolute; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--line2); background: rgba(16, 17, 20, .78); color: var(--ink); cursor: pointer; opacity: 0; transition: opacity .2s; backdrop-filter: blur(6px); }
+  .snav.prev { left: 14px; } .snav.next { right: 14px; }
+  .stage:hover .snav, .snav:focus-visible { opacity: 1; }
+  .snav .btn-svg { width: 18px; height: 18px; }
+  @media (hover: none) { .snav { display: none; } }
+  .dots { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; padding: 12px 4px 4px; }
+  .dot { position: relative; overflow: hidden; display: inline-flex; align-items: center; gap: 7px; font: 500 13px var(--sans); color: var(--muted); background: var(--inset); border: 1px solid var(--line); border-radius: 999px; padding: 6px 13px; cursor: pointer; }
+  .dot:hover { color: var(--ink); }
+  .dot.on { color: var(--ink); background: var(--accent-bg); border-color: #4a2419; }
+  .dot.on .cap-svg { color: var(--accent); }
+  .dot .prog { position: absolute; left: 0; bottom: 0; height: 2px; width: 0; background: var(--accent); }
+  .dot.on.run .prog { animation: prog var(--dur, 5s) linear forwards; }
+  .show.paused .dot.on .prog { animation-play-state: paused; }
+  @keyframes prog { to { width: 100%; } }
+  @media (max-width: 560px) { .dot span { display: none; } .dot { padding: 7px 10px; } .dot.on span { display: inline; } }
+  @media (max-width: 640px) { .hero { padding-top: 56px; } .show { margin-top: 44px; padding: 6px; border-radius: 18px; } .stage { border-radius: 12px; } }
 
   /* agents strip */
   .agents { padding: 64px 0 0; text-align: center; }
@@ -128,7 +153,8 @@
   /* features */
   .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
   .card { padding: 22px; border: 1px solid var(--line); border-radius: 22px; background: var(--panel); }
-  .card .ic { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 12px; background: var(--inset); border: 1px solid var(--line); font-size: 18px; margin-bottom: 16px; }
+  .card .ic { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 12px; background: var(--inset); border: 1px solid var(--line); color: var(--muted); margin-bottom: 16px; }
+  .card.new .ic { color: var(--accent); background: var(--accent-tint); border-color: #3d241c; }
   .card h3 { font-size: 15.5px; margin: 0 0 6px; font-weight: 600; }
   .card p { font-size: 14px; color: var(--muted); margin: 0; line-height: 1.65; }
   .card code { font-size: 12.5px; color: var(--ink); background: var(--inset); padding: 1px 6px; border-radius: 6px; }
@@ -145,7 +171,7 @@
   .frame img { border-radius: 16px; }
   .ticks { list-style: none; padding: 0; margin: 22px 0 0; display: grid; gap: 10px; }
   .ticks li { display: flex; gap: 10px; color: var(--muted); font-size: 15px; }
-  .ticks li::before { content: "✓"; color: var(--accent); font-weight: 700; }
+  .ticks li::before { content: ""; flex: none; width: 16px; height: 16px; margin-top: 4px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ff6a4d' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E") center / contain no-repeat; }
   .today-img { max-width: 340px; margin: 0 auto; }
   @media (max-width: 900px) { .split, .split.rev { grid-template-columns: 1fr; gap: 28px; } .split.rev .txt { order: 0; } }
 
@@ -157,6 +183,7 @@
   .scene .cap { position: absolute; left: 0; right: 0; bottom: 0; padding: 26px 16px 12px; display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14.5px; background: linear-gradient(transparent, rgba(5, 6, 8, .88)); }
   .scene .cap small { margin-left: auto; font: 500 11.5px var(--mono); color: var(--muted); }
   .scene.halloween { border-color: rgba(255, 106, 77, .5); }
+  .scene.halloween .cap-svg { color: var(--accent); }
   .scene.halloween small { color: #fff; background: var(--accent); font-family: var(--sans); font-weight: 700; border-radius: 999px; padding: 1px 8px; }
   @media (max-width: 900px) { .scenes { grid-template-columns: repeat(2, 1fr); } }
   @media (max-width: 520px) { .scenes { grid-template-columns: 1fr; } }
@@ -169,7 +196,7 @@
   .step p { margin: 0; color: var(--muted); font-size: 14.5px; line-height: 1.7; }
   .step code { font-size: 12.5px; color: var(--ink); background: var(--inset); padding: 1px 6px; border-radius: 6px; word-break: break-all; }
   .privacy { margin-top: 12px; display: flex; gap: 16px; align-items: center; padding: 20px 24px; border: 1px solid #1f3326; border-radius: 22px; background: var(--green-tint); }
-  .privacy b { font-size: 20px; }
+  .priv-ic { flex: none; width: 40px; height: 40px; display: grid; place-items: center; border-radius: 12px; background: #1b2c21; color: var(--typing); }
   .privacy p { margin: 0; color: var(--muted); font-size: 14.5px; line-height: 1.7; }
   .privacy p strong { color: var(--ink); }
   .privacy code { font-size: 12.5px; color: var(--ink); }
@@ -206,9 +233,33 @@
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-eyes" viewBox="0 0 24 24"><ellipse cx="7.6" cy="12" rx="4.1" ry="5.2" fill="#fff" stroke="none"/><ellipse cx="16.4" cy="12" rx="4.1" ry="5.2" fill="#fff" stroke="none"/><circle cx="9" cy="13.2" r="1.9" fill="#1a1a1a" stroke="none"/><circle cx="17.8" cy="13.2" r="1.9" fill="#1a1a1a" stroke="none"/></symbol>
+    <symbol id="i-office" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8.5 20h7M12 16v4"/><path d="M7 8.5h4M7 11.5h7"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16.5v-5a6 6 0 0 1 12 0v5l1.6 2H4.4z"/><path d="M10 21a2.2 2.2 0 0 0 4 0"/></symbol>
+    <symbol id="i-approve" viewBox="0 0 24 24"><path d="M12 3l7.5 3v5.6c0 4.4-3.1 8.2-7.5 9.4-4.4-1.2-7.5-5-7.5-9.4V6z"/><path d="M8.8 12.2l2.3 2.3 4.4-4.6"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3.5 20.5h17"/><rect x="5" y="11" width="3.2" height="7" rx="1"/><rect x="10.4" y="6" width="3.2" height="12" rx="1"/><rect x="15.8" y="13.5" width="3.2" height="4.5" rx="1"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M10.3 4.2a2 2 0 0 1 3.4 0l7.6 13.1A2 2 0 0 1 19.6 20H4.4a2 2 0 0 1-1.7-2.7z"/><path d="M12 9.5v4.2"/><circle cx="12" cy="16.6" r=".4" fill="currentColor"/></symbol>
+    <symbol id="i-pip" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.2"/><rect x="12.2" y="11.6" width="6.3" height="4.9" rx="1.1" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2.2"/><path d="M8.3 10.5V8a3.7 3.7 0 0 1 7.4 0v2.5"/><path d="M12 14.6v2"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.8"/><path d="M3.4 12h17.2M12 3.2c2.6 2.6 3.7 5.6 3.7 8.8s-1.1 6.2-3.7 8.8M12 3.2C9.4 5.8 8.3 8.8 8.3 12s1.1 6.2 3.7 8.8"/></symbol>
+    <symbol id="i-pumpkin" viewBox="0 0 24 24"><path d="M12 7.2c-4.9 0-8 2.7-8 6.6S7.1 20.5 12 20.5s8-2.8 8-6.7-3.1-6.6-8-6.6z"/><path d="M12 7.2c-1.9 1.9-1.9 11.4 0 13.3M12 7.2c1.9 1.9 1.9 11.4 0 13.3"/><path d="M12 7.2c0-2 .8-3.2 2.4-3.8"/></symbol>
+    <symbol id="i-building" viewBox="0 0 24 24"><rect x="5" y="3.2" width="14" height="17.6" rx="1.6"/><path d="M9 7.2h1.8M13.2 7.2H15M9 10.8h1.8M13.2 10.8H15M9 14.4h1.8M13.2 14.4H15"/><path d="M10.4 20.8v-3h3.2v3"/></symbol>
+    <symbol id="i-ship" viewBox="0 0 24 24"><path d="M3.5 15.5h17l-2.3 4.3H5.8z"/><path d="M12 3.5v12"/><path d="M12 4.5l5.8 8.3H12M12 6.8L7 12.8h5"/></symbol>
+    <symbol id="i-cup" viewBox="0 0 24 24"><path d="M5 9h11v5a5 5 0 0 1-5 5h-1a5 5 0 0 1-5-5z"/><path d="M16 10.5h1.4a2.4 2.4 0 0 1 0 4.8H16"/><path d="M8.5 3.5c-.8 1 .8 2 0 3M11.8 3.5c-.8 1 .8 2 0 3"/></symbol>
+    <symbol id="i-rocket" viewBox="0 0 24 24"><path d="M12 2.8c3.6 1.9 5.6 5.6 5.6 9.6l-1.9 3.3H8.3l-1.9-3.3c0-4 2-7.7 5.6-9.6z"/><circle cx="12" cy="9.8" r="1.9"/><path d="M9.6 18.6l-.9 2.3M14.4 18.6l.9 2.3M12 18.8v2.6"/></symbol>
+    <symbol id="i-castle" viewBox="0 0 24 24"><path d="M4 20.5V9.5h2.8V6.8h2.4v2.7h1.6V6.8h2.4v2.7h1.6V6.8h2.4v2.7H20v11z"/><path d="M10 20.5v-4.2a2 2 0 0 1 4 0v4.2"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.6l2.5 5.2 5.7.8-4.1 4 1 5.6L12 16.5l-5.1 2.7 1-5.6-4.1-4 5.7-.8z" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-left" viewBox="0 0 24 24"><path d="M14.5 5.5L8 12l6.5 6.5"/></symbol>
+    <symbol id="i-right" viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 5v13M6.5 12.5L12 18l5.5-5.5"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7.5 3v5.6c0 4.4-3.1 8.2-7.5 9.4-4.4-1.2-7.5-5-7.5-9.4V6z"/><rect x="9" y="11" width="6" height="4.6" rx="1"/><path d="M10.2 11V9.7a1.8 1.8 0 0 1 3.6 0V11"/></symbol>
+  </defs>
+</svg>
 <nav id="nav">
   <div class="wrap">
-    <a class="brand" href="#top"><span class="mark">👀</span>whatsmyagentdoing <code>/myoffice</code></a>
+    <a class="brand" href="#top"><span class="mark"><svg class="mark-svg" aria-hidden="true"><use href="#i-eyes"/></svg></span>whatsmyagentdoing <code>/myoffice</code></a>
     <div class="links">
       <a class="nl hide-sm" href="#features" data-i="navFeatures">Features</a>
       <a class="nl hide-sm" href="#scenes" data-i="navScenes">Scenes</a>
@@ -224,7 +275,7 @@
 
 <main id="top">
   <header class="hero wrap">
-    <a class="pill" href="#scenes"><span class="tag">v0.4</span><span data-i="pill">New: <b>Haunted Hollow</b> 🎃, approval alerts and a Today panel</span></a>
+    <a class="pill" href="#scenes"><span class="tag">v0.4</span><span data-i="pill">New: <b>Haunted Hollow</b>, approval alerts and a Today panel</span></a>
     <h1 data-i="h1">See what every coding agent is doing.</h1>
     <p class="sub" data-i="sub">Type <code>/myoffice</code>. Every Claude Code, Codex, Gemini, Copilot and OMP session on your machine walks into a live little office: thinking, running tools, waiting for you, or done.</p>
 
@@ -241,13 +292,30 @@
     </div>
     <p class="note" data-i="note">Node.js 18+ · no npm install · no API keys · macOS, Linux and Windows</p>
     <div class="cta">
-      <a class="btn primary" href="https://github.com/Charonyuu/whatsmyagentdoing" data-i="ctaStar">★ Star on GitHub</a>
-      <a class="btn" href="#features" data-i="ctaTour">Take the tour ↓</a>
+      <a class="btn primary" href="https://github.com/Charonyuu/whatsmyagentdoing" ><svg class="btn-svg" aria-hidden="true"><use href="#i-star"/></svg><span data-i="ctaStar">Star on GitHub</span></a>
+      <a class="btn" href="#features" ><span data-i="ctaTour">Take the tour</span><svg class="btn-svg" aria-hidden="true"><use href="#i-down"/></svg></a>
     </div>
 
-    <div class="show reveal">
-      <div class="bar"><i></i><i></i><i></i><span>localhost:4545 — 3D office</span></div>
-      <img src="site/img/scene-office.jpg" width="1600" height="861" alt="The 3D office: agents at their desks and off-duty ones wandering around">
+    <div class="show reveal" id="show" aria-roledescription="carousel" aria-label="3D scenes">
+      <div class="bar"><i></i><i></i><i></i><span id="showUrl">localhost:4545</span></div>
+      <div class="stage" id="stage" tabindex="0">
+          <img class="slide on" src="site/img/scene-office.jpg" width="1600" height="861" alt="" data-k="office">
+          <img class="slide" src="site/img/scene-graveyard.jpg" width="1600" height="861" alt="" loading="lazy" data-k="graveyard">
+          <img class="slide" src="site/img/scene-pirate.jpg" width="1600" height="861" alt="" loading="lazy" data-k="pirate">
+          <img class="slide" src="site/img/scene-cafe.jpg" width="1600" height="861" alt="" loading="lazy" data-k="cafe">
+          <img class="slide" src="site/img/scene-station.jpg" width="1600" height="861" alt="" loading="lazy" data-k="station">
+          <img class="slide" src="site/img/scene-castle.jpg" width="1600" height="861" alt="" loading="lazy" data-k="castle">
+        <button class="snav prev" type="button" id="prevBtn" aria-label="Previous scene"><svg class="btn-svg" aria-hidden="true"><use href="#i-left"/></svg></button>
+        <button class="snav next" type="button" id="nextBtn" aria-label="Next scene"><svg class="btn-svg" aria-hidden="true"><use href="#i-right"/></svg></button>
+      </div>
+      <div class="dots" id="dots" role="tablist">
+        <button class="dot on" type="button" role="tab" aria-selected="true" data-n="0"><svg class="cap-svg" aria-hidden="true"><use href="#i-building"/></svg><span data-i="scOffice">Office</span><i class="prog"></i></button>
+        <button class="dot" type="button" role="tab" aria-selected="false" data-n="1"><svg class="cap-svg" aria-hidden="true"><use href="#i-pumpkin"/></svg><span data-i="scGrave">Haunted Hollow</span><i class="prog"></i></button>
+        <button class="dot" type="button" role="tab" aria-selected="false" data-n="2"><svg class="cap-svg" aria-hidden="true"><use href="#i-ship"/></svg><span data-i="scPirate">Pirate Cove</span><i class="prog"></i></button>
+        <button class="dot" type="button" role="tab" aria-selected="false" data-n="3"><svg class="cap-svg" aria-hidden="true"><use href="#i-cup"/></svg><span data-i="scCafe">Café</span><i class="prog"></i></button>
+        <button class="dot" type="button" role="tab" aria-selected="false" data-n="4"><svg class="cap-svg" aria-hidden="true"><use href="#i-rocket"/></svg><span data-i="scStation">Space Station</span><i class="prog"></i></button>
+        <button class="dot" type="button" role="tab" aria-selected="false" data-n="5"><svg class="cap-svg" aria-hidden="true"><use href="#i-castle"/></svg><span data-i="scCastle">Castle</span><i class="prog"></i></button>
+      </div>
     </div>
   </header>
 
@@ -287,14 +355,14 @@
       <h2 data-i="featH">A dashboard you'll actually leave open.</h2>
     </div>
     <div class="grid reveal">
-      <div class="card"><div class="ic">🏢</div><h3 data-i="f1">A live office</h3><p data-i="f1d">A hand-drawn 2D canvas or a 3D office with real-time light and shadows. Working agents sit at desks; finished ones grab coffee, nap or play ping-pong.</p></div>
-      <div class="card"><div class="ic">🔔</div><h3 data-i="f2">Needs you, first</h3><p data-i="f2d">Sessions sort into Needs you → Working → Finished, with browser notifications and an optional chime.</p></div>
-      <div class="card new"><div class="ic">✋</div><h3 data-i="f3">Approval prompts</h3><p data-i="f3d">An optional Claude Code hook shows permission prompts as “Waiting for you” instead of “Running”. <code>--install-hook</code></p></div>
-      <div class="card new"><div class="ic">📊</div><h3 data-i="f4">Today at a glance</h3><p data-i="f4d">Turns, tokens and your busiest projects today, plus a context-window bar on every card.</p></div>
-      <div class="card new"><div class="ic">⚠️</div><h3 data-i="f5">Stuck detection</h3><p data-i="f5d">A tool or a thought that goes silent for too long gets flagged before you waste an hour waiting on it.</p></div>
-      <div class="card"><div class="ic">🪟</div><h3 data-i="f6">Pop it out</h3><p data-i="f6d">An always-on-top picture-in-picture window of the office or the list, synced with the main tab.</p></div>
-      <div class="card"><div class="ic">🔒</div><h3 data-i="f7">Private by design</h3><p data-i="f7d">Read-only, bound to 127.0.0.1, nothing leaves your machine. <code>--private</code> hides prompts for screen sharing.</p></div>
-      <div class="card"><div class="ic">🌐</div><h3 data-i="f8">Speaks your language</h3><p data-i="f8d">Nine languages, picked from the language you write your prompts in.</p></div>
+      <div class="card"><div class="ic"><svg class="ic-svg" aria-hidden="true"><use href="#i-office"/></svg></div><h3 data-i="f1">A live office</h3><p data-i="f1d">A hand-drawn 2D canvas or a 3D office with real-time light and shadows. Working agents sit at desks; finished ones grab coffee, nap or play ping-pong.</p></div>
+      <div class="card"><div class="ic"><svg class="ic-svg" aria-hidden="true"><use href="#i-bell"/></svg></div><h3 data-i="f2">Needs you, first</h3><p data-i="f2d">Sessions sort into Needs you → Working → Finished, with browser notifications and an optional chime.</p></div>
+      <div class="card new"><div class="ic"><svg class="ic-svg" aria-hidden="true"><use href="#i-approve"/></svg></div><h3 data-i="f3">Approval prompts</h3><p data-i="f3d">An optional Claude Code hook shows permission prompts as “Waiting for you” instead of “Running”. <code>--install-hook</code></p></div>
+      <div class="card new"><div class="ic"><svg class="ic-svg" aria-hidden="true"><use href="#i-chart"/></svg></div><h3 data-i="f4">Today at a glance</h3><p data-i="f4d">Turns, tokens and your busiest projects today, plus a context-window bar on every card.</p></div>
+      <div class="card new"><div class="ic"><svg class="ic-svg" aria-hidden="true"><use href="#i-alert"/></svg></div><h3 data-i="f5">Stuck detection</h3><p data-i="f5d">A tool or a thought that goes silent for too long gets flagged before you waste an hour waiting on it.</p></div>
+      <div class="card"><div class="ic"><svg class="ic-svg" aria-hidden="true"><use href="#i-pip"/></svg></div><h3 data-i="f6">Pop it out</h3><p data-i="f6d">An always-on-top picture-in-picture window of the office or the list, synced with the main tab.</p></div>
+      <div class="card"><div class="ic"><svg class="ic-svg" aria-hidden="true"><use href="#i-lock"/></svg></div><h3 data-i="f7">Private by design</h3><p data-i="f7d">Read-only, bound to 127.0.0.1, nothing leaves your machine. <code>--private</code> hides prompts for screen sharing.</p></div>
+      <div class="card"><div class="ic"><svg class="ic-svg" aria-hidden="true"><use href="#i-globe"/></svg></div><h3 data-i="f8">Speaks your language</h3><p data-i="f8d">Nine languages, picked from the language you write your prompts in.</p></div>
     </div>
   </section>
 
@@ -336,12 +404,12 @@
       <p class="lead" data-i="scenesLead">The office is built in. Other 3D scenes are 100–230 KB packs, downloaded only when you pick one and checked against a pinned SHA-256.</p>
     </div>
     <div class="scenes reveal" id="sceneGrid">
-      <button class="scene halloween" data-img="site/img/scene-graveyard.jpg"><img src="site/img/scene-graveyard.jpg" alt="" loading="lazy"><span class="cap">🎃 <span data-i="scGrave">Haunted Hollow</span><small data-i="newSmall">NEW</small></span></button>
-      <button class="scene" data-img="site/img/scene-office.jpg"><img src="site/img/scene-office.jpg" alt="" loading="lazy"><span class="cap">🏢 <span data-i="scOffice">Office</span><small data-i="builtIn">built in</small></span></button>
-      <button class="scene" data-img="site/img/scene-pirate.jpg"><img src="site/img/scene-pirate.jpg" alt="" loading="lazy"><span class="cap">🏴‍☠️ <span data-i="scPirate">Pirate Cove</span><small>--scene pirate</small></span></button>
-      <button class="scene" data-img="site/img/scene-cafe.jpg"><img src="site/img/scene-cafe.jpg" alt="" loading="lazy"><span class="cap">☕ <span data-i="scCafe">Café</span><small>--scene cafe</small></span></button>
-      <button class="scene" data-img="site/img/scene-station.jpg"><img src="site/img/scene-station.jpg" alt="" loading="lazy"><span class="cap">🚀 <span data-i="scStation">Space Station</span><small>--scene station</small></span></button>
-      <button class="scene" data-img="site/img/scene-castle.jpg"><img src="site/img/scene-castle.jpg" alt="" loading="lazy"><span class="cap">🏰 <span data-i="scCastle">Castle</span><small>--scene castle</small></span></button>
+      <button class="scene halloween" data-img="site/img/scene-graveyard.jpg"><img src="site/img/scene-graveyard.jpg" alt="" loading="lazy"><span class="cap"><svg class="cap-svg" aria-hidden="true"><use href="#i-pumpkin"/></svg><span data-i="scGrave">Haunted Hollow</span><small data-i="newSmall">NEW</small></span></button>
+      <button class="scene" data-img="site/img/scene-office.jpg"><img src="site/img/scene-office.jpg" alt="" loading="lazy"><span class="cap"><svg class="cap-svg" aria-hidden="true"><use href="#i-building"/></svg><span data-i="scOffice">Office</span><small data-i="builtIn">built in</small></span></button>
+      <button class="scene" data-img="site/img/scene-pirate.jpg"><img src="site/img/scene-pirate.jpg" alt="" loading="lazy"><span class="cap"><svg class="cap-svg" aria-hidden="true"><use href="#i-ship"/></svg><span data-i="scPirate">Pirate Cove</span><small>--scene pirate</small></span></button>
+      <button class="scene" data-img="site/img/scene-cafe.jpg"><img src="site/img/scene-cafe.jpg" alt="" loading="lazy"><span class="cap"><svg class="cap-svg" aria-hidden="true"><use href="#i-cup"/></svg><span data-i="scCafe">Café</span><small>--scene cafe</small></span></button>
+      <button class="scene" data-img="site/img/scene-station.jpg"><img src="site/img/scene-station.jpg" alt="" loading="lazy"><span class="cap"><svg class="cap-svg" aria-hidden="true"><use href="#i-rocket"/></svg><span data-i="scStation">Space Station</span><small>--scene station</small></span></button>
+      <button class="scene" data-img="site/img/scene-castle.jpg"><img src="site/img/scene-castle.jpg" alt="" loading="lazy"><span class="cap"><svg class="cap-svg" aria-hidden="true"><use href="#i-castle"/></svg><span data-i="scCastle">Castle</span><small>--scene castle</small></span></button>
     </div>
   </section>
 
@@ -356,7 +424,7 @@
       <div class="step"><h3 data-i="h2t">Turn events into states</h3><p data-i="h2d">The latest event becomes Thinking, Running, Waiting or Done. Large logs read only their head and tail.</p></div>
       <div class="step"><h3 data-i="h3t">Stream to your browser</h3><p data-i="h3d">A tiny local server pushes snapshots over Server-Sent Events to the page. That's the whole stack.</p></div>
     </div>
-    <div class="privacy reveal"><b>🔒</b><p data-i="privacy"><strong>Nothing leaves your machine.</strong> The server binds to 127.0.0.1 and rejects requests not addressed to localhost. The only network call is an optional version check, which you can turn off with <code>WMAD_NO_UPDATE_CHECK=1</code>.</p></div>
+    <div class="privacy reveal"><span class="priv-ic"><svg class="ic-svg" aria-hidden="true"><use href="#i-shield"/></svg></span><p data-i="privacy"><strong>Nothing leaves your machine.</strong> The server binds to 127.0.0.1 and rejects requests not addressed to localhost. The only network call is an optional version check, which you can turn off with <code>WMAD_NO_UPDATE_CHECK=1</code>.</p></div>
   </section>
 
   <section class="wrap" id="faq">
@@ -405,12 +473,12 @@ const CMDS = {
 
 const ZH = {
   navFeatures: '功能', navScenes: '場景', navInstall: '安裝',
-  pill: '新功能：<b>萬聖節墓園</b> 🎃、批准提醒和今日總結',
+  pill: '新功能：<b>萬聖節墓園</b>、批准提醒和今日總結',
   h1: '看看每個 coding agent 正在做什麼。',
   sub: '輸入 <code>/myoffice</code>，你電腦上所有 Claude Code、Codex、Gemini、Copilot 和 OMP 的 session 都會走進一間即時的小辦公室：思考中、執行工具、等你回應，或是已經完成。',
   tabAsk: '叫 agent 幫你裝', tabCli: '不用 skill',
   note: 'Node.js 18 以上 · 不用 npm install · 不用 API key · 支援 macOS、Linux、Windows',
-  ctaStar: '★ 在 GitHub 按星星', ctaTour: '往下看看 ↓',
+  ctaStar: '在 GitHub 按星星', ctaTour: '往下看看',
   worksWith: '支援你正在用的 agent',
   statesEyebrow: '一眼看懂', statesH: '誰在工作、誰在等你，一目了然。', statesLead: '每個 session 都會把最新的 log 事件轉成狀態，透過 Server-Sent Events 即時更新。',
   sThinking: '思考中', sThinkingD: '推理中，或在讀工具結果', sTool: '執行中', sToolD: '正在跑工具：<code>Bash: npm test</code>',
@@ -472,6 +540,7 @@ function setLang(next) {
   document.getElementById('langBtn').textContent = lang === 'zh' ? 'English' : '中文';
   showCmd(current);
   renderTicker();
+  window.__carouselLang?.();
   try { localStorage.setItem('wmad-site-lang', lang); } catch {}
 }
 
@@ -495,7 +564,7 @@ document.addEventListener('click', async (e) => {
   const b = e.target.closest('.copy');
   if (!b) return;
   try { await navigator.clipboard.writeText(cmdText(b.dataset.key)); } catch { return; }
-  b.textContent = lang === 'zh' ? '已複製 ✓' : 'Copied ✓'; b.classList.add('ok');
+  b.textContent = lang === 'zh' ? '已複製' : 'Copied'; b.classList.add('ok');
   setTimeout(() => { b.textContent = lang === 'zh' ? '複製' : 'Copy'; b.classList.remove('ok'); }, 1600);
 });
 
@@ -514,15 +583,65 @@ setLang(saved || (/^zh/i.test(navigator.language) ? 'zh' : 'en'));
 
 // Scene lightbox.
 const lb = document.getElementById('lb');
+function openLightbox(src, cap) { document.getElementById('lbImg').src = src; document.getElementById('lbCap').textContent = cap; lb.classList.add('on'); }
 document.getElementById('sceneGrid').addEventListener('click', (e) => {
   const s = e.target.closest('.scene');
   if (!s) return;
-  document.getElementById('lbImg').src = s.dataset.img;
-  document.getElementById('lbCap').textContent = s.querySelector('.cap').textContent.replace(/\s+/g, ' ').trim();
-  lb.classList.add('on');
+  openLightbox(s.dataset.img, s.querySelector('.cap').textContent.replace(/\s+/g, ' ').trim());
 });
 lb.addEventListener('click', () => lb.classList.remove('on'));
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') lb.classList.remove('on'); });
+
+// Scene carousel: cross-fades every 5 s, pauses on hover or focus, swipes on touch.
+(() => {
+  const show = document.getElementById('show'), stage = document.getElementById('stage');
+  const slides = [...stage.querySelectorAll('.slide')], dots = [...document.querySelectorAll('#dots .dot')];
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const DUR = 5000;
+  let at = 0, timer = null, paused = false;
+  const name = (i) => dots[i].querySelector('span').textContent;
+  function go(i, user) {
+    at = (i + slides.length) % slides.length;
+    slides.forEach((s, n) => s.classList.toggle('on', n === at));
+    dots.forEach((d, n) => { d.classList.toggle('on', n === at); d.classList.remove('run'); d.setAttribute('aria-selected', n === at ? 'true' : 'false'); });
+    const next = slides[(at + 1) % slides.length];
+    if (next.loading === 'lazy') next.loading = 'eager'; // have the next scene ready before it fades in
+    slides[at].alt = name(at);
+    document.getElementById('showUrl').textContent = `localhost:4545 — ${name(at)}`;
+    if (user) paused = false;
+    schedule();
+  }
+  function schedule() {
+    clearTimeout(timer);
+    if (still || paused) return;
+    void dots[at].offsetWidth; // restart the progress bar
+    dots[at].classList.add('run');
+    timer = setTimeout(() => go(at + 1), DUR);
+  }
+  function pause(on) {
+    paused = on; show.classList.toggle('paused', on);
+    if (on) clearTimeout(timer); else schedule();
+  }
+  show.style.setProperty('--dur', `${DUR}ms`);
+  document.getElementById('prevBtn').addEventListener('click', () => go(at - 1, true));
+  document.getElementById('nextBtn').addEventListener('click', () => go(at + 1, true));
+  dots.forEach((d) => d.addEventListener('click', () => go(+d.dataset.n, true)));
+  stage.addEventListener('mouseenter', () => pause(true));
+  stage.addEventListener('mouseleave', () => pause(false));
+  stage.addEventListener('keydown', (e) => { if (e.key === 'ArrowLeft') go(at - 1, true); if (e.key === 'ArrowRight') go(at + 1, true); });
+  let x0 = null, swiped = false;
+  stage.addEventListener('pointerdown', (e) => { swiped = false; if (e.pointerType !== 'mouse') x0 = e.clientX; });
+  stage.addEventListener('pointerup', (e) => {
+    if (x0 == null) return;
+    const dx = e.clientX - x0; x0 = null;
+    if (Math.abs(dx) > 40) { swiped = true; go(at + (dx < 0 ? 1 : -1), true); }
+  });
+  // A swipe also ends in a click; only a tap opens the full-size image.
+  stage.addEventListener('click', (e) => { if (!swiped && e.target === slides[at]) openLightbox(slides[at].src, name(at)); });
+  document.addEventListener('visibilitychange', () => (document.hidden ? clearTimeout(timer) : schedule()));
+  window.__carouselLang = () => go(at);
+  go(0);
+})();
 
 // Nav border and reveal-on-scroll.
 const nav = document.getElementById('nav');
