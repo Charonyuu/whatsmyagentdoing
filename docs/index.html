@@ -27,7 +27,8 @@
   html { scroll-behavior: smooth; }
   body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 var(--sans); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
   a { color: inherit; }
-  img { max-width: 100%; display: block; }
+  /* height: auto keeps the aspect ratio when max-width shrinks an image with width/height attributes. */
+  img { max-width: 100%; height: auto; display: block; }
   .wrap { max-width: 1160px; margin: 0 auto; padding: 0 24px; }
   @media (max-width: 640px) { .wrap { padding: 0 16px; } }
 
@@ -92,7 +93,7 @@
   .bar { display: flex; align-items: center; gap: 7px; padding: 4px 6px 10px; }
   .bar i { width: 11px; height: 11px; border-radius: 50%; background: var(--line2); }
   .bar span { margin-left: 10px; font: 12px var(--mono); color: var(--faint); }
-  .show img { border-radius: 10px; width: 100%; aspect-ratio: 1600 / 873; object-fit: cover; background: #15171c; }
+  .show img { border-radius: 10px; width: 100%; aspect-ratio: 1600 / 861; object-fit: cover; background: #15171c; }
 
   /* agents strip */
   .agents { padding: 64px 0 0; text-align: center; }
@@ -146,7 +147,7 @@
   /* scenes */
   .scenes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
   .scene { position: relative; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); background: var(--panel); cursor: zoom-in; padding: 0; text-align: left; color: inherit; font: inherit; }
-  .scene img { aspect-ratio: 16 / 9.4; object-fit: cover; width: 100%; transition: transform .5s ease; }
+  .scene img { aspect-ratio: 1600 / 861; object-fit: cover; width: 100%; transition: transform .5s ease; }
   .scene:hover img { transform: scale(1.04); }
   .scene .cap { position: absolute; left: 0; right: 0; bottom: 0; padding: 26px 14px 12px; display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14.5px; background: linear-gradient(transparent, rgba(5, 6, 10, .85)); }
   .scene .cap small { margin-left: auto; font: 500 11.5px var(--mono); color: var(--muted); }
@@ -239,7 +240,7 @@
 
     <div class="show reveal">
       <div class="bar"><i></i><i></i><i></i><span>localhost:4545 — 3D office</span></div>
-      <img src="site/img/scene-office.jpg" width="1600" height="873" alt="The 3D office: agents at their desks and off-duty ones wandering around">
+      <img src="site/img/scene-office.jpg" width="1600" height="861" alt="The 3D office: agents at their desks and off-duty ones wandering around">
     </div>
   </header>
 
