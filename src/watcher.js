@@ -16,8 +16,10 @@ const { ompDirs } = require('./omp');
 
 const HEAD_BYTES = 128 * 1024;
 const TAIL_BYTES = 768 * 1024;
-// OMP logs are replayed whole up to this size, then read head + tail like the others.
+// OMP, Kimi and Grok logs are replayed whole up to this size, then read head + tail like the others.
 const OMP_FULL_BYTES = 32 * 1024 * 1024;
+// DSH logs are decoded and replayed whole, so a busy log is re-read at most this often.
+const DSH_REPLAY_MS = 5000;
 
 const home = os.homedir();
 const CLAUDE_DIR = path.join(process.env.CLAUDE_CONFIG_DIR || path.join(home, '.claude'), 'projects');
@@ -230,10 +232,11 @@ class Watcher extends EventEmitter {
       if ((this.failed.get(c.file) || 0) > now) continue;
       try {
         if (this.track(c, since)) changed = true;
-      } catch {
+      } catch (e) {
         if (c.agent === 'dsh') {
           // A zstd frame may be half-written. Keep the last readable snapshot.
-          this.failed.set(c.file, now + 1000);
+          // A log over the replay limit stays too big, so don't decode it again soon.
+          this.failed.set(c.file, now + (e?.tooLarge ? 60000 : DSH_REPLAY_MS));
           if (!this.dshWarned) {
             console.error('DSH: log decoding failed; keeping the last readable state and retrying. See the zstd requirements and size limit in README.');
             this.dshWarned = true;
@@ -283,6 +286,7 @@ class Watcher extends EventEmitter {
     let changed = false;
     if (t.whole && (st.mtimeMs !== t.mtime || st.size !== t.offset)) {
       // Whole documents and compressed streams are replaced only after reading.
+      if (c.agent === 'dsh' && Date.now() - t.readAt < DSH_REPLAY_MS) return false;
       this.open(c, st);
       return true;
     } else if (st.size > t.offset) {
@@ -315,6 +319,7 @@ class Watcher extends EventEmitter {
     const t = { session, offset: st.size, partial: '', apply, mtime: st.mtimeMs };
     if (c.agent === 'dsh') {
       t.whole = true;
+      t.readAt = Date.now();
       this.feed(t, readDsh(c.file), false);
       if (!session._dshHeader) throw new Error('DSH header is not readable yet');
       for (const [file, old] of this.trackers) {
@@ -346,10 +351,10 @@ class Watcher extends EventEmitter {
       this.trackers.set(c.file, t);
       return t;
     }
-    if (c.agent === 'kimi' || c.agent === 'grok') {
+    // Keep a decoder for later Kimi/Grok appends that split a UTF-8 character.
+    if (c.agent === 'kimi' || c.agent === 'grok') t.decoder = new StringDecoder('utf8');
+    if (t.decoder && st.size <= OMP_FULL_BYTES) {
       // Pending tools and approvals need every event, including the middle.
-      // Keep the decoder for later appends that split a UTF-8 character.
-      t.decoder = new StringDecoder('utf8');
       for (let start = 0; start < st.size; start += TAIL_BYTES) {
         this.feed(t, readRange(c.file, start, Math.min(start + TAIL_BYTES, st.size), t.decoder), false);
       }
@@ -359,7 +364,7 @@ class Watcher extends EventEmitter {
       // Big log: head for metadata (cwd, title, model), tail for current state.
       this.feed(t, readRange(c.file, 0, HEAD_BYTES), true);
       t.partial = '';
-      this.feed(t, readRange(c.file, st.size - TAIL_BYTES, st.size), false, true);
+      this.feed(t, readRange(c.file, st.size - TAIL_BYTES, st.size, t.decoder), false, true);
     }
     if (c.metadata) {
       metadata(session, c.agent, c.metadata);

@@ -239,6 +239,17 @@ test('DSH selects the latest format and does not duplicate a session when it upg
   assert.equal(f.w.sessions()[0].id, 'canonical-id');
 });
 
+test('a busy DSH log is re-read whole at most every five seconds', t => {
+  const f = fixture(t);
+  const p = f.write('.dsh/sessions/project/busy/session.v3.jsonl', [{ type: 'session', id: 'busy', createdAt: NOW }, dsh('turn/start')]);
+  f.w.tick(); assert.equal(f.w.sessions()[0].status, 'thinking');
+  f.advance(1000);
+  fs.appendFileSync(p, JSON.stringify(dsh('turn/end', { reason: { kind: 'completed' } })) + '\n'); f.touch(p);
+  f.w.tick(); assert.equal(f.w.sessions()[0].status, 'thinking', 'a change within the window waits');
+  f.advance(4000); f.w.tick();
+  assert.equal(f.w.sessions()[0].status, 'done', 'the pending change is read once the window passes');
+});
+
 test('large Kimi logs retain pending approvals and parallel tools across partial appends', t => {
   const f = fixture(t);
   const file = f.write('.kimi-code/sessions/project/session/agents/main/wire.jsonl', [
@@ -337,7 +348,7 @@ test('DSH rejects a native decoder that silently reads only the first frame', t 
   }, (command, args, options) => {
     fallbacks++;
     assert.equal(command, 'zstd'); assert.equal(args.at(-1), p);
-    assert.equal(options.maxBuffer, 128 * 1024 * 1024);
+    assert.equal(options.maxBuffer, 32 * 1024 * 1024);
     return 'complete transcript';
   });
   assert.equal(read(p), 'complete transcript');
