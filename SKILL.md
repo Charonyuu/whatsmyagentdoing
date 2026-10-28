@@ -1,6 +1,6 @@
 ---
 name: myoffice
-description: Open a live office view of every Claude Code, Codex and Gemini CLI agent on this machine — who is thinking, running a tool, writing a reply, waiting for the user, or done. Use when the user types /myoffice, asks what their agents are doing, wants to see all running sessions, or which agent is stuck or finished ("我的 agent 在幹嘛", "show my agents").
+description: Open a live office view of every Claude Code, Codex, Gemini CLI, Copilot CLI, OMP, Kimi Code, DeepSeek Harness and Grok Build agent on this machine — who is thinking, running a tool, writing a reply, waiting for the user, or done. Use when the user types /myoffice, asks what their agents are doing, wants to see all running sessions, or which agent is stuck or finished ("我的 agent 在幹嘛", "show my agents").
 ---
 
 # myoffice
@@ -57,5 +57,11 @@ Options the user may ask for:
   the user asks in chat what their other agents are doing: run
   `node "<base directory>/bin/cli.js" --json --hours 2` and summarize by status.
 
-Everything is read locally from `~/.claude/projects`, `~/.codex/sessions` and `~/.gemini/tmp`;
-the server listens on 127.0.0.1 only and sends nothing anywhere.
+If the user wants Claude Code permission prompts to show as "Waiting for you"
+(Claude Code doesn't log them), offer `node "<base directory>/bin/cli.js" --install-hook`.
+It adds one Notification hook to their Claude Code settings; `--uninstall-hook` removes it.
+Ask before running it, since it changes their settings.
+
+Everything is read locally from the agents' own session folders (`~/.claude/projects`,
+`~/.codex/sessions`, `~/.gemini/tmp`, `~/.copilot/session-state`, `~/.omp`, `~/.kimi-code`,
+`~/.dsh`, `~/.grok`); the server listens on 127.0.0.1 only and sends nothing anywhere.

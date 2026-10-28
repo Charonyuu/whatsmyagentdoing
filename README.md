@@ -1,6 +1,8 @@
 # 👀 whatsmyagentdoing
 
-**A Claude Code / Codex skill: type `/myoffice` and see what every Claude Code, Codex, Gemini CLI, Copilot CLI and OMP (oh-my-pi) agent on your machine is doing — live, in a little office.**
+**A Claude Code / Codex skill: type `/myoffice` and see what every Claude Code, Codex, Gemini CLI, Copilot CLI, OMP (oh-my-pi), Kimi Code, DeepSeek Harness and Grok Build agent on your machine is doing — live, in a little office.**
+
+**Website:** https://charonyuu.github.io/whatsmyagentdoing/
 
 OMP support: [paths, profiles, Resume and limitations](docs/omp.md).
 
@@ -36,7 +38,7 @@ It opens an isometric **office**. Agents that are working sit at cubicle desks: 
 
 Two looks: **Medium** is a hand-drawn 2D canvas (zero dependencies). **High (3D)** renders the same office with real-time lighting and shadows using [Kenney](https://kenney.nl)'s CC0 *Mini Characters* (with their walk / sit / interact animations) and *Furniture Kit*; drag to rotate, scroll to zoom. The 3D bundle (three.js, ~180 KB gzipped) and models (~1.3 MB, meshopt-compressed) only load when you pick High.
 
-**Scenes (3D):** the office is built in; other scenes are small downloadable packs (Pirate Cove, Café, Space Station and Castle are 100–160 KB each), fetched only when you pick one from the scene buttons, run `--scene pirate`, or ask your agent for it. Packs are data only (a manifest plus Kenney CC0 models) and are checked against a pinned SHA-256 before they're installed into `~/.whatsmyagentdoing/scenes`.
+**Scenes (3D):** the office is built in; other scenes are small downloadable packs (Haunted Hollow 🎃, Pirate Cove, Café, Space Station and Castle are 100–230 KB each), fetched only when you pick one from the scene buttons, run `--scene pirate`, or ask your agent for it. Packs are data only (a manifest plus Kenney CC0 models) and are checked against a pinned SHA-256 before they're installed into `~/.whatsmyagentdoing/scenes`.
 
 Prefer plain cards? Switch to **List**. Either way, each session updates in real time:
 
@@ -51,9 +53,13 @@ Prefer plain cards? Switch to **List**. Either way, each session updates in real
 
 The UI speaks English, 繁體中文, 简体中文, 日本語, 한국어, Español, Français, Deutsch and Português. By default it uses the language you write your prompts in (falling back to your browser's); pick one from the 🌐 menu to override.
 
-In list view, sessions are grouped into **Needs you → Working → Finished**, with a live timer for the current turn, a copy button for the resume command (`claude --resume …` / `codex resume …` / `copilot --resume …`), optional browser notifications when an agent finishes, and filters for Claude / Codex / Copilot / subagents. The tab title shows how many agents are working.
+In list view, sessions are grouped into **Needs you → Working → Finished**, with a live timer for the current turn, a copy button for the resume command (`claude --resume …` / `codex resume …` / `copilot --resume …`), optional browser notifications when an agent finishes, and filters per agent and for subagents. The tab title shows how many agents are working.
 
-**Agent badges:** in both 2D and 3D, transparent official Claude, Codex and Gemini logos identify each agent beside its name, including subagents. The same icons appear in the legend, list cards and filters. Open **Settings → Agent badges** to hide the office markers and legend; your choice is saved. Icons are bundled locally, with initials as a fallback if an image cannot load. See [icon sources and attribution](assets/agents/README.md).
+**Alerts:** when an agent needs you (a question, an approval or an error), the page can send a browser notification and, with **Settings → Sound**, play a short chime. A tool that runs for more than 10 minutes, or thinking that goes silent for 8, is flagged as *No progress*, so a hung command or a lost prompt doesn't cost you an hour.
+
+**Today:** the 📊 Today panel adds up today's turns and tokens by agent and by project, from Claude Code and Codex usage records since local midnight. Each card also shows how full the model's context window is (amber from 60%, red from 85%). Very large logs are read head + tail, so their counts can be low.
+
+**Agent badges:** in both 2D and 3D, each provider's logo identifies its agents beside their names, including subagents. The same icons appear in the legend, list cards and filters. Open **Settings → Agent badges** to hide the office markers and legend; your choice is saved. Icons are bundled locally, with initials as a fallback if an image cannot load. See [icon sources and attribution](assets/agents/README.md).
 
 The toolbar keeps the view, 2D/3D and pop-out controls visible. Scene selection, agent filters, display options, notifications and language are grouped under **Settings**.
 
@@ -80,6 +86,8 @@ store and isn't supported yet.)
 --update          git pull the latest version and restart (or say /myoffice update)
 --scenes          List 3D scenes, installed and downloadable
 --scene <id>      Download a scene if needed and open the office in it
+--install-hook    Optional: add a Claude Code hook so permission prompts show "Waiting for you"
+--uninstall-hook  Remove that hook again
 ```
 
 Running it again while it's up just reopens the tab.
@@ -188,7 +196,7 @@ dashboard's browser.
 ## Limits
 
 - Logs are written per finished block, not per token, so "Writing reply" means a reply block has landed and the turn isn't over — not a live keystroke stream.
-- Claude Code doesn't log permission prompts, so a tool waiting on your approval shows as "Running" until you answer (Codex and Gemini CLI do log it, so those show "Waiting for you").
+- Claude Code doesn't log permission prompts, so a tool waiting on your approval shows as "Running" until you answer (Codex and Gemini CLI do log it, so those show "Waiting for you"). Run `node bin/cli.js --install-hook` once to add an optional Notification hook to your Claude Code settings: on a permission or question prompt it writes a small marker to `~/.whatsmyagentdoing/waiting`, and the session shows "Waiting for you" until its log moves on. New Claude Code sessions pick it up; `--uninstall-hook` removes it. If you switch Node versions, run `--install-hook` again.
 - Gemini CLI writes its thoughts together with the reply, so between your prompt and its first tool call or reply it simply shows "Thinking".
 - The log formats aren't public APIs. If an update changes them, statuses may degrade — please open an issue.
 
@@ -204,6 +212,10 @@ authentication, Docker port mapping, local interface URLs, privacy and failures.
 including concurrent tools, approvals, explicit turn endings, metadata
 changes, forks, subagents and DSH compressed-log recovery. Compressed checks
 need either Node's zstd support or the `zstd` executable.
+
+`npm run test:copilot` checks Copilot CLI parsing and discovery. `npm run test:hook` checks the optional
+approval hook (marker files, settings install and removal, path validation) and the usage counts behind
+the Today panel and context bars.
 
 Browser development checks require Node.js 20+ (the dashboard itself still runs on Node.js 18+). Run `npm install`, then `npm run build` to rebuild the committed 3D bundle. With Google Chrome installed, `npm run test:ui` runs the browser regression checks against a temporary local server and made-up sessions. Use `WMAD_HEADED=1 npm run test:ui` to see the test windows, or set `WMAD_SCREENSHOTS` to an output folder to save screenshots. The checks cover logo rendering, compact views, settings synchronization, notifications, PiP recovery, video-stream cleanup and responsive settings in light and dark themes. They use Chrome; Firefox and Safari's native video controls still need manual testing.
 
