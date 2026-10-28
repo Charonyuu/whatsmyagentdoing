@@ -38,7 +38,7 @@ async function fixture(t, key = KEY) {
     if (req.headers.cookie !== `${state.cookieName}=${state.key}`) { res.writeHead(401).end(); return; }
     res.writeHead(state.status, { 'content-type': 'application/json', ...(state.redirect ? { location: '/unexpected' } : {}) });
     const value = req.url === '/api/sessions' ? { sessions: state.sessions } : { routes: state.routes, mine: state.mine };
-    res.end(state.malformed ? '{"secret":"' + KEY : JSON.stringify(value));
+    res.end(state.malformed ? '{"secret":"' + KEY : state.huge ? JSON.stringify({ ...value, pad: 'x'.repeat(9 * 1024 * 1024) }) : JSON.stringify(value));
   });
   server.listen(0, '127.0.0.1');
   await once(server, 'listening');
@@ -389,4 +389,21 @@ test('Kimi children do not consume their parent Magpie record through the resume
   assert.equal(rows.length, 2);
   assert.equal(rows[0].model, null);
   assert.equal(rows[1].model, 'parent-model');
+});
+
+test('oversized responses and fields are refused or bounded before reaching the dashboard', async t => {
+  const { state, magpie } = await fixture(t);
+  state.sessions = [session('long', 'codex', { title: 'T'.repeat(5000), name: 'N'.repeat(100), cwd: '/' + 'c'.repeat(5000) })];
+  await magpie.poll();
+  const s = magpie.sessions()[0];
+  assert.equal(s.title, null, 'a title over the field limit is dropped');
+  assert.equal(s.agentName, null);
+  assert.equal(s.cwd, null);
+  state.sessions = [session('long', 'codex', { title: 'T'.repeat(1000) })];
+  await magpie.poll();
+  assert.ok(magpie.sessions()[0].title.length <= 220, 'titles are shortened like native previews');
+  state.huge = true;
+  await magpie.poll();
+  assert.equal(magpie.error, 'API unavailable or invalid response');
+  assert.ok(magpie.sessions().every(row => row.status === 'idle'));
 });

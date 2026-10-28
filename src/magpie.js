@@ -2,7 +2,10 @@
 
 const { EventEmitter } = require('events');
 const os = require('os');
-const { newSession } = require('./parsers');
+const { newSession, clean } = require('./parsers');
+
+// A local API response this large is not a session listing; refuse it.
+const MAX_BODY_BYTES = 8 * 1024 * 1024;
 
 function identity(agent, id) {
   return typeof agent === 'string' && /^[a-zA-Z][a-zA-Z0-9_-]{0,63}$/.test(agent)
@@ -11,7 +14,7 @@ function identity(agent, id) {
     ? `${agent}:${id}` : null;
 }
 
-const text = (value) => typeof value === 'string' ? value : null;
+const text = (value, max = 512) => typeof value === 'string' && value.length <= max ? value : null;
 const time = (value) => typeof value === 'string' ? Date.parse(value) || null : null;
 
 // Magpie's web API observes requests, not agent turns. Keep that distinction
@@ -68,7 +71,13 @@ class Magpie extends EventEmitter {
       await res.body?.cancel();
       throw new Error(`HTTP ${res.status}`);
     }
-    return res.json();
+    if (Number(res.headers.get('content-length')) > MAX_BODY_BYTES) {
+      await res.body?.cancel();
+      throw new Error('Response too large');
+    }
+    const body = await res.text();
+    if (body.length > MAX_BODY_BYTES) throw new Error('Response too large');
+    return JSON.parse(body);
   }
 
   async signIn(signal) {
@@ -103,9 +112,9 @@ class Magpie extends EventEmitter {
         const s = newSession(row.agent, row.id, null);
         s.source = 'magpie';
         s.gateway = row.gateway === true;
-        s.agentName = text(row.name);
-        s.cwd = text(row.cwd);
-        s.title = text(row.title);
+        s.agentName = text(row.name, 64);
+        s.cwd = text(row.cwd, 4096);
+        s.title = clean(text(row.title, 4096));
         s.startedAt = time(row.start);
         s.lastEventAt = time(row.last);
         s.parentId = identity(row.agent, row.parent_session) ? row.parent_session : null;
