@@ -1,0 +1,84 @@
+{
+  "scenes": [
+    {
+      "id": "cafe",
+      "version": 1,
+      "name": {
+        "en": "Café",
+        "zh-TW": "咖啡廳",
+        "zh-CN": "咖啡厅",
+        "ja": "カフェ",
+        "ko": "카페",
+        "es": "Cafetería",
+        "fr": "Café",
+        "de": "Café",
+        "pt": "Café"
+      },
+      "credits": "Models: Kenney Furniture Kit, Food Kit (CC0)",
+      "size": 98208,
+      "sha256": "075df81768c19200c606649ff8db85b48c9abbf14d1fbd4fc0a58a1c787bf012",
+      "url": "https://github.com/Charonyuu/whatsmyagentdoing/releases/download/scenes/cafe-v1.tar.gz",
+      "icon": "☕"
+    },
+    {
+      "id": "castle",
+      "version": 1,
+      "name": {
+        "en": "Castle",
+        "zh-TW": "城堡",
+        "zh-CN": "城堡",
+        "ja": "お城",
+        "ko": "성",
+        "es": "Castillo",
+        "fr": "Château",
+        "de": "Burg",
+        "pt": "Castelo"
+      },
+      "credits": "Models: Kenney Castle Kit, Food Kit, Pirate Kit, Furniture Kit (CC0)",
+      "size": 165298,
+      "sha256": "cfdc4f138164597ca7ff70ef97284a82b0ceda50731dade94e39602696c5d8b6",
+      "url": "https://github.com/Charonyuu/whatsmyagentdoing/releases/download/scenes/castle-v1.tar.gz",
+      "icon": "🏰"
+    },
+    {
+      "id": "pirate",
+      "version": 3,
+      "name": {
+        "en": "Pirate Cove",
+        "zh-TW": "海盜灣",
+        "zh-CN": "海盗湾",
+        "ja": "海賊の入り江",
+        "ko": "해적 만",
+        "es": "Cala pirata",
+        "fr": "Crique des pirates",
+        "de": "Piratenbucht",
+        "pt": "Enseada pirata"
+      },
+      "credits": "Models: Kenney Pirate Kit (CC0)",
+      "size": 140841,
+      "sha256": "5f8ce658a93aa73b02f63ba2c77f2cd8e65b63a66f47a0880e50ff4e564f4836",
+      "url": "https://github.com/Charonyuu/whatsmyagentdoing/releases/download/scenes/pirate-v3.tar.gz",
+      "icon": "🏴‍☠️"
+    },
+    {
+      "id": "station",
+      "version": 1,
+      "name": {
+        "en": "Space Station",
+        "zh-TW": "太空站",
+        "zh-CN": "空间站",
+        "ja": "宇宙ステーション",
+        "ko": "우주 정거장",
+        "es": "Estación espacial",
+        "fr": "Station spatiale",
+        "de": "Raumstation",
+        "pt": "Estação espacial"
+      },
+      "credits": "Models: Kenney Space Station Kit, Space Kit (CC0)",
+      "size": 140442,
+      "sha256": "15b11fcbd89d67f8e69b9b8fa7ef97a2b58be83ec18c12d0c333f66cfc2fbb31",
+      "url": "https://github.com/Charonyuu/whatsmyagentdoing/releases/download/scenes/station-v1.tar.gz",
+      "icon": "🚀"
+    }
+  ]
+}

@@ -15,6 +15,11 @@ node "<base directory>/bin/cli.js"
 
 If it is already running, the same command just reopens the browser tab.
 
+To **update** it — `/myoffice update`, or the user asks to update / upgrade —
+run `node "<base directory>/bin/cli.js" --update` (not in the background),
+report the version it printed, then start it again as above. The page also
+shows the version in the corner and an "Update" button when a new one is out.
+
 To **close** it — `/myoffice stop`, or the user asks to stop / close / shut the
 office down — run (not in the background):
 
@@ -24,7 +29,23 @@ node "<base directory>/bin/cli.js" --stop
 
 and say it's stopped.
 Then tell the user, in one line, that the office is open at the printed URL.
+If the output also says **"Update available: vA → vB"**, tell the user a new
+version is out and offer to update it (`/myoffice update`, below).
 Requires Node.js 18+; if `node` is missing, say so and stop.
+
+## Scenes (3D)
+
+Besides the built-in office there are downloadable 3D scenes (e.g. a pirate
+cove). When the user asks for another scene, a different look, "DLC", or names
+one ("海盜船", "pirate"):
+
+1. `node "<base directory>/bin/cli.js" --scenes` — lists every scene, whether
+   it's installed, and its download size. Use the ids it prints; don't guess.
+2. `node "<base directory>/bin/cli.js" --scene <id>` (in the background) —
+   downloads it if needed (checksum-verified, data only) and opens the office
+   in that scene. `--scene office` goes back to the office.
+
+Scenes are only downloaded when asked for. `--remove-scene <id>` deletes one.
 
 Options the user may ask for:
 

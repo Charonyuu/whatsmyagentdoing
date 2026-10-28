@@ -24,6 +24,33 @@ const CHAR_HEIGHT = 0.92; // world units (≈ tiles)
 const WALL_H = 2.4;
 const SIT_FORWARD = 0.16;
 
+// Turn a scene manifest into the floor plan the shared simulation uses:
+// stations play the part of desks, pois are where off-duty agents hang out.
+function scenePlan(def) {
+  const grid = new window.OfficeGrid(def.W, def.D);
+  const R = grid.res;
+  grid.cost.fill(1); // everything blocked (sea) …
+  for (const [x0, y0, x1, y1] of def.walk || []) {
+    for (let j = Math.floor(y0 * R); j < Math.ceil(y1 * R); j++) {
+      for (let i = Math.floor(x0 * R); i < Math.ceil(x1 * R); i++) {
+        if (i >= 0 && j >= 0 && i < grid.cw && j < grid.ch) grid.cost[j * grid.cw + i] = 0; // … except walkable ground
+      }
+    }
+  }
+  for (const [x, y, w, d] of def.solid || []) grid.block(x, y, w, d, 0.1);
+  const rad = (deg) => (deg == null ? null : (deg * Math.PI) / 180);
+  const desks = def.stations.map((st) => ({
+    x: st.x, y: st.y, side: 'n', pose: st.pose || 'stand', yaw: rad(st.yaw), anim: st.anim, seat: { x: st.x, y: st.y },
+  }));
+  const pois = def.pois.map((q) => ({
+    ...q, yaw: rad(q.yaw), face: 'front', sit: q.sit ? (typeof q.sit === 'number' ? q.sit : 0.3) : 0, taken: null,
+  }));
+  return {
+    W: def.W, D: def.D, viewH: def.viewH, grid, items: [], props: [], pois, desks,
+    windows: [], posters: [], pp: null, door: def.spawn, fixed: true, noNap: true, terrain: !!def.terrain, scene: def,
+  };
+}
+
 function skyNow() {
   const h = new Date().getHours() + new Date().getMinutes() / 60;
   if (h >= 7 && h < 17) return { sky: 0xa9d4f2, sun: 1.7, amb: 1.15, night: false };
@@ -32,9 +59,16 @@ function skyNow() {
   return { sky: 0x1d2747, sun: 0.9, amb: 1.05, night: true };
 }
 
+// The scene pack for the instance being constructed. The base constructor
+// builds the floor plan before our fields exist, so it's passed this way.
+let PENDING_SCENE = null;
+
 export class Office3D extends window.Office {
   constructor(root, opts) {
+    PENDING_SCENE = (opts && opts.scene) || null;
     super(root, opts);
+    this.sceneDef = PENDING_SCENE;
+    this.compact = !!opts?.compact;
     this.canvas.classList.add('office-overlay');
     try {
       this.gl = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -94,6 +128,11 @@ export class Office3D extends window.Office {
     this.gl.domElement.remove();
   }
 
+  buildPlan(n) {
+    const def = PENDING_SCENE || this.sceneDef;
+    return def ? scenePlan(def) : super.buildPlan(n);
+  }
+
   // ------------------------------------------------------------ assets
 
   async load() {
@@ -106,6 +145,16 @@ export class Office3D extends window.Office {
     ]);
     this.chars = chars;
     this.models = Object.fromEntries(furn);
+    if (this.sceneDef) {
+      const extra = [...new Set(this.sceneDef.props.filter((p) => p.f && !this.models[p.f]).map((p) => p.f))];
+      const base = await Promise.all(extra.map((f) => get(`/assets/kenney/furniture/${f}.glb`).then((g) => [f, g.scene])));
+      Object.assign(this.models, Object.fromEntries(base));
+      for (const [, m] of base) m.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+      const names = [...new Set(this.sceneDef.props.filter((p) => p.m).map((p) => p.m))];
+      const got = await Promise.all(names.map((m) => get(`${this.sceneDef.base}models/${m}.glb`).then((g) => [`scene:${m}`, g.scene])));
+      Object.assign(this.models, Object.fromEntries(got));
+      for (const [, m] of got) m.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+    }
     for (const m of Object.values(this.models)) {
       m.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
     }
@@ -170,6 +219,7 @@ export class Office3D extends window.Office {
   // ------------------------------------------------------------ build room
 
   build() {
+    if (this.plan.scene) return this.buildScene();
     const plan = this.plan;
     if (this.room) { this.scene.remove(this.room); }
     this.room = new THREE.Group();
@@ -498,6 +548,392 @@ export class Office3D extends window.Office {
     }
   }
 
+  // ------------------------------------------------------------ scene packs
+
+  buildScene() {
+    const def = this.plan.scene;
+    if (this.room) this.scene.remove(this.room);
+    this.room = new THREE.Group();
+    this.scene.add(this.room);
+    this.screens.clear();
+    this.blinkers = [];
+    this.bobbers = [];
+    this.flames = [];
+    this.pendants = [];
+    this.pulsers = [];
+    this.windowMat = null;
+    this.clearMat = null;
+    this.stars = null;
+    this.planet = null;
+    this.scene.background = def.background === null ? null : new THREE.Color(def.background || def.sky || '#9fd3ef');
+    if (def.fog) this.scene.fog = new THREE.Fog(def.fog[0], def.fog[1], def.fog[2]);
+
+    if (def.water) {
+      const geo = new THREE.PlaneGeometry(160, 160, 80, 80);
+      geo.rotateX(-Math.PI / 2);
+      this.water = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({
+        color: def.water.color, roughness: 0.35, metalness: 0.05, flatShading: true,
+      }));
+      this.water.position.set(def.W / 2, -0.08, def.D / 2);
+      this.water.receiveShadow = true;
+      this.waterBase = geo.attributes.position.array.slice();
+      this.room.add(this.water);
+      if (def.water.island) {
+        const [cx, cz, rx, rz] = def.water.island;
+        const sh = new THREE.Mesh(new THREE.CircleGeometry(1, 48),
+          new THREE.MeshStandardMaterial({ color: def.water.shallow, transparent: true, opacity: 0.7, roughness: 0.5 }));
+        sh.rotation.x = -Math.PI / 2;
+        sh.scale.set(rx, rz, 1);
+        sh.position.set(cx, -0.035, cz);
+        this.room.add(sh);
+      }
+    }
+    for (const p of def.props) this.buildSceneProp(p);
+    this.fitCamera3D(true);
+  }
+
+  // Top of the ground (sand, dock…) under a point, ignoring anything taller
+  // than a step. Props stand on it; y0 in the manifest is relative to it.
+  surfaceAt(x, z) {
+    this.room.updateMatrixWorld(true); // boxes added so far have no world matrix until a render
+    return this.surfaceBelow(x, z, 0.6, 2);
+  }
+
+  buildSceneProp(p) {
+    const flat = ['sandbase', 'floor', 'wall', 'sign', 'pendant', 'stars', 'planet', 'lamp'];
+    const ground = (p.m && p.m.startsWith('patch-')) || flat.includes(p.special) || p.abs ? 0 : this.surfaceAt(p.x + (p.w || 0) / 2, p.y + (p.d || 0) / 2);
+    if (p.special === 'fire') return this.buildFire(p.x, p.y, ground + (p.y0 || 0), p);
+    if (p.special === 'target') return this.buildTarget(p, ground);
+    if (p.special === 'well') return this.buildWell(p, ground);
+    if (p.special === 'map') return this.buildMap({ ...p, y0: ground + (p.y0 ?? 0.78) });
+    if (p.special === 'dock') return this.buildDock(p);
+    if (p.special === 'floor') return this.buildFloor(p);
+    if (p.special === 'stars') return this.buildStars(p);
+    if (p.special === 'lamp') {
+      // an unseen ceiling light
+      const l = new THREE.PointLight(p.color || '#ffffff', p.intensity ?? 1, p.range || 6);
+      l.position.set(p.x, p.z || 2.3, p.y);
+      this.room.add(l);
+      return;
+    }
+    if (p.special === 'planet') return this.buildPlanet(p);
+    if (p.special === 'glow') {
+      // an emissive strip or panel (light bars, screens, floor markings)
+      const m = this.boxMesh(p.x, p.y, ground + (p.y0 || 0), p.w, p.d, p.h || 0.03, 0, {
+        mat: new THREE.MeshStandardMaterial({ color: p.color || '#5ad1ff', emissive: p.color || '#5ad1ff', emissiveIntensity: p.intensity ?? 1.2 }), shadow: false,
+      });
+      if (p.pulse) (this.pulsers = this.pulsers || []).push({ m, base: p.intensity ?? 1.2, ph: p.x + p.y });
+      return m;
+    }
+    if (p.special === 'wall') return this.buildWall(p);
+    if (p.special === 'sign') return this.buildSign(p);
+    if (p.special === 'pendant') return this.buildPendant(p);
+    if (p.special === 'box') return this.boxMesh(p.x, p.y, ground + (p.y0 || 0), p.w, p.d, p.h, new THREE.Color(p.color || '#888').getHex(), { rough: p.rough ?? 0.8, metal: p.metal || 0 });
+    if (p.special === 'glass') return this.boxMesh(p.x, p.y, ground + (p.y0 || 0), p.w, p.d, p.h, 0, { mat: this.glassMat(), shadow: false });
+    if (p.special === 'sandbase') {
+      // a flat bed of sand under the island so seams between sand patches
+      // show sand (and can be stood on) instead of the sea
+      const m = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 0.5, 40),
+        new THREE.MeshStandardMaterial({ color: p.color || '#d9a46c', roughness: 1 }));
+      m.scale.set(p.rx, 1, p.rz);
+      m.position.set(p.x, (p.top ?? 0.27) - 0.25, p.y);
+      m.receiveShadow = true;
+      this.room.add(m);
+      return;
+    }
+    const name = p.m ? `scene:${p.m}` : p.f;
+    const m = this.place(name, p.x, p.y, p.w, p.d, {
+      rot: ((p.rot || 0) * Math.PI) / 180, y0: ground + (p.y0 || 0), h: p.h || null, stretch: !!p.stretch,
+    });
+    if (m && p.bob) this.bobbers.push({ m, y: m.position.y, ph: p.x * 0.7 });
+  }
+
+  buildFire(x, y, ground = 0.25, opts = {}) {
+    const g = new THREE.Group();
+    const wood = new THREE.MeshStandardMaterial({ color: 0x6b4426, roughness: 1 });
+    for (let i = 0; i < 3; i++) {
+      const log = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.07, 0.75, 8), wood);
+      log.rotation.z = Math.PI / 2;
+      log.rotation.y = (i * Math.PI) / 3;
+      log.position.y = 0.32;
+      log.castShadow = true;
+      g.add(log);
+    }
+    const stone = new THREE.MeshStandardMaterial({ color: 0x8a8a8a, roughness: 1, flatShading: true });
+    for (let i = 0; i < (opts.stones === false ? 0 : 9); i++) {
+      const a = (i / 9) * Math.PI * 2;
+      const r = new THREE.Mesh(new THREE.DodecahedronGeometry(0.09), stone);
+      r.position.set(Math.cos(a) * 0.45, 0.3, Math.sin(a) * 0.45);
+      r.castShadow = true;
+      g.add(r);
+    }
+    const outer = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.55, 7), new THREE.MeshBasicMaterial({ color: 0xff7a1a, transparent: true, opacity: 0.9 }));
+    const inner = new THREE.Mesh(new THREE.ConeGeometry(0.11, 0.38, 7), new THREE.MeshBasicMaterial({ color: 0xffe066 }));
+    outer.position.y = 0.6; inner.position.y = 0.55;
+    const light = new THREE.PointLight(0xffa040, 1.4, 6);
+    light.position.y = 0.9;
+    g.add(outer, inner, light);
+    g.position.set(x, ground - 0.25, y); // parts are laid out for a 0.25 sand top
+    if (opts.scale) g.scale.setScalar(opts.scale);
+    this.room.add(g);
+    this.flames.push({ outer, inner, light });
+  }
+
+  // Floor: planks, tiles or a checkerboard over a rectangle.
+  buildFloor(p) {
+    const dark = this.pal.dark;
+    const a = p.color || (dark ? '#4a3f35' : '#e3cfb0');
+    const b = p.color2 || (dark ? '#3e342b' : '#d6bf9c');
+    const tex = this.patternTexture((c, s) => {
+      c.fillStyle = a; c.fillRect(0, 0, s, s);
+      if (p.pattern === 'checker') {
+        c.fillStyle = b; c.fillRect(0, 0, s / 2, s / 2); c.fillRect(s / 2, s / 2, s / 2, s / 2);
+      } else {
+        c.strokeStyle = b; c.lineWidth = 3;
+        for (let i = 0; i <= 4; i++) { c.beginPath(); c.moveTo(0, (i * s) / 4); c.lineTo(s, (i * s) / 4); c.stroke(); }
+        for (let i = 0; i < 4; i++) { const x = (((i * 37) % 4) + 0.5) * (s / 4); c.beginPath(); c.moveTo(x, (i * s) / 4); c.lineTo(x, ((i + 1) * s) / 4); c.stroke(); }
+      }
+    });
+    tex.repeat.set(p.w / (p.tile || 2), p.d / (p.tile || 2));
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(p.w, p.d), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.9 }));
+    m.rotation.x = -Math.PI / 2;
+    m.position.set(p.x + p.w / 2, p.y0 || 0.002, p.y + p.d / 2);
+    m.receiveShadow = true;
+    this.room.add(m);
+  }
+
+  // Wall along x (axis "x": from x to x+len at depth y) or along z (axis
+  // "z": from y to y+len at x), with optional window/door openings
+  // [from, length, bottom, top] measured along the wall.
+  buildWall(p) {
+    const h = p.h || 2.4, t = p.t || 0.12;
+    const mat = new THREE.MeshStandardMaterial({ color: p.color || (this.pal.dark ? '#4a4640' : '#f1ebe0'), roughness: 0.95 });
+    if (p.clear) {
+      this.clearMat = this.clearMat || new THREE.MeshPhysicalMaterial({ color: '#9fd8ff', transparent: true, opacity: 0.12, roughness: 0.05, depthWrite: false });
+    } else if (!this.windowMat) {
+      this.windowMat = new THREE.MeshStandardMaterial({ color: this.plan.scene.sky || '#a9d4f2', emissive: this.plan.scene.sky || '#a9d4f2', emissiveIntensity: 0.6 });
+    }
+    const paneMat = p.clear ? this.clearMat : this.windowMat;
+    const seg = (a, len, z0, z1) => {
+      if (len <= 0.001 || z1 - z0 <= 0.001) return;
+      if (p.axis === 'z') this.boxMesh(p.x - t, p.y + a, z0, t, len, z1 - z0, 0, { mat });
+      else this.boxMesh(p.x + a, p.y - t, z0, len, t, z1 - z0, 0, { mat });
+    };
+    const holes = (p.holes || []).slice().sort((u, v) => u[0] - v[0]);
+    let at = 0;
+    for (const [from, len, bot, top] of holes) {
+      seg(at, from - at, 0, h);
+      seg(from, len, 0, bot);
+      seg(from, len, top, h);
+      if (bot > 0.05) {
+        // window pane + a mullion in the middle
+        const pane = new THREE.Mesh(new THREE.PlaneGeometry(len, top - bot), paneMat);
+        if (p.axis === 'z') { pane.rotation.y = Math.PI / 2; pane.position.set(p.x - t / 2, (bot + top) / 2, p.y + from + len / 2); }
+        else pane.position.set(p.x + from + len / 2, (bot + top) / 2, p.y - t / 2);
+        this.room.add(pane);
+        const frame = new THREE.Color(p.frame || '#2b2926').getHex();
+        for (let k = 1; k < Math.round(len / 1.2); k++) {
+          const f = from + (len * k) / Math.round(len / 1.2);
+          if (p.axis === 'z') this.boxMesh(p.x - 0.04, p.y + f - 0.03, bot, 0.04, 0.06, top - bot, frame);
+          else this.boxMesh(p.x + f - 0.03, p.y - 0.04, bot, 0.06, 0.04, top - bot, frame);
+        }
+        if (p.axis === 'z') this.boxMesh(p.x - 0.02, p.y + from, bot - 0.05, 0.14, len, 0.05, frame);
+        else this.boxMesh(p.x + from, p.y - 0.02, bot - 0.05, len, 0.14, 0.05, frame);
+      } else if (p.door) {
+        const door = new THREE.Color(p.door).getHex();
+        if (p.axis === 'z') this.boxMesh(p.x - 0.06, p.y + from + 0.05, 0, 0.05, len - 0.1, top - 0.05, door);
+        else this.boxMesh(p.x + from + 0.05, p.y - 0.06, 0, len - 0.1, 0.05, top - 0.05, door);
+      }
+      at = from + len;
+    }
+    seg(at, (p.len || 0) - at, 0, h);
+  }
+
+  // Text on a board, flat against a wall (face "+z" or "+x").
+  buildSign(p) {
+    const cv = document.createElement('canvas');
+    cv.width = 512; cv.height = Math.round(512 * p.h / p.w);
+    const c = cv.getContext('2d');
+    c.fillStyle = p.bg || '#2b2b2b'; c.fillRect(0, 0, cv.width, cv.height);
+    if (p.border) { c.strokeStyle = p.border; c.lineWidth = 14; c.strokeRect(7, 7, cv.width - 14, cv.height - 14); }
+    c.fillStyle = p.fg || '#fff';
+    c.textAlign = 'center'; c.textBaseline = 'middle';
+    const lines = String(p.text || '').split('\n');
+    const size = Math.min(cv.height / (lines.length + 0.6), (cv.width * 1.6) / Math.max(...lines.map((l) => l.length), 1));
+    c.font = `700 ${Math.round(size)}px ${p.font || 'ui-rounded, "Comic Sans MS", system-ui, sans-serif'}`;
+    lines.forEach((l, i) => c.fillText(l, cv.width / 2, (cv.height * (i + 0.8)) / (lines.length + 0.6)));
+    const tex = new THREE.CanvasTexture(cv);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    const mat = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.9, emissive: p.glow ? '#ffffff' : '#000000', emissiveMap: p.glow ? tex : null, emissiveIntensity: p.glow ? 0.9 : 0 });
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(p.w, p.h), mat);
+    if (p.face === '+x') { m.rotation.y = Math.PI / 2; m.position.set(p.x + 0.01, p.z, p.y); }
+    else m.position.set(p.x, p.z, p.y + 0.01);
+    this.room.add(m);
+  }
+
+  // A field of stars on a big sphere around the scene.
+  buildStars(p) {
+    const n = p.count || 900, r = p.r || 70;
+    const pos = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) {
+      const u = Math.random() * 2 - 1, a = Math.random() * Math.PI * 2, k = Math.sqrt(1 - u * u);
+      pos[i * 3] = this.plan.W / 2 + Math.cos(a) * k * r;
+      pos[i * 3 + 1] = u * r * 0.6;
+      pos[i * 3 + 2] = this.plan.D / 2 + Math.sin(a) * k * r;
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    this.stars = new THREE.Points(g, new THREE.PointsMaterial({ color: '#ffffff', size: p.size || 0.35, sizeAttenuation: true, fog: false }));
+    this.room.add(this.stars);
+  }
+
+  // A planet (with an optional ring) out beyond the windows.
+  buildPlanet(p) {
+    const cv = document.createElement('canvas');
+    cv.width = 256; cv.height = 128;
+    const c = cv.getContext('2d');
+    const cols = p.colors || ['#e08a5a', '#c76b45', '#f0b27a', '#a85a3c'];
+    for (let y = 0; y < 128; y += 4) { c.fillStyle = cols[Math.floor((Math.sin(y * 0.21) + 1) * 1.99) % cols.length]; c.fillRect(0, y, 256, 4); }
+    const tex = new THREE.CanvasTexture(cv);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    const planet = new THREE.Mesh(new THREE.SphereGeometry(p.r || 6, 40, 24), new THREE.MeshStandardMaterial({ map: tex, roughness: 1, fog: false }));
+    planet.position.set(p.x, p.z || 0, p.y);
+    planet.rotation.z = 0.35;
+    this.room.add(planet);
+    if (p.ring) {
+      const ring = new THREE.Mesh(new THREE.RingGeometry((p.r || 6) * 1.3, (p.r || 6) * 1.75, 64),
+        new THREE.MeshBasicMaterial({ color: p.ring, transparent: true, opacity: 0.4, side: THREE.DoubleSide, fog: false }));
+      ring.position.copy(planet.position);
+      ring.rotation.x = -Math.PI / 2 + 0.45;
+      ring.rotation.y = 0.3;
+      this.room.add(ring);
+    }
+    this.planet = planet;
+  }
+
+  // An archery target on a wooden stand, facing `yaw` degrees.
+  buildTarget(p, ground) {
+    const g = new THREE.Group();
+    const wood = new THREE.MeshStandardMaterial({ color: 0x7a5232, roughness: 1 });
+    for (const dz of [-0.28, 0.28]) {
+      const leg = new THREE.Mesh(new THREE.BoxGeometry(0.06, 1.2, 0.06), wood);
+      leg.position.set(-0.12, 0.6, dz); leg.rotation.z = 0.18; leg.castShadow = true; g.add(leg);
+    }
+    const cv = document.createElement('canvas'); cv.width = cv.height = 128;
+    const c = cv.getContext('2d');
+    ['#f4efe2', '#d23c2f', '#f4efe2', '#d23c2f', '#f2c14e'].forEach((col, i) => {
+      c.fillStyle = col; c.beginPath(); c.arc(64, 64, 62 - i * 12, 0, Math.PI * 2); c.fill();
+    });
+    const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace;
+    const face = new THREE.Mesh(new THREE.CircleGeometry(0.38, 32), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.9 }));
+    const back = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.08, 32), new THREE.MeshStandardMaterial({ color: 0xd8c08a, roughness: 1 }));
+    back.rotation.z = Math.PI / 2; back.position.set(0, 0.95, 0); back.castShadow = true;
+    face.rotation.y = Math.PI / 2; face.position.set(0.045, 0.95, 0);
+    g.add(back, face);
+    g.rotation.y = ((p.yaw ?? -90) * Math.PI) / 180 + Math.PI / 2;
+    g.position.set(p.x, ground, p.y);
+    this.room.add(g);
+  }
+
+  // A stone well with a little roof and a bucket.
+  buildWell(p, ground) {
+    const g = new THREE.Group();
+    const stone = new THREE.MeshStandardMaterial({ color: 0x8d8a84, roughness: 1, flatShading: true });
+    const ring = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.6, 0.6, 12, 1, true), stone);
+    ring.material.side = THREE.DoubleSide; ring.position.y = 0.3; ring.castShadow = true;
+    const water = new THREE.Mesh(new THREE.CircleGeometry(0.5, 12), new THREE.MeshStandardMaterial({ color: 0x2f6f9a, roughness: 0.2 }));
+    water.rotation.x = -Math.PI / 2; water.position.y = 0.35;
+    const wood = new THREE.MeshStandardMaterial({ color: 0x6b4426, roughness: 1 });
+    for (const dx of [-0.5, 0.5]) { const post = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.3, 0.08), wood); post.position.set(dx, 0.95, 0); post.castShadow = true; g.add(post); }
+    const roof = new THREE.Mesh(new THREE.ConeGeometry(0.85, 0.45, 4), new THREE.MeshStandardMaterial({ color: 0x9c3b2e, roughness: 0.9 }));
+    roof.position.y = 1.8; roof.rotation.y = Math.PI / 4; roof.castShadow = true;
+    const bucket = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.08, 0.16, 10), wood);
+    bucket.position.set(0, 1.05, 0);
+    g.add(ring, water, roof, bucket);
+    g.position.set(p.x, ground, p.y);
+    this.room.add(g);
+  }
+
+  // A hanging lamp: cord, shade and a soft warm light.
+  buildPendant(p) {
+    const top = p.top || 2.5, drop = p.drop || 0.8;
+    const cord = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, drop, 4), new THREE.MeshStandardMaterial({ color: 0x222222 }));
+    cord.position.set(p.x, top - drop / 2, p.y);
+    const shade = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.18, 16, 1, true), new THREE.MeshStandardMaterial({ color: p.color || '#2f3b36', side: THREE.DoubleSide, roughness: 0.6 }));
+    shade.position.set(p.x, top - drop, p.y);
+    const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.05, 10, 8), new THREE.MeshBasicMaterial({ color: '#ffe7b0' }));
+    bulb.position.set(p.x, top - drop - 0.07, p.y);
+    const light = new THREE.PointLight(0xffd9a0, 0.7, 3.5);
+    light.position.set(p.x, top - drop - 0.15, p.y);
+    this.room.add(cord, shade, bulb, light);
+    this.pendants.push(light);
+  }
+
+  // A plank boardwalk on posts, from the shore out over the water.
+  buildDock(p) {
+    const top = p.top ?? 0.32;
+    const planks = [0x9c6b3c, 0xa8774a, 0x8f6236];
+    for (let z = p.y, i = 0; z < p.y + p.d - 0.05; z += 0.3, i++) {
+      this.boxMesh(p.x, z, top - 0.07, p.w, 0.26, 0.07, planks[i % 3], { rough: 0.95 });
+    }
+    for (const side of [p.x - 0.02, p.x + p.w - 0.1]) this.boxMesh(side, p.y, top - 0.16, 0.12, p.d, 0.1, 0x6b4426);
+    for (let z = p.y + 0.1; z < p.y + p.d; z += 1.6) {
+      for (const x of [p.x + 0.02, p.x + p.w - 0.14]) this.boxMesh(x, z, -0.9, 0.12, 0.12, top + 0.95, 0x5c3a20);
+    }
+    // a rope post at the far end
+    this.boxMesh(p.x + p.w - 0.2, p.y + 0.05, top - 0.1, 0.14, 0.14, 0.55, 0x5c3a20);
+  }
+
+  buildMap(p) {
+    const cv = document.createElement('canvas');
+    cv.width = 256; cv.height = 160;
+    const c = cv.getContext('2d');
+    c.fillStyle = '#e9d5a6'; c.fillRect(0, 0, 256, 160);
+    c.strokeStyle = '#8a6a3a'; c.lineWidth = 3;
+    c.beginPath(); c.moveTo(40, 120); c.bezierCurveTo(30, 60, 90, 20, 140, 40); c.bezierCurveTo(200, 60, 230, 110, 180, 135); c.bezierCurveTo(130, 150, 60, 150, 40, 120); c.stroke();
+    c.setLineDash([6, 6]); c.strokeStyle = '#6b4426'; c.lineWidth = 2;
+    c.beginPath(); c.moveTo(70, 110); c.quadraticCurveTo(110, 60, 165, 95); c.stroke();
+    c.setLineDash([]); c.strokeStyle = '#c0392b'; c.lineWidth = 5;
+    c.beginPath(); c.moveTo(158, 88); c.lineTo(174, 104); c.moveTo(174, 88); c.lineTo(158, 104); c.stroke();
+    const tex = new THREE.CanvasTexture(cv);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(p.w, p.d), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.95 }));
+    m.rotation.x = -Math.PI / 2;
+    m.position.set(p.x + p.w / 2, (p.y0 || 0.78) + 0.005, p.y + p.d / 2);
+    m.receiveShadow = true;
+    this.room.add(m);
+  }
+
+  animateScene(t, sky) {
+    const def = this.plan.scene;
+    if (this.water) {
+      const pos = this.water.geometry.attributes.position;
+      const a = pos.array, b = this.waterBase;
+      for (let i = 0; i < a.length; i += 3) {
+        a[i + 1] = Math.sin(b[i] * 0.45 + t * 1.1) * 0.06 + Math.cos(b[i + 2] * 0.38 + t * 0.8) * 0.05;
+      }
+      pos.needsUpdate = true;
+      if ((this.waterTick = (this.waterTick || 0) + 1) % 3 === 0) this.water.geometry.computeVertexNormals();
+    }
+    for (const b of this.bobbers) {
+      b.m.position.y = b.y + Math.sin(t * 0.9 + b.ph) * 0.05;
+      b.m.rotation.x = Math.sin(t * 0.7 + b.ph) * 0.015;
+    }
+    for (const f of this.flames) {
+      const k = 0.85 + Math.sin(t * 13) * 0.08 + Math.sin(t * 7.3) * 0.07;
+      f.outer.scale.set(1, k, 1);
+      f.inner.scale.set(1, 1.6 - k * 0.6, 1);
+      f.light.intensity = (sky.night ? 3 : 1.2) * k;
+    }
+    if (this.scene.background && !def.fixedSky) this.scene.background.set(sky.night ? '#13213f' : (def.background || def.sky || '#9fd3ef'));
+    if (this.planet) this.planet.rotation.y = t * 0.03;
+    if (this.stars) this.stars.rotation.y = t * 0.004;
+    for (const g of this.pulsers || []) g.m.material.emissiveIntensity = g.base * (0.65 + 0.35 * Math.sin(t * 2.2 + g.ph));
+    if (this.windowMat) { this.windowMat.color.set(sky.night ? '#1d2747' : def.sky); this.windowMat.emissive.set(sky.night ? '#1d2747' : def.sky); }
+    for (const l of this.pendants || []) l.intensity = sky.night ? 1.6 : 0.7;
+    if (this.scene.fog) this.scene.fog.color.set(sky.night ? '#1b2a4a' : def.fog[0]);
+  }
+
   // ------------------------------------------------------------ camera
 
   fitCamera3D(reset) {
@@ -507,7 +943,7 @@ export class Office3D extends window.Office {
       const dist = 40;
       this.camera.position.set(center.x + dist * 0.62, center.y + dist * 0.58, center.z + dist * 0.62);
       this.controls.target.copy(center);
-      this.camera.zoom = 1.25;
+      this.camera.zoom = this.compact ? 1 : 1.25;
       this.fitted = true;
     }
     this.camera.lookAt(this.controls.target);
@@ -515,12 +951,14 @@ export class Office3D extends window.Office {
     // Fit the room's corners into the view.
     const inv = this.camera.matrixWorldInverse;
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-    for (const x of [0, W]) for (const y of [0, WALL_H]) for (const z of [0, D]) {
+    for (const x of [0, W]) for (const y of [0, this.plan.viewH || WALL_H]) for (const z of [0, D]) {
       const v = new THREE.Vector3(x, y, z).applyMatrix4(inv);
       minX = Math.min(minX, v.x); maxX = Math.max(maxX, v.x); minY = Math.min(minY, v.y); maxY = Math.max(maxY, v.y);
     }
     const aspect = this.cw / this.ch;
     let w = (maxX - minX) * 1.06, h = (maxY - minY) * 1.1;
+    // Leave room for screen-space badges and bubbles in a small PiP window.
+    if (this.compact) h *= this.ch / Math.max(80, this.ch - 48);
     if (w / h > aspect) h = w / aspect; else w = h * aspect;
     const cxv = (minX + maxX) / 2, cyv = (minY + maxY) / 2;
     Object.assign(this.camera, { left: cxv - w / 2, right: cxv + w / 2, top: cyv + h / 2, bottom: cyv - h / 2 });
@@ -580,9 +1018,13 @@ export class Office3D extends window.Office {
 
   facing(p, st) {
     if (st.pose === 'walk') return null;
-    if (p.mode === 'work' && p.desk) return p.desk.side === 'n' ? 0 : Math.PI;
+    if (p.mode === 'work' && p.desk) {
+      if (p.desk.yaw != null) return p.desk.yaw;
+      return p.desk.side === 'n' ? 0 : Math.PI;
+    }
     const q = p.poi;
     if (!q) return null;
+    if (q.yaw != null) return q.yaw;
     if (q.pair) {
       const other = this.plan.pois.find((o) => o.pair === q.pair && o !== q);
       return Math.atan2(other.x - q.x, 0);
@@ -604,12 +1046,15 @@ export class Office3D extends window.Office {
         phone: 'holding-right', arcade: 'interact-right', whiteboard: 'interact-right', foosball: 'interact-left',
         pingpong: 'interact-right', vending: 'interact-right', fridge: 'interact-left', sink: 'interact-right',
       }[st.pose === 'walk' ? 'walk' : st.act] || (st.pose === 'sit' ? 'sit' : 'idle');
-      this.play(a, anim);
+      let chosen = anim;
+      if (st.act === 'station') chosen = p.s.status === 'thinking' ? 'idle' : (p.desk.anim || 'interact-right');
+      else if (st.pose !== 'walk' && p.poi && p.poi.anim) chosen = p.poi.anim;
+      this.play(a, chosen);
       a.mixer.update(dt);
 
       // position + facing
       const dx = p.x - a.last.x, dy = p.y - a.last.y;
-      let want = this.facing(p, st);
+      let want = st.pose !== 'walk' && p.poi && p.poi.float ? null : this.facing(p, st);
       if (want == null && Math.hypot(dx, dy) > 0.001) want = Math.atan2(dx, dy);
       if (want != null) {
         let d = want - a.yaw;
@@ -618,17 +1063,25 @@ export class Office3D extends window.Office {
       }
       a.last = { x: p.x, y: p.y };
       a.obj.rotation.y = a.yaw;
-      const seatY = st.pose === 'sit' ? this.seatHeight(p.x, p.y, st.sitZ) : 0;
+      const seatY = st.pose === 'sit' ? this.seatHeight(p.x, p.y, st.sitZ)
+        : this.plan.terrain ? this.groundHeight(p.x, p.y) : 0;
       // The sit pose's torso leans back past its origin; slide the body
       // forward so the back rests against the backrest instead of in it.
       const fwd = st.pose === 'sit' ? SIT_FORWARD : 0;
-      a.obj.position.set(p.x + Math.sin(a.yaw) * fwd, seatY, p.y + Math.cos(a.yaw) * fwd);
+      let lift = 0;
+      if (st.pose !== 'walk' && p.poi && p.poi.float) {
+        // zero gravity: drift up and down, slowly turning
+        const k = this.t / 1000 + p.phase;
+        lift = 0.45 + Math.sin(k * 0.9) * 0.18;
+        a.yaw += dt * 0.35;
+      }
+      a.obj.position.set(p.x + Math.sin(a.yaw) * fwd, seatY + lift, p.y + Math.cos(a.yaw) * fwd);
       if (a.head) {
         if (st.act === 'nap') { a.head.rotation.x = a.headRest + 0.55; a.napped = true; }
         else if (a.napped) { a.head.rotation.x = a.headRest; a.napped = false; }
       }
       // hand-held props
-      a.cup.visible = st.act === 'coffee' || st.act === 'water';
+      a.cup.visible = st.act === 'coffee' || st.act === 'water' || (st.pose !== 'walk' && p.poi && p.poi.prop === 'cup');
       a.book.visible = st.act === 'read';
       if (a.armR && (a.cup.visible || a.book.visible)) {
         a.obj.updateMatrixWorld(true);
@@ -641,6 +1094,33 @@ export class Office3D extends window.Office {
     }
   }
 
+  // Highest surface below `limit` under (x, z). Sampled at the point and
+  // four spots around it so a gap between dock planks or sand patches
+  // doesn't read as the sea floor. World matrices must be current.
+  surfaceBelow(x, z, limit, from = 1.2) {
+    if (!this.room) return 0;
+    const ray = new THREE.Raycaster();
+    const down = new THREE.Vector3(0, -1, 0);
+    let best = 0;
+    for (const [dx, dz] of [[0, 0], [0.09, 0], [-0.09, 0], [0, 0.09], [0, -0.09]]) {
+      ray.set(new THREE.Vector3(x + dx, from, z + dz), down);
+      for (const h of ray.intersectObject(this.room, true)) {
+        if (h.point.y < limit && h.point.y > best) best = h.point.y;
+      }
+    }
+    return best;
+  }
+
+  // Height of the walkable surface (sand, dock planks…) on terrain scenes.
+  groundHeight(x, y) {
+    const key = `${Math.round(x * 4)},${Math.round(y * 4)}`;
+    this.ground = this.ground || new Map();
+    if (this.ground.has(key)) return this.ground.get(key);
+    const v = this.surfaceBelow(x, y, 0.55);
+    this.ground.set(key, v);
+    return v;
+  }
+
   // Kenney's `sit` clip is a sit-on-the-floor pose (seat at the model's
   // origin), so lift the character to whatever surface is under the seat
   // point: chair cushion, stool, sofa or beanbag. Measured once per spot.
@@ -648,11 +1128,7 @@ export class Office3D extends window.Office {
     const key = `${x.toFixed(2)},${y.toFixed(2)}`;
     this.seats = this.seats || new Map();
     if (this.seats.has(key)) return this.seats.get(key);
-    const ray = new THREE.Raycaster(new THREE.Vector3(x, 1.2, y), new THREE.Vector3(0, -1, 0));
-    let best = 0;
-    for (const h of ray.intersectObject(this.room, true)) {
-      if (h.point.y < 0.75 && h.point.y > best) best = h.point.y;
-    }
+    const best = this.surfaceBelow(x, y, 0.75);
     const v = best > 0.05 ? best : fallback;
     this.seats.set(key, v);
     return v;
@@ -678,7 +1154,9 @@ export class Office3D extends window.Office {
     } else {
       this.build();
       this.builtPlan = this.plan;
+      this.room.updateMatrixWorld(true);
       this.seats = new Map();
+      this.ground = new Map();
       for (const a of this.actors.values()) this.scene.remove(a.obj, a.prop);
       this.actors.clear();
     }
@@ -689,8 +1167,11 @@ export class Office3D extends window.Office {
     const sky = skyNow();
     this.sun.intensity = sky.sun;
     this.hemi.intensity = sky.amb;
-    this.windowMat.color.setHex(sky.sky);
-    this.windowMat.emissive.setHex(sky.sky);
+    if (this.windowMat) {
+      this.windowMat.color.setHex(sky.sky);
+      this.windowMat.emissive.setHex(sky.sky);
+    }
+    if (this.plan.scene) this.animateScene(t, sky);
     if (this.lampLight) this.lampLight.intensity = sky.night ? 2.2 : 0;
 
     // screens show who is working and on what
@@ -729,7 +1210,9 @@ export class Office3D extends window.Office {
       if (!a) continue;
       const st = this.stateOf(p);
       const scale = p.s.subagent ? 0.8 : 1;
-      const top = st.pose === 'sit' ? this.seatHeight(p.x, p.y, st.sitZ) + CHAR_HEIGHT * 0.8 * scale : CHAR_HEIGHT * scale;
+      const base = this.plan.terrain && st.pose !== 'sit' ? this.groundHeight(p.x, p.y) : 0;
+      const floatUp = st.pose !== 'walk' && p.poi && p.poi.float ? 0.45 + Math.sin((this.t / 1000 + p.phase) * 0.9) * 0.18 : 0;
+      const top = (st.pose === 'sit' ? this.seatHeight(p.x, p.y, st.sitZ) + CHAR_HEIGHT * 0.8 * scale : base + CHAR_HEIGHT * scale) + floatUp;
       v.set(p.x, top + 0.05, p.y).project(this.camera);
       const sx = (v.x + 1) / 2 * this.cw, sy = (1 - v.y) / 2 * this.ch;
       const foot = new THREE.Vector3(p.x, 0, p.y).project(this.camera);

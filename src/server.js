@@ -11,10 +11,14 @@ const STATIC = {
   '/office.js': ['office.js', 'text/javascript; charset=utf-8'],
   '/office3d.js': ['office3d.js', 'text/javascript; charset=utf-8'],
   '/i18n.js': ['i18n.js', 'text/javascript; charset=utf-8'],
+  '/popout.js': ['popout.js', 'text/javascript; charset=utf-8'],
 };
-const TYPES = { '.js': 'text/javascript; charset=utf-8', '.glb': 'model/gltf-binary', '.png': 'image/png' };
+const TYPES = { '.js': 'text/javascript; charset=utf-8', '.glb': 'model/gltf-binary', '.png': 'image/png', '.svg': 'image/svg+xml', '.json': 'application/json' };
 // 3D models, served as-is (3D view only).
 const MOUNTS = { '/assets/': path.join(__dirname, '..', 'assets') };
+const scenes = require('./scenes');
+const updater = require('./update');
+const { ompResumeCommand } = require('./omp');
 
 function serveFile(res, root, rel) {
   const file = path.normalize(path.join(root, rel));
@@ -23,7 +27,8 @@ function serveFile(res, root, rel) {
     res.writeHead(404).end();
     return;
   }
-  res.writeHead(200, { 'content-type': type, 'cache-control': 'max-age=3600' });
+  // no-cache: a reinstalled scene pack or an updated clone must show up on reload
+  res.writeHead(200, { 'content-type': type, 'cache-control': 'no-cache' });
   fs.createReadStream(file).pipe(res);
 }
 const ACTIVE = new Set(['thinking', 'tool', 'typing']);
@@ -59,6 +64,10 @@ function view(s, now, { privacy }) {
     lastEventAt: s.lastEventAt || s.mtime,
     startedAt: s.startedAt,
   };
+  if (s.agent === 'omp') {
+    out.ompProfile = s.ompProfile || null;
+    out.resumeCommand = ompResumeCommand(s);
+  }
   if (privacy) {
     out.prompt = out.reply = out.title = null;
     if (out.activity) out.activity = out.activity.split(/[:\s]/)[0];
@@ -87,12 +96,13 @@ function snapshot(watcher, opts) {
   return { now, lang: opts.demo ? null : promptLanguage([...dedupe.values()]), sessions };
 }
 
-function createServer(watcher, opts, { onShutdown } = {}) {
+function createServer(watcher, opts, { onShutdown, onRestart } = {}) {
   const clients = new Set();
   let last = '';
 
   const push = (force) => {
-    const body = JSON.stringify(snapshot(watcher, opts));
+    let body;
+    try { body = JSON.stringify(snapshot(watcher, opts)); } catch (e) { console.error('snapshot failed:', e.message); return; }
     // Compare without the timestamp so idle ticks don't spam clients.
     const sig = body.replace(/^\{"now":\d+,/, '{');
     if (!force && sig === last) return;
@@ -119,7 +129,36 @@ function createServer(watcher, opts, { onShutdown } = {}) {
       fs.createReadStream(path.join(PUBLIC, file)).pipe(res);
     } else if (Object.keys(MOUNTS).some((m) => url.pathname.startsWith(m))) {
       const m = Object.keys(MOUNTS).find((k) => url.pathname.startsWith(k));
-      serveFile(res, MOUNTS[m], decodeURIComponent(url.pathname.slice(m.length)));
+      let rel;
+      try { rel = decodeURIComponent(url.pathname.slice(m.length)); }
+      catch { res.writeHead(400).end(); return; }
+      serveFile(res, MOUNTS[m], rel);
+    } else if (url.pathname.startsWith('/scenes/')) {
+      let rel;
+      try { rel = decodeURIComponent(url.pathname.slice('/scenes/'.length)); }
+      catch { res.writeHead(400).end(); return; }
+      const [id, ...rest] = rel.split('/');
+      const dir = scenes.sceneDir(id);
+      if (!dir) res.writeHead(404).end();
+      else serveFile(res, dir, rest.join('/'));
+    } else if (url.pathname === '/api/scenes') {
+      const cat = scenes.catalog();
+      const icon = (x) => x.icon || (cat.find((c) => c.id === x.id) || {}).icon || '🗺️';
+      const have = scenes.installed().map((x) => ({ ...x, icon: icon(x) }));
+      const ids = new Set(have.map((x) => x.id));
+      res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
+      res.end(JSON.stringify({
+        installed: have.map(({ id, name, version, credits, icon }) => ({ id, name, version, credits, icon })),
+        available: cat.filter((x) => !ids.has(x.id)).map(({ id, name, version, size, credits, icon }) => ({ id, name, version, size, credits, icon: icon || '🗺️' })),
+      }));
+    } else if (url.pathname === '/api/scenes/install' && req.method === 'POST') {
+      // Same guard as shutdown: a custom header web pages can't send cross-site.
+      if (req.headers['x-whatsmyagentdoing'] !== 'install') { res.writeHead(403).end(); return; }
+      const id = url.searchParams.get('id') || '';
+      scenes.install(id).then(
+        (x) => { res.writeHead(200, { 'content-type': 'application/json' }); res.end(JSON.stringify({ ok: true, id: x.id })); },
+        (e) => { res.writeHead(400, { 'content-type': 'application/json' }); res.end(JSON.stringify({ ok: false, error: String(e.message || e) })); },
+      );
     } else if (url.pathname === '/api/sessions') {
       res.writeHead(200, { 'content-type': 'application/json' });
       res.end(JSON.stringify(snapshot(watcher, opts)));
@@ -134,6 +173,23 @@ function createServer(watcher, opts, { onShutdown } = {}) {
       res.end(JSON.stringify({ ok: true }));
       for (const c of clients) c.end();
       setTimeout(onShutdown, 50);
+    } else if (url.pathname === '/api/version') {
+      updater.checkLatest().finally(() => {
+        res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
+        res.end(JSON.stringify(updater.info()));
+      });
+    } else if (url.pathname === '/api/update' && req.method === 'POST') {
+      // Same guard as shutdown: web pages can't send this header cross-site.
+      if (req.headers['x-whatsmyagentdoing'] !== 'update') { res.writeHead(403).end(); return; }
+      updater.update().then(
+        (version) => {
+          res.writeHead(200, { 'content-type': 'application/json' });
+          res.end(JSON.stringify({ ok: true, version }));
+          for (const c of clients) c.end();
+          if (onRestart) setTimeout(onRestart, 100);
+        },
+        (e) => { res.writeHead(400, { 'content-type': 'application/json' }); res.end(JSON.stringify({ ok: false, error: String(e.message || e) })); },
+      );
     } else if (url.pathname === '/api/ping') {
       res.writeHead(200, { 'content-type': 'application/json' });
       res.end(JSON.stringify({ app: 'whatsmyagentdoing' }));
