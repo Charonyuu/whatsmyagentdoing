@@ -41,6 +41,26 @@
       "icon": "🏰"
     },
     {
+      "id": "graveyard",
+      "version": 1,
+      "name": {
+        "en": "Haunted Hollow",
+        "zh-TW": "萬聖節墓園",
+        "zh-CN": "万圣节墓园",
+        "ja": "ハロウィン墓地",
+        "ko": "할로윈 묘지",
+        "es": "Cementerio embrujado",
+        "fr": "Cimetière hanté",
+        "de": "Spukfriedhof",
+        "pt": "Cemitério assombrado"
+      },
+      "credits": "Models: Kenney Graveyard Kit, Furniture Kit (CC0)",
+      "icon": "🎃",
+      "size": 232553,
+      "sha256": "aa7129bc6323e94febd9f7838176eabaa047e4edd029207fe63d189f4fc0dc56",
+      "url": "https://github.com/Charonyuu/whatsmyagentdoing/releases/download/scenes/graveyard-v1.tar.gz"
+    },
+    {
       "id": "pirate",
       "version": 3,
       "name": {
