@@ -255,14 +255,23 @@ function applyGrok(s, d) {
   }
 }
 
+function tooLarge() {
+  return Object.assign(new Error('DSH log exceeds replay limit'), { tooLarge: true });
+}
+
 function readDsh(file) {
-  // shortcut: whole-file replay is bounded to 128 MB; use a streaming decoder
+  // shortcut: whole-file replay is bounded to 32 MB; use a streaming decoder
   // if individual DSH logs grow beyond this or replay becomes expensive.
-  const limit = 128 * 1024 * 1024;
-  if (fs.statSync(file).size > limit) throw new Error('DSH log exceeds replay limit');
+  const limit = 32 * 1024 * 1024;
+  if (fs.statSync(file).size > limit) throw tooLarge();
   if (!file.endsWith('.zstd')) return fs.readFileSync(file, 'utf8');
-  if (nativeZstd) return zlib.zstdDecompressSync(fs.readFileSync(file), { maxOutputLength: limit }).toString('utf8');
-  return execFileSync('zstd', ['-dc', '--', file], { encoding: 'utf8', maxBuffer: limit, timeout: 5000, stdio: ['ignore', 'pipe', 'pipe'] });
+  try {
+    if (nativeZstd) return zlib.zstdDecompressSync(fs.readFileSync(file), { maxOutputLength: limit }).toString('utf8');
+    return execFileSync('zstd', ['-dc', '--', file], { encoding: 'utf8', maxBuffer: limit, timeout: 5000, stdio: ['ignore', 'pipe', 'pipe'] });
+  } catch (e) {
+    if (e.code === 'ENOBUFS' || e.code === 'ERR_BUFFER_TOO_LARGE') throw tooLarge();
+    throw e;
+  }
 }
 
 module.exports = { clientFiles, metadata, applyKimi, applyDsh, applyGrok, readDsh };

@@ -127,7 +127,8 @@ DSH's compressed logs use Node's built-in zstd decoder after a one-time
 concatenated-frame check, otherwise the existing `zstd` executable on PATH.
 Nothing is installed automatically. Compressed DSH logs cannot be read without either decoder;
 the dashboard warns and other clients continue. DSH replays changed logs
-whole, bounded to 128 MB of decoded data. An incomplete compressed write
+whole, at most every 5 seconds, bounded to 32 MB of decoded data. Kimi Code and Grok Build
+logs up to 32 MB are replayed whole on discovery; larger ones are read head + tail. An incomplete compressed write
 preserves the last readable snapshot and is retried. Large unsupported logs
 are reported rather than truncated into a misleading status.
 
