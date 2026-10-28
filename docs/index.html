@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>whatsmyagentdoing · /myoffice</title>
+<meta name="description" content="Type /myoffice and watch every Claude Code, Codex, Gemini, Copilot and OMP agent on your machine work in a live little office. Local, read-only, zero setup.">
+<meta property="og:title" content="whatsmyagentdoing — see what every coding agent is doing">
+<meta property="og:description" content="A Claude Code / Codex skill: a live office of every agent on your machine.">
+<meta property="og:image" content="https://charonyuu.github.io/whatsmyagentdoing/site/img/scene-office.jpg">
+<meta name="theme-color" content="#0b0d12">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👀</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0b0d12; --bg2: #0f1218; --panel: #13161e; --panel2: #181c26; --line: #242936; --line2: #2f3545;
+    --ink: #eef0f5; --muted: #a0a7b8; --faint: #6c7386;
+    --thinking: #8b6be6; --tool: #3b8ee0; --typing: #22a874; --waiting: #e8a23a; --done: #6fb35a; --error: #e2574c;
+    --accent: #a48bf5; --glow: rgba(139, 107, 230, .35);
+    --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", "PingFang TC", "Noto Sans TC", sans-serif;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 var(--sans); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+  a { color: inherit; }
+  img { max-width: 100%; display: block; }
+  .wrap { max-width: 1160px; margin: 0 auto; padding: 0 24px; }
+  @media (max-width: 640px) { .wrap { padding: 0 16px; } }
+
+  /* nav */
+  nav { position: sticky; top: 0; z-index: 30; backdrop-filter: blur(12px); background: rgba(11, 13, 18, .72); border-bottom: 1px solid transparent; transition: border-color .2s; }
+  nav.scrolled { border-bottom-color: var(--line); }
+  nav .wrap { display: flex; align-items: center; gap: 24px; height: 60px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; text-decoration: none; letter-spacing: -.01em; }
+  .brand code { font: 600 12px var(--mono); color: var(--accent); background: rgba(164, 139, 245, .12); padding: 2px 7px; border-radius: 6px; }
+  .links { display: flex; gap: 22px; margin-left: auto; align-items: center; font-size: 14px; color: var(--muted); }
+  .links a { text-decoration: none; }
+  .links a:hover { color: var(--ink); }
+  .lang { font: 500 12.5px var(--sans); color: var(--muted); background: none; border: 1px solid var(--line2); border-radius: 8px; padding: 5px 10px; cursor: pointer; }
+  .lang:hover { color: var(--ink); border-color: var(--faint); }
+  .gh { display: inline-flex; align-items: center; gap: 7px; color: var(--ink) !important; border: 1px solid var(--line2); border-radius: 8px; padding: 5px 11px; }
+  @media (max-width: 760px) { .links .hide-sm { display: none; } .links { gap: 10px; } }
+  @media (max-width: 480px) { .brand code, .gh .t { display: none; } .brand { font-size: 15px; min-width: 0; } nav .wrap { gap: 10px; } }
+
+  /* hero */
+  .hero { position: relative; padding-top: 84px; padding-bottom: 40px; text-align: center; }
+  @media (max-width: 640px) { .hero { padding-top: 52px; } .show { margin-top: 44px; padding: 6px; } }
+  .hero::before { content: ""; position: absolute; inset: -120px 0 auto; height: 620px; pointer-events: none;
+    background: radial-gradient(600px 320px at 50% 30%, var(--glow), transparent 70%), radial-gradient(420px 260px at 20% 10%, rgba(59, 142, 224, .16), transparent 70%), radial-gradient(420px 260px at 80% 20%, rgba(232, 162, 58, .12), transparent 70%); }
+  .hero > * { position: relative; }
+  .pill { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); border: 1px solid var(--line2); background: rgba(19, 22, 30, .7); border-radius: 999px; padding: 5px 13px 5px 8px; text-decoration: none; }
+  .pill b { color: #ffb15c; font-weight: 600; }
+  .pill .tag { font: 600 11px var(--mono); color: #1a1206; background: #ffb15c; border-radius: 999px; padding: 1px 7px; }
+  h1 { font-size: clamp(38px, 6.6vw, 76px); line-height: 1.04; letter-spacing: -.035em; margin: 22px auto 18px; max-width: 900px; font-weight: 800; }
+  h1 .grad { background: linear-gradient(92deg, #c4b2ff 0%, #7fb8ff 45%, #ffc27a 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .sub { font-size: clamp(16px, 2vw, 19px); color: var(--muted); max-width: 680px; margin: 0 auto 30px; }
+  .sub code { font: 600 .92em var(--mono); color: var(--ink); background: var(--panel2); padding: 2px 7px; border-radius: 6px; }
+
+  /* live ticker */
+  .ticker { display: inline-flex; flex-direction: column; gap: 6px; text-align: left; margin: 0 auto 30px; font: 13px var(--mono); color: var(--muted); }
+  .tick { display: flex; align-items: center; gap: 10px; padding: 7px 12px; border: 1px solid var(--line); border-radius: 10px; background: rgba(19, 22, 30, .8); min-width: min(520px, calc(100vw - 32px)); transition: border-color .4s; }
+  .tick img { width: 16px; height: 16px; }
+  .tick .who { color: var(--ink); min-width: 104px; }
+  .tick .st { display: inline-flex; align-items: center; gap: 6px; min-width: 128px; }
+  .tick .st i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; box-shadow: 0 0 10px currentColor; }
+  .tick .act { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--faint); }
+  @media (max-width: 560px) { .tick .act { display: none; } .tick .who { min-width: 0; flex: 1; } }
+
+  /* install */
+  .install { max-width: 720px; margin: 0 auto; text-align: left; border: 1px solid var(--line2); border-radius: 14px; background: var(--panel); overflow: hidden; box-shadow: 0 20px 60px rgba(0, 0, 0, .45); }
+  .tabs { display: flex; gap: 2px; padding: 6px; border-bottom: 1px solid var(--line); background: var(--bg2); overflow-x: auto; }
+  .tabs button { font: 500 13px var(--sans); color: var(--muted); background: none; border: 0; border-radius: 8px; padding: 7px 12px; cursor: pointer; white-space: nowrap; }
+  .tabs button.on { color: var(--ink); background: var(--panel2); }
+  .cmd { position: relative; padding: 18px 84px 18px 18px; font: 13.5px/1.7 var(--mono); color: #d9dcf0; white-space: pre-wrap; word-break: break-word; min-height: 64px; }
+  .cmd .p { color: var(--typing); user-select: none; }
+  .cmd .c { color: var(--faint); }
+  .copy { position: absolute; top: 12px; right: 12px; font: 500 12px var(--sans); color: var(--muted); background: var(--panel2); border: 1px solid var(--line2); border-radius: 7px; padding: 5px 9px; cursor: pointer; }
+  .copy:hover { color: var(--ink); }
+  .copy.ok { color: var(--typing); border-color: rgba(34, 168, 116, .5); }
+  .note { font-size: 13px; color: var(--faint); margin-top: 14px; }
+  .cta { display: flex; gap: 12px; justify-content: center; margin-top: 26px; flex-wrap: wrap; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; font: 600 14.5px var(--sans); text-decoration: none; border-radius: 10px; padding: 11px 18px; border: 1px solid var(--line2); color: var(--ink); background: var(--panel); }
+  .btn.primary { background: linear-gradient(180deg, #9c82f5, #7a5fe0); border-color: #8c72ee; box-shadow: 0 8px 28px rgba(139, 107, 230, .35); }
+  .btn:hover { filter: brightness(1.08); }
+
+  /* showcase */
+  .show { margin: 64px auto 0; max-width: 1080px; border-radius: 16px; border: 1px solid var(--line2); background: var(--panel); padding: 10px; box-shadow: 0 40px 120px rgba(0, 0, 0, .6), 0 0 0 1px rgba(164, 139, 245, .08); }
+  .bar { display: flex; align-items: center; gap: 7px; padding: 4px 6px 10px; }
+  .bar i { width: 11px; height: 11px; border-radius: 50%; background: var(--line2); }
+  .bar span { margin-left: 10px; font: 12px var(--mono); color: var(--faint); }
+  .show img { border-radius: 10px; width: 100%; aspect-ratio: 1600 / 873; object-fit: cover; background: #15171c; }
+
+  /* agents strip */
+  .agents { padding: 64px 0 0; text-align: center; }
+  .eyebrow { font: 600 12px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--faint); }
+  .logos { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 14px; margin-top: 18px; }
+  .logo { display: inline-flex; align-items: center; gap: 9px; padding: 8px 14px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel); font-size: 14px; color: var(--muted); }
+  .logo img { width: 18px; height: 18px; }
+  .logo img.mono { filter: invert(1); }
+
+  /* sections */
+  section.wrap { margin-top: 112px; }
+  @media (max-width: 640px) { section.wrap { margin-top: 80px; } }
+  h2 { font-size: clamp(28px, 4vw, 44px); letter-spacing: -.03em; line-height: 1.12; margin: 10px 0 14px; font-weight: 800; }
+  .lead { color: var(--muted); max-width: 640px; font-size: 17px; margin: 0; }
+  .head { margin-bottom: 36px; }
+
+  /* status legend */
+  .states { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin-top: 30px; }
+  .state { padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); }
+  .state b { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+  .state b i { width: 9px; height: 9px; border-radius: 50%; background: currentColor; box-shadow: 0 0 12px currentColor; }
+  .state span { display: block; margin-top: 6px; font-size: 13px; color: var(--muted); line-height: 1.5; }
+  @media (max-width: 920px) { .states { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 520px) { .states { grid-template-columns: repeat(2, 1fr); } }
+
+  /* features */
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .card { position: relative; padding: 22px; border: 1px solid var(--line); border-radius: 14px; background: linear-gradient(180deg, var(--panel), var(--bg2)); overflow: hidden; }
+  .card::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background: radial-gradient(300px 120px at 0 0, rgba(164, 139, 245, .07), transparent 70%); }
+  .card .ic { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 10px; background: var(--panel2); border: 1px solid var(--line2); font-size: 19px; margin-bottom: 14px; }
+  .card h3 { font-size: 16px; margin: 0 0 6px; letter-spacing: -.01em; }
+  .card p { font-size: 14px; color: var(--muted); margin: 0; line-height: 1.55; }
+  .card code { font: 12.5px var(--mono); color: var(--ink); background: var(--panel2); padding: 1px 5px; border-radius: 5px; }
+  .card.new h3::after { content: "NEW"; font: 700 10px var(--mono); color: #1a1206; background: #ffb15c; border-radius: 999px; padding: 2px 7px; margin-left: 8px; vertical-align: 2px; }
+  @media (max-width: 1000px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px) { .grid { grid-template-columns: 1fr; } }
+
+  /* split rows */
+  .split { display: grid; grid-template-columns: 1fr 1.25fr; gap: 48px; align-items: center; }
+  .split.rev { grid-template-columns: 1.25fr 1fr; }
+  .split.rev .txt { order: 2; }
+  .frame { border-radius: 14px; border: 1px solid var(--line2); background: var(--panel); padding: 8px; box-shadow: 0 30px 80px rgba(0, 0, 0, .5); }
+  .frame img { border-radius: 9px; }
+  .ticks { list-style: none; padding: 0; margin: 22px 0 0; display: grid; gap: 10px; }
+  .ticks li { display: flex; gap: 10px; color: var(--muted); font-size: 15px; }
+  .ticks li::before { content: "✓"; color: var(--typing); font-weight: 700; }
+  .ticks code { font: 13px var(--mono); color: var(--ink); background: var(--panel2); padding: 1px 6px; border-radius: 5px; }
+  .today-img { max-width: 340px; margin: 0 auto; }
+  @media (max-width: 900px) { .split, .split.rev { grid-template-columns: 1fr; gap: 28px; } .split.rev .txt { order: 0; } }
+
+  /* scenes */
+  .scenes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .scene { position: relative; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); background: var(--panel); cursor: zoom-in; padding: 0; text-align: left; color: inherit; font: inherit; }
+  .scene img { aspect-ratio: 16 / 9.4; object-fit: cover; width: 100%; transition: transform .5s ease; }
+  .scene:hover img { transform: scale(1.04); }
+  .scene .cap { position: absolute; left: 0; right: 0; bottom: 0; padding: 26px 14px 12px; display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14.5px; background: linear-gradient(transparent, rgba(5, 6, 10, .85)); }
+  .scene .cap small { margin-left: auto; font: 500 11.5px var(--mono); color: var(--muted); }
+  .scene.halloween { border-color: rgba(255, 138, 42, .45); box-shadow: 0 0 0 1px rgba(255, 138, 42, .15), 0 10px 40px rgba(255, 138, 42, .12); }
+  .scene.halloween small { color: #ffb15c; }
+  @media (max-width: 900px) { .scenes { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 520px) { .scenes { grid-template-columns: 1fr; } }
+
+  /* how */
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; counter-reset: s; }
+  .step { padding: 24px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); }
+  .step::before { counter-increment: s; content: "0" counter(s); font: 600 13px var(--mono); color: var(--accent); }
+  .step h3 { margin: 10px 0 6px; font-size: 17px; }
+  .step p { margin: 0; color: var(--muted); font-size: 14.5px; }
+  .step code { font: 12.5px var(--mono); color: var(--ink); background: var(--panel2); padding: 1px 5px; border-radius: 5px; word-break: break-all; }
+  .privacy { margin-top: 16px; display: flex; gap: 16px; align-items: center; padding: 20px 24px; border: 1px solid rgba(34, 168, 116, .35); border-radius: 14px; background: linear-gradient(90deg, rgba(34, 168, 116, .1), transparent); }
+  .privacy b { font-size: 22px; }
+  .privacy p { margin: 0; color: var(--muted); font-size: 14.5px; }
+  .privacy p strong { color: var(--ink); }
+  @media (max-width: 800px) { .steps { grid-template-columns: 1fr; } }
+
+  /* faq */
+  .faq { display: grid; gap: 10px; max-width: 820px; }
+  details.q { border: 1px solid var(--line); border-radius: 12px; background: var(--panel); padding: 0 20px; }
+  details.q summary { cursor: pointer; list-style: none; padding: 17px 0; font-weight: 600; display: flex; justify-content: space-between; gap: 16px; }
+  details.q summary::-webkit-details-marker { display: none; }
+  details.q summary::after { content: "+"; color: var(--faint); font-weight: 400; font-size: 20px; line-height: 1; }
+  details.q[open] summary::after { content: "–"; }
+  details.q p { margin: 0 0 18px; color: var(--muted); font-size: 15px; }
+  details.q code { font: 13px var(--mono); color: var(--ink); background: var(--panel2); padding: 1px 6px; border-radius: 5px; }
+
+  /* final cta + footer */
+  .final { margin-top: 110px; text-align: center; padding: 64px 24px; border: 1px solid var(--line2); border-radius: 20px; background: radial-gradient(500px 220px at 50% 0, var(--glow), transparent 70%), var(--panel); }
+  .final h2 { margin-top: 0; }
+  footer { padding: 48px 0 56px; color: var(--faint); font-size: 13.5px; }
+  footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 28px; justify-content: space-between; }
+  footer a { color: var(--muted); }
+
+  /* lightbox */
+  .lb { position: fixed; inset: 0; z-index: 50; display: none; place-items: center; padding: 24px; background: rgba(4, 5, 8, .88); backdrop-filter: blur(6px); cursor: zoom-out; }
+  .lb.on { display: grid; }
+  .lb img { max-height: 88vh; border-radius: 12px; border: 1px solid var(--line2); }
+  .lb p { color: var(--muted); text-align: center; margin: 12px 0 0; }
+
+  /* Hidden only once the script runs, so the page still reads without JavaScript. */
+  .js .reveal { opacity: 0; transform: translateY(14px); transition: opacity .7s ease, transform .7s ease; }
+  .js .reveal.in { opacity: 1; transform: none; }
+  @media (prefers-reduced-motion: reduce) { .js .reveal { opacity: 1; transform: none; transition: none; } html { scroll-behavior: auto; } .scene img { transition: none; } }
+</style>
+</head>
+<body>
+<nav id="nav">
+  <div class="wrap">
+    <a class="brand" href="#top">👀 whatsmyagentdoing <code>/myoffice</code></a>
+    <div class="links">
+      <a class="hide-sm" href="#features" data-i="navFeatures">Features</a>
+      <a class="hide-sm" href="#scenes" data-i="navScenes">Scenes</a>
+      <a class="hide-sm" href="#install" data-i="navInstall">Install</a>
+      <button class="lang" id="langBtn" type="button">中文</button>
+      <a class="gh" href="https://github.com/Charonyuu/whatsmyagentdoing" aria-label="GitHub">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        <span class="t">GitHub</span>
+      </a>
+    </div>
+  </div>
+</nav>
+
+<main id="top">
+  <header class="hero wrap">
+    <a class="pill" href="#scenes"><span class="tag">v0.4</span><span data-i="pill">New: <b>Haunted Hollow</b> 🎃, approval alerts and a Today panel</span></a>
+    <h1 data-i="h1">See what <span class="grad">every coding agent</span> is doing.</h1>
+    <p class="sub" data-i="sub">Type <code>/myoffice</code>. Every Claude Code, Codex, Gemini, Copilot and OMP session on your machine walks into a live little office: thinking, running tools, waiting for you, or done.</p>
+
+    <div class="ticker" id="ticker" aria-hidden="true"></div>
+
+    <div class="install" id="installBox">
+      <div class="tabs" role="tablist" id="tabs">
+        <button class="on" data-k="ask" data-i="tabAsk">Ask your agent</button>
+        <button data-k="claude">Claude Code</button>
+        <button data-k="codex">Codex</button>
+        <button data-k="cli" data-i="tabCli">Without a skill</button>
+      </div>
+      <div class="cmd" id="cmd"></div>
+    </div>
+    <p class="note" data-i="note">Node.js 18+ · no npm install · no API keys · macOS, Linux and Windows</p>
+    <div class="cta">
+      <a class="btn primary" href="https://github.com/Charonyuu/whatsmyagentdoing" data-i="ctaStar">★ Star on GitHub</a>
+      <a class="btn" href="#features" data-i="ctaTour">Take the tour ↓</a>
+    </div>
+
+    <div class="show reveal">
+      <div class="bar"><i></i><i></i><i></i><span>localhost:4545 — 3D office</span></div>
+      <img src="site/img/scene-office.jpg" width="1600" height="873" alt="The 3D office: agents at their desks and off-duty ones wandering around">
+    </div>
+  </header>
+
+  <div class="agents wrap">
+    <div class="eyebrow" data-i="worksWith">Works with the agents you already run</div>
+    <div class="logos">
+      <span class="logo"><img src="site/img/agents/claude.png" alt="">Claude Code</span>
+      <span class="logo"><img src="site/img/agents/codex.png" alt="">Codex</span>
+      <span class="logo"><img src="site/img/agents/gemini.png" alt="">Gemini CLI</span>
+      <span class="logo"><img class="mono" src="site/img/agents/copilot.svg" alt="">Copilot CLI</span>
+      <span class="logo"><img src="site/img/agents/omp.svg" alt="">OMP</span>
+      <span class="logo"><img class="mono" src="site/img/agents/kimi.svg" alt="">Kimi Code</span>
+      <span class="logo"><img src="site/img/agents/dsh.svg" alt="">DeepSeek Harness</span>
+      <span class="logo"><img class="mono" src="site/img/agents/grok.svg" alt="">Grok Build</span>
+    </div>
+  </div>
+
+  <section class="wrap" id="states">
+    <div class="head reveal">
+      <div class="eyebrow" data-i="statesEyebrow">One glance</div>
+      <h2 data-i="statesH">Know who's working, and who's waiting on you.</h2>
+      <p class="lead" data-i="statesLead">Each session turns its latest log event into a status, updated live over Server-Sent Events.</p>
+    </div>
+    <div class="states reveal">
+      <div class="state"><b style="color:var(--thinking)"><i></i><em data-i="sThinking" style="font-style:normal">Thinking</em></b><span data-i="sThinkingD">Reasoning or reading a tool result</span></div>
+      <div class="state"><b style="color:var(--tool)"><i></i><em data-i="sTool" style="font-style:normal">Running</em></b><span data-i="sToolD">A tool call is in flight: <code>Bash: npm test</code></span></div>
+      <div class="state"><b style="color:var(--typing)"><i></i><em data-i="sTyping" style="font-style:normal">Writing reply</em></b><span data-i="sTypingD">The answer has started landing</span></div>
+      <div class="state"><b style="color:var(--waiting)"><i></i><em data-i="sWaiting" style="font-style:normal">Waiting for you</em></b><span data-i="sWaitingD">A question or an approval</span></div>
+      <div class="state"><b style="color:var(--done)"><i></i><em data-i="sDone" style="font-style:normal">Done</em></b><span data-i="sDoneD">Turn finished, with the last reply</span></div>
+      <div class="state"><b style="color:var(--error)"><i></i><em data-i="sStuck" style="font-style:normal">No progress</em></b><span data-i="sStuckD">Silent too long: a hung tool or a lost prompt</span></div>
+    </div>
+  </section>
+
+  <section class="wrap" id="features">
+    <div class="head reveal">
+      <div class="eyebrow" data-i="featEyebrow">Features</div>
+      <h2 data-i="featH">A dashboard you'll actually leave open.</h2>
+    </div>
+    <div class="grid reveal">
+      <div class="card"><div class="ic">🏢</div><h3 data-i="f1">A live office</h3><p data-i="f1d">A hand-drawn 2D canvas or a 3D office with real-time light and shadows. Working agents sit at desks; finished ones grab coffee, nap or play ping-pong.</p></div>
+      <div class="card"><div class="ic">🔔</div><h3 data-i="f2">Needs you, first</h3><p data-i="f2d">Sessions sort into Needs you → Working → Finished, with browser notifications and an optional chime.</p></div>
+      <div class="card new"><div class="ic">✋</div><h3 data-i="f3">Approval prompts</h3><p data-i="f3d">An optional Claude Code hook shows permission prompts as “Waiting for you” instead of “Running”. <code>--install-hook</code></p></div>
+      <div class="card new"><div class="ic">📊</div><h3 data-i="f4">Today at a glance</h3><p data-i="f4d">Turns, tokens and your busiest projects today, plus a context-window bar on every card.</p></div>
+      <div class="card new"><div class="ic">⚠️</div><h3 data-i="f5">Stuck detection</h3><p data-i="f5d">A tool or a thought that goes silent for too long gets flagged before you waste an hour waiting on it.</p></div>
+      <div class="card"><div class="ic">🪟</div><h3 data-i="f6">Pop it out</h3><p data-i="f6d">An always-on-top picture-in-picture window of the office or the list, synced with the main tab.</p></div>
+      <div class="card"><div class="ic">🔒</div><h3 data-i="f7">Private by design</h3><p data-i="f7d">Read-only, bound to 127.0.0.1, nothing leaves your machine. <code>--private</code> hides prompts for screen sharing.</p></div>
+      <div class="card"><div class="ic">🌐</div><h3 data-i="f8">Speaks your language</h3><p data-i="f8d">Nine languages, picked from the language you write your prompts in.</p></div>
+    </div>
+  </section>
+
+  <section class="wrap">
+    <div class="split">
+      <div class="txt reveal">
+        <div class="eyebrow" data-i="listEyebrow">List view</div>
+        <h2 data-i="listH">Prefer plain cards?</h2>
+        <p class="lead" data-i="listLead">Switch to the list: grouped by what needs you, with a live turn timer and the agent's latest prompt and reply.</p>
+        <ul class="ticks">
+          <li data-i="l1">One-click copy of the resume command for each session</li>
+          <li data-i="l2">Filter by agent, show or hide subagents and idle sessions</li>
+          <li data-i="l3">The tab title counts working agents, so you can watch from another tab</li>
+        </ul>
+      </div>
+      <div class="frame reveal"><img src="site/img/list.jpg" width="1600" height="1075" alt="The list view with grouped session cards" loading="lazy"></div>
+    </div>
+  </section>
+
+  <section class="wrap">
+    <div class="split rev">
+      <div class="txt reveal">
+        <div class="eyebrow" data-i="todayEyebrow">New in 0.4</div>
+        <h2 data-i="todayH">How much did the team do today?</h2>
+        <p class="lead" data-i="todayLead">The Today panel adds up turns and tokens from Claude and Codex usage records since midnight, by agent and by project.</p>
+        <ul class="ticks">
+          <li data-i="t1">Context bars turn amber at 60% and red at 85%, before a compaction surprises you</li>
+          <li data-i="t2">Counted from your local logs only: nothing is sent anywhere</li>
+        </ul>
+      </div>
+      <div class="frame today-img reveal"><img src="site/img/today.jpg" width="680" height="908" alt="The Today panel: turns, tokens, agents and busiest projects" loading="lazy"></div>
+    </div>
+  </section>
+
+  <section class="wrap" id="scenes">
+    <div class="head reveal">
+      <div class="eyebrow" data-i="scenesEyebrow">Scenes</div>
+      <h2 data-i="scenesH">Move the team somewhere fun.</h2>
+      <p class="lead" data-i="scenesLead">The office is built in. Other 3D scenes are 100–230 KB packs, downloaded only when you pick one and checked against a pinned SHA-256.</p>
+    </div>
+    <div class="scenes reveal" id="sceneGrid">
+      <button class="scene halloween" data-img="site/img/scene-graveyard.jpg"><img src="site/img/scene-graveyard.jpg" alt="" loading="lazy"><span class="cap">🎃 <span data-i="scGrave">Haunted Hollow</span><small data-i="newSmall">NEW</small></span></button>
+      <button class="scene" data-img="site/img/scene-office.jpg"><img src="site/img/scene-office.jpg" alt="" loading="lazy"><span class="cap">🏢 <span data-i="scOffice">Office</span><small data-i="builtIn">built in</small></span></button>
+      <button class="scene" data-img="site/img/scene-pirate.jpg"><img src="site/img/scene-pirate.jpg" alt="" loading="lazy"><span class="cap">🏴‍☠️ <span data-i="scPirate">Pirate Cove</span><small>--scene pirate</small></span></button>
+      <button class="scene" data-img="site/img/scene-cafe.jpg"><img src="site/img/scene-cafe.jpg" alt="" loading="lazy"><span class="cap">☕ <span data-i="scCafe">Café</span><small>--scene cafe</small></span></button>
+      <button class="scene" data-img="site/img/scene-station.jpg"><img src="site/img/scene-station.jpg" alt="" loading="lazy"><span class="cap">🚀 <span data-i="scStation">Space Station</span><small>--scene station</small></span></button>
+      <button class="scene" data-img="site/img/scene-castle.jpg"><img src="site/img/scene-castle.jpg" alt="" loading="lazy"><span class="cap">🏰 <span data-i="scCastle">Castle</span><small>--scene castle</small></span></button>
+    </div>
+  </section>
+
+  <section class="wrap" id="how">
+    <div class="head reveal">
+      <div class="eyebrow" data-i="howEyebrow">How it works</div>
+      <h2 data-i="howH">No hooks required. No config. No keys.</h2>
+      <p class="lead" data-i="howLead">Your agents already write every message and tool call to disk. whatsmyagentdoing just reads along.</p>
+    </div>
+    <div class="steps reveal">
+      <div class="step"><h3 data-i="h1t">Tail the logs</h3><p data-i="h1d">Session logs under <code>~/.claude</code>, <code>~/.codex</code>, <code>~/.gemini</code> and friends are read incrementally, never written.</p></div>
+      <div class="step"><h3 data-i="h2t">Turn events into states</h3><p data-i="h2d">The latest event becomes Thinking, Running, Waiting or Done. Large logs read only their head and tail.</p></div>
+      <div class="step"><h3 data-i="h3t">Stream to your browser</h3><p data-i="h3d">A tiny local server pushes snapshots over Server-Sent Events to the page. That's the whole stack.</p></div>
+    </div>
+    <div class="privacy reveal"><b>🔒</b><p data-i="privacy"><strong>Nothing leaves your machine.</strong> The server binds to 127.0.0.1 and rejects requests not addressed to localhost. The only network call is an optional version check, which you can turn off with <code>WMAD_NO_UPDATE_CHECK=1</code>.</p></div>
+  </section>
+
+  <section class="wrap" id="faq">
+    <div class="head reveal">
+      <div class="eyebrow">FAQ</div>
+      <h2 data-i="faqH">Questions</h2>
+    </div>
+    <div class="faq reveal">
+      <details class="q"><summary data-i="q1">Does it slow my agents down or change anything?</summary><p data-i="a1">No. It only reads log files. The optional approval hook writes one tiny marker file per permission prompt into <code>~/.whatsmyagentdoing</code> and nothing else.</p></details>
+      <details class="q"><summary data-i="q2">Why does Claude Code show “Running” while it waits for my approval?</summary><p data-i="a2">Claude Code doesn't log permission prompts. Run <code>node bin/cli.js --install-hook</code> once to add an optional Notification hook, and they'll show as “Waiting for you”. <code>--uninstall-hook</code> removes it.</p></details>
+      <details class="q"><summary data-i="q3">How do I update?</summary><p data-i="a3">The page tells you when a new version is out. Click Update, run <code>/myoffice update</code>, or <code>git pull</code> in the skill folder.</p></details>
+      <details class="q"><summary data-i="q4">Can I share my screen with it open?</summary><p data-i="a4">Yes. Start it with <code>--private</code> to hide prompts, replies and titles and show status only.</p></details>
+      <details class="q"><summary data-i="q5">My agent isn't listed. Can it be supported?</summary><p data-i="a5">If it writes session logs to disk, probably. Open an issue with the log location and a short sample with the content removed.</p></details>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <div class="final reveal" id="install">
+      <h2 data-i="finalH">Open your office.</h2>
+      <p class="lead" style="margin:0 auto 26px" data-i="finalLead">Paste one line into Claude Code or Codex, then type /myoffice.</p>
+      <div class="install" id="installBox2"><div class="cmd" id="cmd2"></div></div>
+      <div class="cta"><a class="btn primary" href="https://github.com/Charonyuu/whatsmyagentdoing" data-i="ctaRepo">View on GitHub</a></div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span data-i="footL">MIT licensed · 3D models by <a href="https://kenney.nl">Kenney</a> (CC0) · Brand marks belong to their owners.</span>
+    <span><a href="https://github.com/Charonyuu/whatsmyagentdoing">GitHub</a> · <a href="https://github.com/Charonyuu/whatsmyagentdoing/issues" data-i="issues">Issues</a></span>
+  </div>
+</footer>
+
+<div class="lb" id="lb" role="dialog" aria-modal="true"><div><img id="lbImg" alt=""><p id="lbCap"></p></div></div>
+
+<script>
+document.documentElement.classList.add('js');
+const REPO = 'https://github.com/Charonyuu/whatsmyagentdoing';
+const CMDS = {
+  ask: { en: `Install the myoffice skill from ${REPO}: clone it with \`git clone --depth 1\` into ~/.claude/skills/myoffice (for Codex: ~/.codex/skills/myoffice), check that \`node --version\` is 18 or newer, then tell me to start a new session and type /myoffice.`,
+    zh: `請從 ${REPO} 安裝 myoffice skill：用 \`git clone --depth 1\` 複製到 ~/.claude/skills/myoffice（Codex 用 ~/.codex/skills/myoffice），確認 \`node --version\` 是 18 以上，然後提醒我開新的 session 並輸入 /myoffice。` },
+  claude: `git clone --depth 1 ${REPO} ~/.claude/skills/myoffice`,
+  codex: `git clone --depth 1 ${REPO} ~/.codex/skills/myoffice`,
+  cli: `git clone --depth 1 ${REPO}\ncd whatsmyagentdoing && node bin/cli.js`,
+};
+
+const ZH = {
+  navFeatures: '功能', navScenes: '場景', navInstall: '安裝',
+  pill: '新功能：<b>萬聖節墓園</b> 🎃、批准提醒和今日總結',
+  h1: '看看<span class="grad">每個 coding agent</span> 正在做什麼。',
+  sub: '輸入 <code>/myoffice</code>，你電腦上所有 Claude Code、Codex、Gemini、Copilot 和 OMP 的 session 都會走進一間即時的小辦公室：思考中、執行工具、等你回應，或是已經完成。',
+  tabAsk: '叫 agent 幫你裝', tabCli: '不用 skill',
+  note: 'Node.js 18 以上 · 不用 npm install · 不用 API key · 支援 macOS、Linux、Windows',
+  ctaStar: '★ 在 GitHub 按星星', ctaTour: '往下看看 ↓',
+  worksWith: '支援你正在用的 agent',
+  statesEyebrow: '一眼看懂', statesH: '誰在工作、誰在等你，一目了然。', statesLead: '每個 session 都會把最新的 log 事件轉成狀態，透過 Server-Sent Events 即時更新。',
+  sThinking: '思考中', sThinkingD: '推理中，或在讀工具結果', sTool: '執行中', sToolD: '正在跑工具：<code>Bash: npm test</code>',
+  sTyping: '回覆中', sTypingD: '回答已經開始出現', sWaiting: '等你回應', sWaitingD: '有問題要問你，或需要批准',
+  sDone: '已完成', sDoneD: '這輪結束，附上最後的回覆', sStuck: '沒有進展', sStuckD: '太久沒動靜：工具卡住或提示遺失',
+  featEyebrow: '功能', featH: '會讓你一直開著的儀表板。',
+  f1: '即時辦公室', f1d: '手繪風 2D，或有即時光影的 3D 辦公室。工作中的 agent 坐在桌前；做完的去喝咖啡、睡午覺、打桌球。',
+  f2: '先處理需要你的', f2d: 'Session 依「需要你 → 工作中 → 已完成」分組，可開瀏覽器通知和提示音。',
+  f3: '批准提示', f3d: '可選的 Claude Code hook，讓權限提示顯示成「等你回應」而不是「執行中」。<code>--install-hook</code>',
+  f4: '今日總結', f4d: '今天的輪數、token 和最忙的專案，每張卡片也有 context 用量條。',
+  f5: '卡住偵測', f5d: '工具或思考太久沒動靜就標出來，不用白等一小時。',
+  f6: '子母畫面', f6d: '永遠置頂的小視窗，可放辦公室或列表，跟主分頁同步。',
+  f7: '隱私優先', f7d: '只讀不寫、只綁 127.0.0.1，資料不會離開你的電腦。<code>--private</code> 可在分享螢幕時隱藏 prompt。',
+  f8: '說你的語言', f8d: '支援九種語言，會依你寫 prompt 的語言自動選擇。',
+  listEyebrow: '列表模式', listH: '比較喜歡卡片？', listLead: '切到列表：依需要你的程度分組，附上即時計時器和 agent 最新的 prompt 與回覆。',
+  l1: '每個 session 都能一鍵複製接續指令', l2: '可依 agent 篩選，切換顯示子 agent 和閒置的 session', l3: '分頁標題會顯示工作中的數量，在別的分頁也看得到',
+  todayEyebrow: '0.4 新功能', todayH: '團隊今天做了多少？', todayLead: '今日面板會從午夜起，加總 Claude 和 Codex 的用量紀錄，依 agent 和專案統計輪數與 token。',
+  t1: 'Context 用量到 60% 變橘、85% 變紅，壓縮前就先提醒你', t2: '只從本機 log 統計，什麼都不會送出去',
+  scenesEyebrow: '場景', scenesH: '帶團隊去好玩的地方。', scenesLead: '辦公室是內建的。其他 3D 場景是 100–230 KB 的場景包，選了才下載，並用固定的 SHA-256 驗證。',
+  scGrave: '萬聖節墓園', newSmall: '新', scOffice: '辦公室', builtIn: '內建', scPirate: '海盜灣', scCafe: '咖啡廳', scStation: '太空站', scCastle: '城堡',
+  howEyebrow: '運作方式', howH: '不用 hook、不用設定、不用 key。', howLead: '你的 agent 本來就會把每則訊息和工具呼叫寫到硬碟，whatsmyagentdoing 只是跟著讀。',
+  h1t: '跟著讀 log', h1d: '<code>~/.claude</code>、<code>~/.codex</code>、<code>~/.gemini</code> 等目錄下的 session log 會被逐步讀取，從不寫入。',
+  h2t: '把事件變成狀態', h2d: '最新的事件會變成思考中、執行中、等你或已完成。很大的 log 只讀開頭和結尾。',
+  h3t: '串流到瀏覽器', h3d: '一個很小的本機伺服器透過 Server-Sent Events 把狀態推到頁面，整個架構就這樣。',
+  privacy: '<strong>資料不會離開你的電腦。</strong>伺服器只綁 127.0.0.1，不是送給 localhost 的請求一律拒絕。唯一的網路請求是可選的版本檢查，設定 <code>WMAD_NO_UPDATE_CHECK=1</code> 就能關掉。',
+  faqH: '常見問題',
+  q1: '會拖慢 agent 或改到什麼東西嗎？', a1: '不會。它只讀 log。可選的批准 hook 每次權限提示只會在 <code>~/.whatsmyagentdoing</code> 寫一個很小的標記檔，其他什麼都不動。',
+  q2: '為什麼 Claude Code 在等我批准時顯示「執行中」？', a2: 'Claude Code 不會把權限提示寫進 log。執行一次 <code>node bin/cli.js --install-hook</code> 加上可選的 Notification hook，就會顯示「等你回應」。<code>--uninstall-hook</code> 可以移除。',
+  q3: '要怎麼更新？', a3: '有新版時頁面會提醒你。按「更新」、執行 <code>/myoffice update</code>，或在 skill 資料夾裡 <code>git pull</code>。',
+  q4: '開著它可以分享螢幕嗎？', a4: '可以。用 <code>--private</code> 啟動就會隱藏 prompt、回覆和標題，只顯示狀態。',
+  q5: '我的 agent 不在清單上，可以支援嗎？', a5: '只要它會把 session log 寫到硬碟，大概都可以。開個 issue 附上 log 位置和去掉內容的簡短範例。',
+  finalH: '打開你的辦公室。', finalLead: '貼一行到 Claude Code 或 Codex，然後輸入 /myoffice。', ctaRepo: '到 GitHub 看看',
+  footL: 'MIT 授權 · 3D 模型來自 <a href="https://kenney.nl">Kenney</a>（CC0）· 各品牌標誌屬於其所有者。', issues: '回報問題',
+};
+
+// Live-looking ticker of made-up agents.
+const TICKS = [
+  ['claude', 'api-server', 'tool', 'Running', '執行中', 'Bash: npm test'],
+  ['codex', 'landing-page', 'thinking', 'Thinking', '思考中', 'reading src/hero.tsx'],
+  ['gemini', 'data-pipeline', 'waiting', 'Waiting for you', '等你回應', 'Allow Shell: pg_dump?'],
+  ['claude', 'mobile-app', 'typing', 'Writing reply', '回覆中', 'Fixed the crash on launch…'],
+  ['copilot', 'cli-tools', 'done', 'Done', '已完成', 'Added a --verbose flag'],
+  ['codex', 'billing', 'tool', 'Running', '執行中', 'Shell: pnpm test'],
+];
+const COLORS = { thinking: 'var(--thinking)', tool: 'var(--tool)', typing: 'var(--typing)', waiting: 'var(--waiting)', done: 'var(--done)' };
+const LOGO = { claude: 'claude.png', codex: 'codex.png', gemini: 'gemini.png', copilot: 'copilot.svg' };
+
+let lang = 'en';
+const en = {};
+document.querySelectorAll('[data-i]').forEach((el) => { en[el.dataset.i] = el.innerHTML; });
+
+function setLang(next) {
+  lang = next;
+  document.documentElement.lang = lang === 'zh' ? 'zh-Hant' : 'en';
+  document.querySelectorAll('[data-i]').forEach((el) => {
+    const v = (lang === 'zh' ? ZH : en)[el.dataset.i];
+    if (v != null) el.innerHTML = v;
+  });
+  document.getElementById('langBtn').textContent = lang === 'zh' ? 'English' : '中文';
+  showCmd(current);
+  renderTicker();
+  try { localStorage.setItem('wmad-site-lang', lang); } catch {}
+}
+
+let current = 'ask', tickAt = 0;
+function cmdText(k) { const c = CMDS[k]; return typeof c === 'string' ? c : c[lang]; }
+function cmdHtml(k) {
+  const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  if (k === 'ask') return esc(cmdText(k));
+  return cmdText(k).split('\n').map((l) => `<span class="p">$ </span>${esc(l)}`).join('\n');
+}
+function showCmd(k) {
+  current = k;
+  for (const [id, key] of [['cmd', k], ['cmd2', 'ask']]) {
+    const box = document.getElementById(id);
+    box.innerHTML = cmdHtml(key) + `<button class="copy" type="button" data-key="${key}">${lang === 'zh' ? '複製' : 'Copy'}</button>`;
+  }
+  document.querySelectorAll('#tabs button').forEach((b) => b.classList.toggle('on', b.dataset.k === k));
+}
+document.getElementById('tabs').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) showCmd(b.dataset.k); });
+document.addEventListener('click', async (e) => {
+  const b = e.target.closest('.copy');
+  if (!b) return;
+  try { await navigator.clipboard.writeText(cmdText(b.dataset.key)); } catch { return; }
+  b.textContent = lang === 'zh' ? '已複製 ✓' : 'Copied ✓'; b.classList.add('ok');
+  setTimeout(() => { b.textContent = lang === 'zh' ? '複製' : 'Copy'; b.classList.remove('ok'); }, 1600);
+});
+
+function renderTicker() {
+  const rows = [0, 1, 2].map((i) => TICKS[(tickAt + i) % TICKS.length]);
+  document.getElementById('ticker').innerHTML = rows.map(([agent, who, st, enL, zhL, act]) =>
+    `<div class="tick"><img src="site/img/agents/${LOGO[agent]}" alt=""${agent === 'copilot' ? ' style="filter:invert(1)"' : ''}><span class="who">${who}</span>` +
+    `<span class="st" style="color:${COLORS[st]}"><i></i>${lang === 'zh' ? zhL : enL}</span><span class="act">${act}</span></div>`).join('');
+}
+if (!matchMedia('(prefers-reduced-motion: reduce)').matches) setInterval(() => { tickAt = (tickAt + 1) % TICKS.length; renderTicker(); }, 2600);
+
+document.getElementById('langBtn').addEventListener('click', () => setLang(lang === 'zh' ? 'en' : 'zh'));
+let saved = null;
+try { saved = localStorage.getItem('wmad-site-lang'); } catch {}
+setLang(saved || (/^zh/i.test(navigator.language) ? 'zh' : 'en'));
+
+// Scene lightbox.
+const lb = document.getElementById('lb');
+document.getElementById('sceneGrid').addEventListener('click', (e) => {
+  const s = e.target.closest('.scene');
+  if (!s) return;
+  document.getElementById('lbImg').src = s.dataset.img;
+  document.getElementById('lbCap').textContent = s.querySelector('.cap').textContent.replace(/\s+/g, ' ').trim();
+  lb.classList.add('on');
+});
+lb.addEventListener('click', () => lb.classList.remove('on'));
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') lb.classList.remove('on'); });
+
+// Nav border and reveal-on-scroll.
+const nav = document.getElementById('nav');
+addEventListener('scroll', () => nav.classList.toggle('scrolled', scrollY > 8), { passive: true });
+const io = 'IntersectionObserver' in window ? new IntersectionObserver((es) => es.forEach((x) => { if (x.isIntersecting) { x.target.classList.add('in'); io.unobserve(x.target); } }), { rootMargin: '0px 0px -8% 0px' }) : null;
+document.querySelectorAll('.reveal').forEach((el) => (io ? io.observe(el) : el.classList.add('in')));
+</script>
+</body>
+</html>
