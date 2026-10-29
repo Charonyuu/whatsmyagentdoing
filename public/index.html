@@ -76,9 +76,10 @@
   .controls > .btn, .settings > summary { min-height: 36px; display: inline-flex; align-items: center; white-space: nowrap; }
   .settings > summary { list-style: none; gap: 7px; color: var(--ink); }
   .settings > summary::-webkit-details-marker { display: none; }
-  .settings > summary::after { content: "⌄"; color: var(--muted); }
+  /* A drawn chevron sits on the text's centre line; the ⌄ glyph hangs below it in most fonts. */
+  .settings > summary::after { content: ""; flex: none; width: 6px; height: 6px; margin: -3px 1px 0 2px; border-right: 1.6px solid var(--muted); border-bottom: 1.6px solid var(--muted); transform: rotate(45deg); transition: transform .2s ease, margin .2s ease; }
   .settings[open] > summary { background: var(--line); }
-  .settings[open] > summary::after { content: "⌃"; }
+  .settings[open] > summary::after { margin-top: 3px; transform: rotate(-135deg); }
   .filter-active { font-size: 11px; color: var(--tool); }
   .settings-panel { position: absolute; z-index: 20; right: 0; top: calc(100% + 10px); width: min(360px, calc(100vw - 32px)); max-height: calc(100dvh - 180px); overflow-y: auto; overscroll-behavior: contain; padding: 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); box-shadow: 0 12px 40px #0003; }
   .setting-group + .setting-group { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); }
