@@ -56,12 +56,19 @@
   @media (max-width: 480px) { .brand code, .gh .t { display: none; } .brand { min-width: 0; } nav .wrap { gap: 10px; } }
 
   /* hero */
-  .hero { padding-top: 88px; padding-bottom: 24px; text-align: center; }
+  .hero { position: relative; padding-top: 88px; padding-bottom: 24px; text-align: center; }
+  .hero > :not(.hero-bg) { position: relative; }
+  /* The blurred office: full-bleed behind the hero, darkened and faded out below the install box. */
+  .hero-bg { position: absolute; z-index: 0; top: -61px; left: 50%; width: 100vw; height: 900px; transform: translateX(-50%); overflow: hidden; pointer-events: none;
+    -webkit-mask-image: linear-gradient(#000 45%, transparent); mask-image: linear-gradient(#000 45%, transparent); }
+  .hero-bg video { width: 100%; height: 100%; object-fit: cover; transform: scale(1.12); opacity: .85; }
+  .hero-bg::after { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse 46% 42% at 50% 36%, rgba(9, 9, 9, .62), rgba(9, 9, 9, .38) 70%, rgba(9, 9, 9, .5)); }
+  @media (max-width: 640px) { .hero-bg { height: 760px; } .hero-bg video { opacity: .7; } }
   .pill { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 5px 14px 5px 6px; text-decoration: none; }
   .pill b { color: var(--ink); font-weight: 600; }
   .pill .tag { font-size: 11.5px; font-weight: 700; color: #fff; background: var(--accent); border-radius: 999px; padding: 1px 9px; }
   h1 { font-size: clamp(32px, 5vw, 54px); line-height: 1.18; letter-spacing: -.02em; margin: 26px auto 16px; max-width: 820px; font-weight: 650; }
-  .sub { font-size: clamp(15px, 1.8vw, 17px); color: var(--muted); max-width: 620px; margin: 0 auto 32px; line-height: 1.8; }
+  .sub { text-shadow: 0 1px 14px rgba(0, 0, 0, .7); font-size: clamp(15px, 1.8vw, 17px); color: #b4b8c0; max-width: 620px; margin: 0 auto 32px; line-height: 1.8; }
   .sub code { font-size: .9em; color: var(--ink); background: var(--panel); border: 1px solid var(--line); padding: 1px 7px; border-radius: 7px; }
 
   /* live ticker */
@@ -102,7 +109,7 @@
   .stage { cursor: zoom-in; position: relative; border-radius: 16px; overflow: hidden; aspect-ratio: 1600 / 861; background: var(--inset); outline: none; touch-action: pan-y; }
   .stage:focus-visible { box-shadow: 0 0 0 2px var(--accent); }
   .slide { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .8s ease; }
-  .slide { pointer-events: none; }
+  .slide { pointer-events: none; display: block; }
   .slide.on { opacity: 1; pointer-events: auto; z-index: 1; }
   .snav { z-index: 2; }
   .snav { position: absolute; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--line2); background: rgba(16, 17, 20, .78); color: var(--ink); cursor: pointer; opacity: 0; transition: opacity .2s; backdrop-filter: blur(6px); }
@@ -124,8 +131,18 @@
 
   /* agents strip */
   .agents { padding: 64px 0 0; text-align: center; }
-  .logos { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 16px; }
-  .logo { display: inline-flex; align-items: center; gap: 9px; padding: 7px 14px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel); font-size: 14px; color: var(--muted); }
+  .marquee { position: relative; overflow: hidden; margin-top: 18px; -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); }
+  .track { display: flex; width: max-content; animation: marquee 36s linear infinite; }
+  .marquee:hover .track { animation-play-state: paused; }
+  .logos { display: flex; gap: 10px; padding-right: 10px; }
+  @keyframes marquee { to { transform: translateX(-50%); } }
+  @media (prefers-reduced-motion: reduce) {
+    .marquee { -webkit-mask-image: none; mask-image: none; }
+    .track { animation: none; width: auto; justify-content: center; }
+    .track .logos { flex-wrap: wrap; justify-content: center; padding: 0; }
+    .track .logos[aria-hidden] { display: none; }
+  }
+  .logo { flex: none; white-space: nowrap; display: inline-flex; align-items: center; gap: 9px; padding: 7px 14px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel); font-size: 14px; color: var(--muted); }
   .logo img { width: 18px; height: 18px; }
   .logo img.mono { filter: invert(1); }
 
@@ -223,7 +240,8 @@
   /* lightbox */
   .lb { position: fixed; inset: 0; z-index: 50; display: none; place-items: center; padding: 24px; background: rgba(4, 4, 5, .9); backdrop-filter: blur(6px); cursor: zoom-out; }
   .lb.on { display: grid; }
-  .lb img { max-height: 88vh; border-radius: 16px; border: 1px solid var(--line); }
+  .lb img, .lb video { max-height: 88vh; max-width: 100%; border-radius: 16px; border: 1px solid var(--line); display: block; }
+  .lb [hidden] { display: none; }
   .lb p { color: var(--muted); text-align: center; margin: 12px 0 0; }
 
   /* Hidden only once the script runs, so the page still reads without JavaScript. */
@@ -275,6 +293,9 @@
 
 <main id="top">
   <header class="hero wrap">
+    <div class="hero-bg" aria-hidden="true">
+      <video id="heroBg" muted loop playsinline preload="none" poster="site/video/hero-bg.jpg"><source src="site/video/hero-bg.mp4" type="video/mp4"></video>
+    </div>
     <a class="pill" href="#scenes"><span class="tag">v0.4</span><span data-i="pill">New: <b>Haunted Hollow</b>, approval alerts and a Today panel</span></a>
     <h1 data-i="h1">See what every coding agent is doing.</h1>
     <p class="sub" data-i="sub">Type <code>/myoffice</code>. Every Claude Code, Codex, Gemini, Copilot and OMP session on your machine walks into a live little office: thinking, running tools, waiting for you, or done.</p>
@@ -299,12 +320,12 @@
     <div class="show reveal" id="show" aria-roledescription="carousel" aria-label="3D scenes">
       <div class="bar"><i></i><i></i><i></i><span id="showUrl">localhost:4545</span></div>
       <div class="stage" id="stage" tabindex="0">
-          <img class="slide on" src="site/img/scene-office.jpg" width="1600" height="861" alt="" data-k="office">
-          <img class="slide" src="site/img/scene-graveyard.jpg" width="1600" height="861" alt="" loading="lazy" data-k="graveyard">
-          <img class="slide" src="site/img/scene-pirate.jpg" width="1600" height="861" alt="" loading="lazy" data-k="pirate">
-          <img class="slide" src="site/img/scene-cafe.jpg" width="1600" height="861" alt="" loading="lazy" data-k="cafe">
-          <img class="slide" src="site/img/scene-station.jpg" width="1600" height="861" alt="" loading="lazy" data-k="station">
-          <img class="slide" src="site/img/scene-castle.jpg" width="1600" height="861" alt="" loading="lazy" data-k="castle">
+          <video class="slide on" muted loop playsinline preload="none" poster="site/video/office.jpg" data-src="site/video/office.mp4" data-k="office" width="1180" height="606"></video>
+          <video class="slide" muted loop playsinline preload="none" poster="site/video/graveyard.jpg" data-src="site/video/graveyard.mp4" data-k="graveyard" width="1180" height="606"></video>
+          <video class="slide" muted loop playsinline preload="none" poster="site/video/pirate.jpg" data-src="site/video/pirate.mp4" data-k="pirate" width="1180" height="606"></video>
+          <video class="slide" muted loop playsinline preload="none" poster="site/video/cafe.jpg" data-src="site/video/cafe.mp4" data-k="cafe" width="1180" height="606"></video>
+          <video class="slide" muted loop playsinline preload="none" poster="site/video/station.jpg" data-src="site/video/station.mp4" data-k="station" width="1180" height="606"></video>
+          <video class="slide" muted loop playsinline preload="none" poster="site/video/castle.jpg" data-src="site/video/castle.mp4" data-k="castle" width="1180" height="606"></video>
         <button class="snav prev" type="button" id="prevBtn" aria-label="Previous scene"><svg class="btn-svg" aria-hidden="true"><use href="#i-left"/></svg></button>
         <button class="snav next" type="button" id="nextBtn" aria-label="Next scene"><svg class="btn-svg" aria-hidden="true"><use href="#i-right"/></svg></button>
       </div>
@@ -321,15 +342,29 @@
 
   <div class="agents wrap">
     <div class="eyebrow" data-i="worksWith">Works with the agents you already run</div>
-    <div class="logos">
-      <span class="logo"><img src="site/img/agents/claude.png" alt="">Claude Code</span>
-      <span class="logo"><img src="site/img/agents/codex.png" alt="">Codex</span>
-      <span class="logo"><img src="site/img/agents/gemini.png" alt="">Gemini CLI</span>
-      <span class="logo"><img class="mono" src="site/img/agents/copilot.svg" alt="">Copilot CLI</span>
-      <span class="logo"><img src="site/img/agents/omp.svg" alt="">OMP</span>
-      <span class="logo"><img class="mono" src="site/img/agents/kimi.svg" alt="">Kimi Code</span>
-      <span class="logo"><img src="site/img/agents/dsh.svg" alt="">DeepSeek Harness</span>
-      <span class="logo"><img class="mono" src="site/img/agents/grok.svg" alt="">Grok Build</span>
+    <div class="marquee" id="marquee">
+      <div class="track">
+        <div class="logos">
+          <span class="logo"><img src="site/img/agents/claude.png" alt="">Claude Code</span>
+          <span class="logo"><img src="site/img/agents/codex.png" alt="">Codex</span>
+          <span class="logo"><img src="site/img/agents/gemini.png" alt="">Gemini CLI</span>
+          <span class="logo"><img class="mono" src="site/img/agents/copilot.svg" alt="">Copilot CLI</span>
+          <span class="logo"><img src="site/img/agents/omp.svg" alt="">OMP</span>
+          <span class="logo"><img class="mono" src="site/img/agents/kimi.svg" alt="">Kimi Code</span>
+          <span class="logo"><img src="site/img/agents/dsh.svg" alt="">DeepSeek Harness</span>
+          <span class="logo"><img class="mono" src="site/img/agents/grok.svg" alt="">Grok Build</span>
+        </div>
+        <div class="logos" aria-hidden="true">
+          <span class="logo"><img src="site/img/agents/claude.png" alt="">Claude Code</span>
+          <span class="logo"><img src="site/img/agents/codex.png" alt="">Codex</span>
+          <span class="logo"><img src="site/img/agents/gemini.png" alt="">Gemini CLI</span>
+          <span class="logo"><img class="mono" src="site/img/agents/copilot.svg" alt="">Copilot CLI</span>
+          <span class="logo"><img src="site/img/agents/omp.svg" alt="">OMP</span>
+          <span class="logo"><img class="mono" src="site/img/agents/kimi.svg" alt="">Kimi Code</span>
+          <span class="logo"><img src="site/img/agents/dsh.svg" alt="">DeepSeek Harness</span>
+          <span class="logo"><img class="mono" src="site/img/agents/grok.svg" alt="">Grok Build</span>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -458,7 +493,7 @@
   </div>
 </footer>
 
-<div class="lb" id="lb" role="dialog" aria-modal="true"><div><img id="lbImg" alt=""><p id="lbCap"></p></div></div>
+<div class="lb" id="lb" role="dialog" aria-modal="true"><div><img id="lbImg" alt=""><video id="lbVid" muted loop playsinline></video><p id="lbCap"></p></div></div>
 
 <script>
 document.documentElement.classList.add('js');
@@ -583,37 +618,66 @@ setLang(saved || (/^zh/i.test(navigator.language) ? 'zh' : 'en'));
 
 // Scene lightbox.
 const lb = document.getElementById('lb');
-function openLightbox(src, cap) { document.getElementById('lbImg').src = src; document.getElementById('lbCap').textContent = cap; lb.classList.add('on'); }
+function openLightbox(src, cap) {
+  const img = document.getElementById('lbImg'), vid = document.getElementById('lbVid'), isVideo = src.endsWith('.mp4');
+  img.hidden = isVideo; vid.hidden = !isVideo;
+  if (isVideo) { vid.src = src; vid.play().catch(() => {}); } else { img.src = src; vid.removeAttribute('src'); vid.load(); }
+  document.getElementById('lbCap').textContent = cap;
+  lb.classList.add('on');
+}
 document.getElementById('sceneGrid').addEventListener('click', (e) => {
   const s = e.target.closest('.scene');
   if (!s) return;
   openLightbox(s.dataset.img, s.querySelector('.cap').textContent.replace(/\s+/g, ' ').trim());
 });
-lb.addEventListener('click', () => lb.classList.remove('on'));
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') lb.classList.remove('on'); });
+function closeLightbox() { lb.classList.remove('on'); document.getElementById('lbVid').pause(); }
+lb.addEventListener('click', closeLightbox);
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLightbox(); });
 
-// Scene carousel: cross-fades every 5 s, pauses on hover or focus, swipes on touch.
+// Motion is off for reduced-motion and data-saver users: they get the still posters.
+const STILL = matchMedia('(prefers-reduced-motion: reduce)').matches || !!navigator.connection?.saveData;
+const playSafe = (v) => { const p = v.play(); if (p) p.catch(() => {}); };
+
+// Blurred office behind the hero.
+(() => {
+  const v = document.getElementById('heroBg');
+  if (STILL) return;
+  v.preload = 'auto';
+  playSafe(v);
+  document.addEventListener('visibilitychange', () => (document.hidden ? v.pause() : playSafe(v)));
+})();
+
+// Scene carousel: each looping clip plays once through (8 s), then cross-fades to the next.
+// Only the current clip and the next one are downloaded.
 (() => {
   const show = document.getElementById('show'), stage = document.getElementById('stage');
   const slides = [...stage.querySelectorAll('.slide')], dots = [...document.querySelectorAll('#dots .dot')];
-  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const DUR = 5000;
+  const DUR = 8000;
   let at = 0, timer = null, paused = false;
   const name = (i) => dots[i].querySelector('span').textContent;
-  function go(i, user) {
+  const load = (v) => { if (!v.src) { v.src = v.dataset.src; v.preload = 'auto'; } };
+  function go(i, user, keep) {
     at = (i + slides.length) % slides.length;
-    slides.forEach((s, n) => s.classList.toggle('on', n === at));
+    slides.forEach((s, n) => {
+      s.classList.toggle('on', n === at);
+      if (n !== at && !s.paused) s.pause();
+    });
     dots.forEach((d, n) => { d.classList.toggle('on', n === at); d.classList.remove('run'); d.setAttribute('aria-selected', n === at ? 'true' : 'false'); });
-    const next = slides[(at + 1) % slides.length];
-    if (next.loading === 'lazy') next.loading = 'eager'; // have the next scene ready before it fades in
-    slides[at].alt = name(at);
+    const v = slides[at];
+    v.setAttribute('aria-label', name(at));
     document.getElementById('showUrl').textContent = `localhost:4545 — ${name(at)}`;
+    if (!STILL) {
+      load(v);
+      if (!keep) v.currentTime = 0;
+      playSafe(v);
+      load(slides[(at + 1) % slides.length]); // ready before it fades in
+    }
     if (user) paused = false;
-    schedule();
+    if (!keep) schedule();
   }
   function schedule() {
     clearTimeout(timer);
-    if (still || paused) return;
+    if (STILL || paused) return;
     void dots[at].offsetWidth; // restart the progress bar
     dots[at].classList.add('run');
     timer = setTimeout(() => go(at + 1), DUR);
@@ -636,10 +700,15 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') lb.classLi
     const dx = e.clientX - x0; x0 = null;
     if (Math.abs(dx) > 40) { swiped = true; go(at + (dx < 0 ? 1 : -1), true); }
   });
-  // A swipe also ends in a click; only a tap opens the full-size image.
-  stage.addEventListener('click', (e) => { if (!swiped && e.target === slides[at]) openLightbox(slides[at].src, name(at)); });
-  document.addEventListener('visibilitychange', () => (document.hidden ? clearTimeout(timer) : schedule()));
-  window.__carouselLang = () => go(at);
+  // A swipe also ends in a click; only a tap opens it full size.
+  stage.addEventListener('click', (e) => {
+    if (swiped || e.target !== slides[at]) return;
+    openLightbox(STILL ? slides[at].poster : slides[at].dataset.src, name(at));
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) { clearTimeout(timer); slides[at].pause(); } else if (!STILL) { playSafe(slides[at]); schedule(); }
+  });
+  window.__carouselLang = () => go(at, false, true);
   go(0);
 })();
 
