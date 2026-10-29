@@ -84,16 +84,11 @@
   .settings-panel { position: absolute; z-index: 20; right: 0; top: calc(100% + 10px); width: min(360px, calc(100vw - 32px)); max-height: calc(100dvh - 180px); overflow-y: auto; overscroll-behavior: contain; padding: 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); box-shadow: 0 12px 40px #0003; }
   .setting-group + .setting-group { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); }
   .setting-label { display: block; color: var(--muted); font-size: 12px; margin-bottom: 9px; }
-  #sceneSeg { display: grid; grid-template-columns: 1fr 1fr; border: 0; padding: 0; gap: 6px; }
-  #sceneSeg button { text-align: left; padding: 8px 10px; background: var(--bg); }
-  #sceneSeg button.on { background: var(--line); color: var(--ink); box-shadow: inset 0 0 0 1px var(--faint); }
   .setting-toggles { display: grid; gap: 12px; margin-top: 14px; }
   .setting-toggles .tog { color: var(--ink); gap: 8px; }
   .tog input { accent-color: var(--tool); margin: 0; width: 15px; height: 15px; }
   .setting-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
   .setting-row .setting-label { margin: 0; }
-  #notify { width: 100%; margin-top: 14px; padding: 8px; }
-  #notify:disabled { cursor: default; opacity: .65; }
   @media (max-width: 640px) {
     header { gap: 14px; }
     .summary { margin-left: 0; width: 100%; gap: 18px; }
@@ -153,25 +148,32 @@
   /* ---- toolbar menus and controls, styled to match (no browser defaults) */
   details.menu > summary { gap: 7px; }
   .scene-ico { display: inline-flex; }
+  .scene-art { width: 18px; height: 18px; flex: none; display: block; }
+  .scene-list .thumb .scene-art { width: 22px; height: 22px; }
   #sceneName, #langName { max-width: 11em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .scene-panel { width: min(400px, calc(100vw - 32px)); right: auto; left: 0; }
-  .scene-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 10px; }
-  .scene-grid button { display: flex; flex-direction: column; gap: 6px; padding: 6px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); color: var(--ink); font: inherit; text-align: left; cursor: pointer; transition: border-color .15s, transform .15s; }
-  .scene-grid button:hover { border-color: color-mix(in srgb, var(--ink) 30%, var(--line)); transform: translateY(-1px); }
-  .scene-grid button.on { border-color: var(--tool); box-shadow: 0 0 0 1px var(--tool); }
-  .scene-grid .thumb { display: grid; place-items: center; aspect-ratio: 16 / 10; border-radius: 8px; overflow: hidden; background: color-mix(in srgb, var(--ink) 6%, var(--panel)); color: var(--muted); }
-  .scene-grid .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-  .scene-grid .thumb .ui-ico { width: 28px; height: 28px; }
-  .scene-grid .nm { display: flex; align-items: center; gap: 6px; padding: 0 4px; font-size: 13px; font-weight: 600; }
-  .scene-grid small { display: flex; align-items: center; gap: 4px; padding: 0 4px 2px; color: var(--muted); font-size: 11.5px; }
-  .lang-panel { width: 240px; }
-  .lang-list { display: flex; flex-direction: column; margin-top: 8px; }
-  .lang-list button { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 0; border-radius: 8px; background: none; color: var(--ink); font: inherit; font-size: 13.5px; text-align: left; cursor: pointer; }
-  .lang-list button:hover { background: color-mix(in srgb, var(--ink) 7%, transparent); }
-  .lang-list button small { color: var(--faint); font-size: 12px; }
-  .lang-list .chk { margin-left: auto; opacity: 0; color: var(--tool); }
-  .lang-list button.on { font-weight: 600; }
-  .lang-list button.on .chk { opacity: 1; }
+  /* Scene, agent and language menus share one compact list. */
+  .list-panel { width: 250px; padding: 12px; }
+  .scene-panel { right: auto; left: 0; }
+  .pick-list { display: flex; flex-direction: column; gap: 1px; margin-top: 8px; }
+  .pick-list button { display: flex; align-items: center; gap: 9px; width: 100%; min-height: 34px; padding: 6px 8px; border: 0; border-radius: 8px; background: none; color: var(--ink); font: inherit; font-size: 13.5px; text-align: left; cursor: pointer; }
+  .pick-list button:hover { background: color-mix(in srgb, var(--ink) 7%, transparent); }
+  .pick-list .lbl { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pick-list small { color: var(--faint); font-size: 12px; display: inline-flex; align-items: center; gap: 3px; }
+  .pick-list .chk { flex: none; opacity: 0; color: var(--tool); }
+  .pick-list button.on { font-weight: 600; }
+  .pick-list button.on .chk { opacity: 1; }
+  .pick-list .agent-logo { width: 16px; height: 16px; margin: 0; }
+  .scene-list .thumb { flex: none; width: 44px; height: 28px; border-radius: 5px; overflow: hidden; display: grid; place-items: center; background: color-mix(in srgb, var(--ink) 7%, var(--panel)); color: var(--muted); }
+  .scene-list .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  /* Agent rows: a checkbox square, the logo, the name and a count */
+  #agentChips .box { flex: none; display: grid; place-items: center; width: 16px; height: 16px; border: 1.5px solid color-mix(in srgb, var(--ink) 30%, var(--line)); border-radius: 4px; }
+  #agentChips .box .chk { width: 12px; height: 12px; opacity: 0; color: #fff; stroke-width: 2.6; }
+  #agentChips .on .box { background: var(--tool); border-color: var(--tool); }
+  #agentChips .on .box .chk { opacity: 1; }
+  #agentChips .chip-f > .chk, #agentChips button > svg.chk:last-child { display: none; }
+  #agentChips b { font-weight: 500; font-size: 12px; color: var(--faint); font-variant-numeric: tabular-nums; }
+  #agentChips .ini { font-size: 11px; color: var(--muted); width: 16px; text-align: center; }
+  details.menu.active > summary { border-color: color-mix(in srgb, var(--tool) 55%, var(--line)); }
   .prefs-panel { width: 280px; }
   .prefs-panel .setting-toggles { display: flex; flex-direction: column; gap: 2px; margin: 0 0 12px; }
   /* Switches instead of checkboxes */
@@ -181,16 +183,8 @@
   .tog input:checked { background: var(--tool); }
   .tog input:checked::after { transform: translateX(15px); }
   .tog input:focus-visible { outline: 2px solid var(--tool); outline-offset: 2px; }
-  .prefs-panel #notify { width: 100%; margin: 0; }
-  /* Agent filter chips at the top of the panel */
-  .agent-chips { flex: none; display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 14px; border-bottom: 1px solid var(--line); }
-  .chip-f { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 9px; border: 1px solid var(--line); border-radius: 999px; background: none; color: var(--muted); font: 600 12.5px inherit; cursor: pointer; transition: background .15s, border-color .15s, color .15s; }
-  .chip-f:hover { color: var(--ink); border-color: color-mix(in srgb, var(--ink) 25%, var(--line)); }
-  .chip-f .agent-logo { width: 15px; height: 15px; margin: 0; }
-  .chip-f b { font-weight: 600; font-size: 11.5px; color: var(--faint); font-variant-numeric: tabular-nums; }
-  .chip-f .ini { font-size: 11px; }
-  .chip-f.on { color: var(--ink); background: color-mix(in srgb, var(--tool) 16%, var(--panel)); border-color: color-mix(in srgb, var(--tool) 55%, var(--line)); }
-  .chip-f.on b { color: var(--muted); }
+  .tog-note { margin: 0 2px 4px; font-size: 12px; line-height: 1.5; color: var(--muted); }
+  .prefs-panel .setting-toggles:last-of-type { margin-bottom: 4px; }
   /* ---- full-screen mode: the office fills the window, agents in a side panel */
   .ui-ico { stroke-width: 1.8; }
   .side, .side-tab { display: none; }
@@ -273,14 +267,32 @@
   /* The panel's group headings already count Needs you / Working / Finished, so the
      toolbar drops those chips (and then the title) before it would wrap. */
   @media (max-width: 1240px) { body.full .summary { display: none; } }
-  @media (max-width: 900px) { body.full h1 { display: none; } }
+  @media (max-width: 900px) {
+    body.full h1, body.full #langName, body.full .today-tokens,
+    body.full #todayMenu > summary [data-t], body.full #settingsMenu > summary [data-t] { display: none; }
+  }
+  /* Phones: one row of icon buttons; the labels, chevrons and pop-out (unsupported there) go. */
+  @media (max-width: 640px) {
+    html body.full header { padding: 8px 10px; gap: 6px; flex-wrap: nowrap; }
+    html body.full .controls { flex-wrap: nowrap; gap: 6px; }
+    body.full #pipBtn { display: none !important; }
+    body.full details.menu > summary { gap: 0; padding-inline: 9px; }
+    body.full #sceneMenu > summary { gap: 6px; }
+    body.full #sceneName { max-width: 6.5em; }
+    body.full details.menu > summary::after,
+    body.full #agentName, body.full #langName, body.full .today-tokens,
+    body.full #todayMenu > summary [data-t], body.full #settingsMenu > summary [data-t] { display: none; }
+    body.full details.menu.active > summary { position: relative; }
+    body.full details.menu.active > summary::before { content: ""; position: absolute; top: 5px; right: 5px; width: 7px; height: 7px; border-radius: 50%; background: var(--tool); }
+  }
+  @media (max-width: 359px) { body.full #sceneName { display: none; } }
   @media (max-width: 760px) {
     body.full .side { width: min(340px, 88vw); }
     body.full #officeWrap { margin-right: 0; }
     body.full h1, body.full .summary { display: none; }
     body.full header { flex-wrap: wrap; }
     /* Menus span the screen under the toolbar instead of hanging off their button. */
-    body.full .settings-panel { position: fixed; left: 12px; right: 12px; width: auto; top: calc(var(--bar, 53px) + 6px); max-height: calc(100dvh - var(--bar, 53px) - 24px); }
+    body.full .settings-panel { position: fixed; left: auto; right: 12px; max-width: calc(100vw - 24px); top: calc(var(--bar, 53px) + 6px); max-height: calc(100dvh - var(--bar, 53px) - 24px); }
     body.full .controls { flex-wrap: wrap; row-gap: 6px; }
   }
   .stuck { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--error); white-space: nowrap; }
@@ -384,35 +396,43 @@
         <button data-v="high" data-t="qHigh"></button>
       </div>
       <details class="settings menu" id="sceneMenu">
-        <summary class="btn" aria-controls="scenePanel"><span class="scene-ico" id="sceneIco"></span><span id="sceneName"></span></summary>
-        <div class="settings-panel scene-panel" id="scenePanel">
+        <summary class="btn" aria-controls="scenePanel" data-a="scene"><span class="scene-ico" id="sceneIco"></span><span id="sceneName"></span></summary>
+        <div class="settings-panel list-panel scene-panel" id="scenePanel">
           <div class="setting-label" data-t="scene"></div>
-          <div class="scene-grid" id="sceneSeg" role="group"></div>
+          <div class="pick-list scene-list" id="sceneSeg" role="group"></div>
         </div>
       </details>
       <span class="toolbar-space" aria-hidden="true"></span>
       <button class="btn" id="pipBtn" hidden></button>
       <details class="settings menu" id="todayMenu">
-        <summary class="btn" aria-controls="todayPanel"><svg class="ui-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 20.5h17"/><rect x="5" y="11" width="3.2" height="7" rx="1"/><rect x="10.4" y="6" width="3.2" height="12" rx="1"/><rect x="15.8" y="13.5" width="3.2" height="4.5" rx="1"/></svg><span data-t="today"></span> <span class="today-tokens" id="todayTokens"></span></summary>
+        <summary class="btn" aria-controls="todayPanel" data-a="today"><svg class="ui-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 20.5h17"/><rect x="5" y="11" width="3.2" height="7" rx="1"/><rect x="10.4" y="6" width="3.2" height="12" rx="1"/><rect x="15.8" y="13.5" width="3.2" height="4.5" rx="1"/></svg><span data-t="today"></span> <span class="today-tokens" id="todayTokens"></span></summary>
         <div class="settings-panel today-panel" id="todayPanel"></div>
       </details>
+      <details class="settings menu" id="agentMenu">
+        <summary class="btn" aria-controls="agentPanel" data-a="agents"><svg class="ui-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5h16l-6 7.2v5.3l-4 1.5v-6.8z"/></svg><span id="agentName"></span></summary>
+        <div class="settings-panel list-panel" id="agentPanel">
+          <div class="setting-label" data-t="agents"></div>
+          <div class="pick-list" id="agentChips" role="group"></div>
+        </div>
+      </details>
       <details class="settings menu" id="langMenu">
-        <summary class="btn" aria-controls="langPanel"><svg class="ui-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.8"/><path d="M3.4 12h17.2M12 3.2c2.6 2.6 3.7 5.6 3.7 8.8s-1.1 6.2-3.7 8.8M12 3.2C9.4 5.8 8.3 8.8 8.3 12s1.1 6.2 3.7 8.8"/></svg><span id="langName"></span></summary>
-        <div class="settings-panel lang-panel" id="langPanel">
+        <summary class="btn" aria-controls="langPanel" data-a="language"><svg class="ui-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.8"/><path d="M3.4 12h17.2M12 3.2c2.6 2.6 3.7 5.6 3.7 8.8s-1.1 6.2-3.7 8.8M12 3.2C9.4 5.8 8.3 8.8 8.3 12s1.1 6.2 3.7 8.8"/></svg><span id="langName"></span></summary>
+        <div class="settings-panel list-panel" id="langPanel">
           <div class="setting-label" data-t="language"></div>
-          <div class="lang-list" id="langList" role="listbox"></div>
+          <div class="pick-list" id="langList" role="listbox"></div>
         </div>
       </details>
       <details class="settings menu" id="settingsMenu">
-        <summary class="btn" aria-controls="settingsPanel"><span data-t="settings"></span></summary>
+        <summary class="btn" aria-controls="settingsPanel" data-a="settings"><svg class="ui-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 13.5a7.6 7.6 0 0 0 0-3l2-1.5-2-3.4-2.3.9a7.5 7.5 0 0 0-2.6-1.5L14.1 2.6h-4l-.4 2.4A7.5 7.5 0 0 0 7.1 6.5l-2.3-.9-2 3.4 2 1.5a7.6 7.6 0 0 0 0 3l-2 1.5 2 3.4 2.3-.9a7.5 7.5 0 0 0 2.6 1.5l.4 2.4h4l.4-2.4a7.5 7.5 0 0 0 2.6-1.5l2.3.9 2-3.4z"/></svg><span data-t="settings"></span></summary>
         <div class="settings-panel prefs-panel" id="settingsPanel">
           <div class="setting-toggles">
             <label class="tog"><span data-t="subagents"></span><input type="checkbox" role="switch" id="showSub"></label>
             <label class="tog" id="idleToggle"><span data-t="showIdle"></span><input type="checkbox" role="switch" id="showIdle"></label>
             <label class="tog" id="agentBadgeToggle"><span data-t="showAgent"></span><input type="checkbox" role="switch" id="showAgent"></label>
             <label class="tog" id="soundToggle"><span data-t="sound"></span><input type="checkbox" role="switch" id="sound"></label>
+            <label class="tog" id="notifyToggle"><span data-t="notify"></span><input type="checkbox" role="switch" id="notify"></label>
           </div>
-          <button class="btn" id="notify" data-t="notify"></button>
+          <p class="tog-note" id="notifyNote" data-t="notifyBlocked" hidden></p>
         </div>
       </details>
     </div>
@@ -433,7 +453,6 @@
     <div class="side-pane" id="sideList">
       <div class="side-head"><b id="sideTitle"></b><span class="side-count" id="sideCount"></span>
         <button class="icon-btn" id="sideHide"><svg class="ui-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5L21 12l-6.5 6.5M3 12h17"/></svg></button></div>
-      <div class="agent-chips" id="agentChips" role="group"></div>
       <div class="side-body" id="sideRows"></div>
     </div>
     <div class="side-pane" id="sideDetail" inert>
@@ -471,6 +490,7 @@ function applyLang(code) {
   document.documentElement.lang = L.html;
   rtf = new Intl.RelativeTimeFormat(L.html, { numeric: 'auto', style: 'short' });
   document.querySelectorAll('[data-t]').forEach((el) => (el.textContent = L[el.dataset.t]));
+  document.querySelectorAll('[data-a]').forEach((el) => { el.setAttribute('aria-label', L[el.dataset.a]); el.title = L[el.dataset.a]; });
   const legend = document.getElementById('legend');
   if (legend) legend.innerHTML = ['thinking', 'tool', 'typing', 'waiting', 'done', 'error']
     .map((k) => `<span data-s="${k}"><span class="dot" style="color:var(--s)"></span>${L[k]}</span>`).join('');
@@ -488,7 +508,7 @@ const store = (() => {
   return { get, set };
 })();
 
-const PREF_DEFAULTS = { view: 'office', quality: 'mid', scene: 'office', agents: [], showSub: false, showIdle: false, showAgent: true, sound: false, side: true, lang: 'auto' };
+const PREF_DEFAULTS = { view: 'office', quality: 'mid', scene: 'office', agents: [], showSub: false, showIdle: false, showAgent: true, sound: false, notify: true, side: true, lang: 'auto' };
 function validAgentId(v) {
   return typeof v === 'string' && v !== 'all' && /^[a-zA-Z][a-zA-Z0-9_-]{0,63}$/.test(v) && !Object.hasOwn(Object.prototype, v);
 }
@@ -760,7 +780,7 @@ function onData(data) {
     if (alert) {
       state.flash.add(s.key);
       if (!PIP && !s.subagent) {
-        if (window.Notification && Notification.permission === 'granted') {
+        if (state.notify && window.Notification && Notification.permission === 'granted') {
           try { new Notification(alert, { body: s.reply || s.activity || '', tag: s.key }); } catch {}
         }
         if (state.sound) chime(s.status === 'done' && !s.stuck ? 'done' : 'attention');
@@ -810,7 +830,9 @@ const todayMenu = document.getElementById('todayMenu');
 const MENUS = [...document.querySelectorAll('details.menu')];
 function closeMenus() { for (const m of MENUS) m.open = false; }
 for (const m of MENUS) m.addEventListener('toggle', () => { if (m.open) for (const o of MENUS) if (o !== m) o.open = false; });
-document.addEventListener('click', (e) => { for (const m of MENUS) if (!m.contains(e.target)) m.open = false; });
+// composedPath is fixed when the click starts, so a list that redraws under the
+// pointer (the agent filter) still counts as a click inside its menu.
+document.addEventListener('click', (e) => { const path = e.composedPath(); for (const m of MENUS) if (!path.includes(m)) m.open = false; });
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
   const m = MENUS.find((x) => x.open);
@@ -829,8 +851,8 @@ document.getElementById('viewSeg').addEventListener('click', (e) => {
 const showSub = document.getElementById('showSub');
 const showIdle = document.getElementById('showIdle');
 const showAgent = document.getElementById('showAgent');
-showSub.addEventListener('change', () => { state.showSub = showSub.checked; store.set('showSub', state.showSub); render(); });
-showIdle.addEventListener('change', () => { state.showIdle = showIdle.checked; store.set('showIdle', state.showIdle); render(); });
+showSub.addEventListener('change', () => { state.showSub = showSub.checked; store.set('showSub', state.showSub); renderNow(); });
+showIdle.addEventListener('change', () => { state.showIdle = showIdle.checked; store.set('showIdle', state.showIdle); renderNow(); });
 const soundBox = document.getElementById('sound');
 soundBox.addEventListener('change', () => {
   state.sound = soundBox.checked; store.set('sound', state.sound);
@@ -852,10 +874,21 @@ function syncControls() {
   showAgent.checked = state.showAgent;
   document.getElementById('agentBadgeToggle').style.display = view === 'office' ? '' : 'none';
   popout?.sync(PIP, view);
-  if (!window.Notification) notifyBtn.style.display = 'none';
-  else if (Notification.permission === 'granted') { notifyBtn.textContent = L.notifyOn; notifyBtn.disabled = true; }
+  // On only when both the switch and the browser allow it; blocked shows how to unblock.
+  const perm = window.Notification ? Notification.permission : 'unsupported';
+  document.getElementById('notifyToggle').style.display = perm === 'unsupported' ? 'none' : '';
+  notifyBtn.checked = state.notify && perm === 'granted';
+  document.getElementById('notifyNote').hidden = perm !== 'denied';
 }
-notifyBtn.addEventListener('click', () => Notification.requestPermission().then(syncControls));
+notifyBtn.addEventListener('change', async () => {
+  if (notifyBtn.checked && Notification.permission !== 'granted') {
+    // The first time, ask the browser; a refusal leaves the switch off with a hint.
+    try { await Notification.requestPermission(); } catch {}
+  }
+  state.notify = notifyBtn.checked && Notification.permission === 'granted';
+  store.set('notify', notifyBtn.checked);
+  syncControls();
+});
 
 document.addEventListener('click', (e) => {
   const b = e.target.closest('[data-copy]'); if (!b) return;
@@ -957,18 +990,19 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') hideTip();
 // Scenes (3D only): the built-in office plus any installed scene packs.
 const sceneSel = document.getElementById('sceneSeg');
 state.available = [];
+const CHECK = '<svg class="ui-ico chk" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
 // Scene icons are drawn, one per known pack; any other pack gets a map.
-const SCENE_PATHS = {
-  office: '<rect x="5" y="3.2" width="14" height="17.6" rx="1.6"/><path d="M9 7.2h1.8M13.2 7.2H15M9 10.8h1.8M13.2 10.8H15M9 14.4h1.8M13.2 14.4H15M10.4 20.8v-3h3.2v3"/>',
-  graveyard: '<path d="M12 7.2c-4.9 0-8 2.7-8 6.6S7.1 20.5 12 20.5s8-2.8 8-6.7-3.1-6.6-8-6.6z"/><path d="M12 7.2c-1.9 1.9-1.9 11.4 0 13.3M12 7.2c1.9 1.9 1.9 11.4 0 13.3M12 7.2c0-2 .8-3.2 2.4-3.8"/>',
-  pirate: '<path d="M3.5 15.5h17l-2.3 4.3H5.8z"/><path d="M12 3.5v12M12 4.5l5.8 8.3H12M12 6.8L7 12.8h5"/>',
-  cafe: '<path d="M5 9h11v5a5 5 0 0 1-5 5h-1a5 5 0 0 1-5-5z"/><path d="M16 10.5h1.4a2.4 2.4 0 0 1 0 4.8H16M8.5 3.5c-.8 1 .8 2 0 3M11.8 3.5c-.8 1 .8 2 0 3"/>',
-  station: '<path d="M12 2.8c3.6 1.9 5.6 5.6 5.6 9.6l-1.9 3.3H8.3l-1.9-3.3c0-4 2-7.7 5.6-9.6z"/><circle cx="12" cy="9.8" r="1.9"/><path d="M9.6 18.6l-.9 2.3M14.4 18.6l.9 2.3M12 18.8v2.6"/>',
-  castle: '<path d="M4 20.5V9.5h2.8V6.8h2.4v2.7h1.6V6.8h2.4v2.7h1.6V6.8h2.4v2.7H20v11z"/><path d="M10 20.5v-4.2a2 2 0 0 1 4 0v4.2"/>',
-  map: '<path d="M3.5 6.5l5.5-2.5 6 2.5 5.5-2.5v13.5l-5.5 2.5-6-2.5-5.5 2.5z"/><path d="M9 4v13.5M15 6.5V20"/>',
+const SCENE_ART = {
+  office: '<rect x="4.5" y="3" width="15" height="18.5" rx="2" fill="#7b93b8"/><rect x="4.5" y="3" width="15" height="3" rx="1.5" fill="#5f7699"/><g fill="#dbe8fb"><rect x="7" y="8" width="3" height="2.4" rx=".5"/><rect x="14" y="8" width="3" height="2.4" rx=".5"/><rect x="7" y="12" width="3" height="2.4" rx=".5"/><rect x="14" y="12" width="3" height="2.4" rx=".5"/></g><rect x="10.3" y="16" width="3.4" height="5.5" rx=".6" fill="#3f4e66"/>',
+  graveyard: '<path d="M12 7.4c-5.1 0-8.4 2.8-8.4 6.9S6.9 21 12 21s8.4-2.6 8.4-6.7-3.3-6.9-8.4-6.9z" fill="#ff8a2a"/><path d="M12 7.4c-2 1.9-2.2 11.6 0 13.6M12 7.4c2 1.9 2.2 11.6 0 13.6" fill="none" stroke="#e0661a" stroke-width="1.1"/><path d="M11 7.6c.1-2.1.9-3.6 2.7-4.3l.8 1.1c-1.2.6-1.7 1.7-1.6 3.2z" fill="#4f8a3a"/><path d="M8 12.3l1.8-1.6 1.1 1.9zM16 12.3l-1.8-1.6-1.1 1.9zM8.3 15.2c1 1.9 6.4 1.9 7.4 0-1.1.5-2 .8-3.7.8s-2.6-.3-3.7-.8z" fill="#5a2a10"/>',
+  pirate: '<path d="M2.5 17.2c1.6 1.3 3.2 1.3 4.8 0s3.2-1.3 4.7 0 3.2 1.3 4.8 0 3.1-1.3 4.7 0V22h-19z" fill="#3d9ad6"/><path d="M4 14h16l-2.4 4.2H6.4z" fill="#8b5636"/><rect x="11.3" y="3" width="1.4" height="11.2" fill="#5a3a24"/><path d="M12.7 4.2c3 1.4 5.2 4.4 5.8 8.3h-5.8z" fill="#f6f1e5"/><path d="M11.3 5.6c-2.4 1.3-4 3.7-4.5 6.9h4.5z" fill="#e8e0cf"/><path d="M12.7 3h4l-1 1.1 1 1.1h-4z" fill="#222"/>',
+  cafe: '<path d="M5 10h12v5.5A5.5 5.5 0 0 1 11.5 21h-1A5.5 5.5 0 0 1 5 15.5z" fill="#f4ead9"/><ellipse cx="11" cy="10.2" rx="6" ry="1.5" fill="#7a4a2e"/><path d="M17 11.4h1.2a2.6 2.6 0 0 1 0 5.2H17" fill="none" stroke="#f4ead9" stroke-width="1.8"/><path d="M8.4 3.5c-1 1.2 1 2.3 0 3.6M11.8 3.5c-1 1.2 1 2.3 0 3.6" fill="none" stroke="#b9a48e" stroke-width="1.4" stroke-linecap="round"/>',
+  station: '<path d="M12 2.5c3.6 2 5.4 5.7 5.4 9.9l-1.8 3.4H8.4l-1.8-3.4c0-4.2 1.8-7.9 5.4-9.9z" fill="#e9edf3"/><circle cx="12" cy="9.6" r="2.3" fill="#3d9ad6" stroke="#9aa6b5" stroke-width="1"/><path d="M6.7 12.6l-2.2 3.5 3.6-.3zM17.3 12.6l2.2 3.5-3.6-.3z" fill="#e2574c"/><path d="M9.6 15.8h4.8L12 21.6z" fill="#ffb24a"/><path d="M10.7 15.8h2.6L12 19.4z" fill="#ff6a2a"/>',
+  castle: '<path d="M3.5 21V9.5h3V7h2.2v2.5h1.6V7h3.4v2.5h1.6V7h2.2v2.5h3V21z" fill="#aab0bb"/><path d="M3.5 9.5h17V11h-17z" fill="#8d94a1"/><path d="M9.6 21v-4.2a2.4 2.4 0 0 1 4.8 0V21z" fill="#6b4a33"/><rect x="11.5" y="2" width="1" height="5" fill="#5a3a24"/><path d="M12.5 2.2h4l-1.2 1.3 1.2 1.3h-4z" fill="#e2574c"/>',
+  map: '<path d="M3 6.5l5.8-2.5 6.4 2.5L21 4v13.5L15.2 20l-6.4-2.5L3 20z" fill="#ecdcb4"/><path d="M8.8 4v13.5M15.2 6.5V20" stroke="#cdb98a" stroke-width="1"/><path d="M6 15l2.5-3 3 2 2.5-4 3 2" fill="none" stroke="#e2574c" stroke-width="1.3" stroke-dasharray="1.6 1.4" stroke-linecap="round"/>',
 };
 const SCENE_THUMBS = new Set(['office', 'graveyard', 'pirate', 'cafe', 'station', 'castle']);
-const sceneIcon = (id) => `<svg class="ui-ico" viewBox="0 0 24 24" aria-hidden="true">${SCENE_PATHS[id] || SCENE_PATHS.map}</svg>`;
+const sceneIcon = (id) => `<svg class="scene-art" viewBox="0 0 24 24" aria-hidden="true">${SCENE_ART[id] || SCENE_ART.map}</svg>`;
 const DOWNLOAD = '<svg class="ui-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/></svg>';
 function renderSceneSel() {
   const name = (x) => (x.name && (x.name[langCode] || x.name.en)) || x.id;
@@ -978,7 +1012,7 @@ function renderSceneSel() {
     `<button data-v="${esc(v)}" class="${v === current ? 'on' : ''}" aria-pressed="${v === current}"${title ? ` title="${esc(title)}"` : ''}>${label}</button>`;
   const card = (id, v, label, sub, title) => btn(v,
     `<span class="thumb">${SCENE_THUMBS.has(id) ? `<img src="/assets/scenes/${id}.jpg" alt="" loading="lazy">` : sceneIcon(id)}</span>` +
-    `<span class="nm">${sceneIcon(id)}<span>${label}</span></span>${sub ? `<small>${sub}</small>` : ''}`, title);
+    `<span class="lbl">${label}</span>${sub ? `<small>${sub}</small>` : ''}${CHECK}`, title);
   sceneSel.innerHTML = card('office', 'office', esc(L.office)) +
     state.scenes.map((x) => card(x.id, x.id, esc(name(x)), '', x.credits || '')).join('') +
     state.available.map((x) => card(x.id, `dl:${x.id}`, esc(name(x)), `${DOWNLOAD}${kb(x.size)}`, `${L.dl} ${kb(x.size)}`)).join('');
@@ -1055,11 +1089,10 @@ loadVersion();
 setInterval(loadVersion, 30 * 60 * 1000);
 
 // Language: a list of the nine translations plus Auto, in a toolbar menu.
-const CHECK = '<svg class="ui-ico chk" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
 function renderLangMenu() {
   const pick = store.get('lang', 'auto');
   document.getElementById('langName').textContent = pick === 'auto' ? L.auto : I18N[pick]?.langName || L.auto;
-  const item = (v, label, sub) => `<button role="option" aria-selected="${v === pick}" data-lang="${v}" class="${v === pick ? 'on' : ''}"><span>${esc(label)}</span>${sub ? `<small>${esc(sub)}</small>` : ''}${CHECK}</button>`;
+  const item = (v, label, sub) => `<button role="option" aria-selected="${v === pick}" data-lang="${v}" class="${v === pick ? 'on' : ''}"><span class="lbl">${esc(label)}</span>${sub ? `<small>${esc(sub)}</small>` : ''}${CHECK}</button>`;
   document.getElementById('langList').innerHTML = item('auto', L.auto, I18N[chooseLangAuto()]?.langName) +
     Object.entries(I18N).map(([k, v]) => item(k, v.langName)).join('');
 }
@@ -1139,13 +1172,18 @@ function renderChips() {
   const agents = [...new Set([...count.keys(), ...state.agents])]
     .sort((a, b) => (order.indexOf(a) + 1 || 99) - (order.indexOf(b) + 1 || 99) || a.localeCompare(b));
   const all = !state.agents.length;
-  const chip = (v, inner, on, name) => `<button class="chip-f${on ? ' on' : ''}" data-v="${esc(v)}" aria-pressed="${on}" title="${esc(name)}" aria-label="${esc(name)}">${inner}</button>`;
-  const html = chip('all', `<span>${esc(L.all)}</span><b>${pool.length}</b>`, all, L.all) + agents.map((a) => {
+  const row = (v, icon, name, n, on) => `<button class="chip-f${on ? ' on' : ''}" data-v="${esc(v)}" aria-pressed="${on}" title="${esc(name)}">` +
+    `<span class="box">${CHECK}</span>${icon}<span class="lbl">${esc(name)}</span><b>${n}</b></button>`;
+  const html = row('all', '', L.all, pool.length, all) + agents.map((a) => {
     const logo = agentLogo(a) || `<span class="ini">${esc((AGENT_NAME[a] || a).slice(0, 2))}</span>`;
-    return chip(a, `${logo}<b>${count.get(a) || 0}</b>`, !all && state.agents.includes(a), AGENT_NAME[a] || a);
+    return row(a, logo, AGENT_NAME[a] || a, count.get(a) || 0, !all && state.agents.includes(a));
   }).join('');
   const box = document.getElementById('agentChips');
   if (box.dataset.html !== html) { box.innerHTML = html; box.dataset.html = html; }
+  // The button says what is shown: All, one or two names, or how many.
+  const names = state.agents.map((a) => AGENT_NAME[a] || a);
+  document.getElementById('agentName').textContent = all ? L.all : names.length <= 2 ? names.join(', ') : `${names.length}`;
+  document.getElementById('agentMenu').classList.toggle('active', !all);
 }
 document.getElementById('agentChips').addEventListener('click', (e) => {
   const b = e.target.closest('.chip-f'); if (!b) return;
@@ -1155,13 +1193,16 @@ document.getElementById('agentChips').addEventListener('click', (e) => {
   const present = new Set(state.data.sessions.map((s) => s.agent));
   if (next.length && [...present].every((a) => next.includes(a))) next = [];
   state.agents = next; store.set('agents', next);
-  syncControls(); render();
+  syncControls(); renderNow();
 });
 
+// Set when the person changes a filter: the list follows at once even under the pointer.
+let rowsNow = false;
+function renderNow() { rowsNow = true; try { render(); } finally { rowsNow = false; } }
 function renderSide() {
+  renderChips();
   if (!state.full) return;
   syncFull();
-  renderChips();
   const now = Date.now() - state.skew;
   const list = visible();
   document.getElementById('sideCount').textContent = list.length;
@@ -1181,7 +1222,7 @@ function renderSide() {
   const html = rows || `<div class="msgs-note">${esc(L.empty)}</div>`;
   // Rows re-sort as statuses change; hold them still while the pointer is on
   // the list so a click lands on the agent you aimed at, and catch up on leave.
-  if (box.dataset.html !== html && box.matches(':hover') && box.dataset.html) { box.dataset.stale = '1'; }
+  if (box.dataset.html !== html && box.matches(':hover') && box.dataset.html && !rowsNow) { box.dataset.stale = '1'; }
   else if (box.dataset.html !== html) {
     box.innerHTML = html; box.dataset.html = html; delete box.dataset.stale;
     box.querySelectorAll('[data-time]').forEach((el) => { const s = list.find((x) => x.key === el.dataset.time); if (s) el.textContent = timeLabel(s, now); });
