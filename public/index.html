@@ -155,7 +155,6 @@
   .ctx.full .bar i { background: var(--error); }
   /* ---- full-screen mode: the office fills the window, agents in a side panel */
   .ui-ico { stroke-width: 1.8; }
-  #fullBtn { display: inline-flex; align-items: center; gap: 6px; }
   .side, .side-tab { display: none; }
   body.full { overflow: hidden; padding: 0; margin: 0; height: 100dvh; }
   body.full .wrap { max-width: none; height: 100dvh; padding: 0; display: flex; flex-direction: column; }
@@ -164,17 +163,32 @@
   body.full .summary { margin-left: 0; flex-wrap: nowrap; }
   body.full .controls { width: auto; flex: 1; padding: 0; border: 0; flex-wrap: nowrap; }
   body.full #viewSeg, body.full .newver { display: none; }
-  body.full #officeWrap { position: relative; flex: 1; min-height: 0; margin-right: var(--side, 340px); transition: margin-right .2s ease; }
+  /* Only the panel slides; the office resizes once (at once when opening, after
+     the slide when closing), because resizing the canvas every frame blanks it. */
+  body.full #officeWrap { position: relative; flex: 1; min-height: 0; margin-right: var(--side, 340px); }
+  body.full.side-closed #officeWrap { transition: margin-right 0s .32s; }
   body.full .office { height: 100%; min-height: 0; border: 0; border-radius: 0; }
   body.full .legend { position: absolute; left: 12px; bottom: 10px; margin: 0; padding: 6px 10px; border-radius: 10px; background: color-mix(in srgb, var(--panel) 85%, transparent); backdrop-filter: blur(6px); }
   body.full #agentLegend { bottom: 44px; }
   body.full #main { display: none; }
-  body.full .side { display: block; position: fixed; z-index: 15; right: 0; bottom: 0; top: var(--bar, 53px); width: 340px; border-left: 1px solid var(--line); background: var(--panel); transition: transform .2s ease; }
+  body.full .side { display: block; position: fixed; z-index: 15; right: 0; bottom: 0; top: var(--bar, 53px); width: 340px; border-left: 1px solid var(--line); background: var(--panel); transition: transform .32s cubic-bezier(.2, .8, .2, 1), box-shadow .32s; overflow: hidden; }
   body.full.side-closed { --side: 0px; }
-  body.full.side-closed .side { transform: translateX(100%); }
-  body.full.side-closed .side-tab { display: inline-flex; }
+  body.full.side-closed .side { transform: translateX(100%); box-shadow: none; }
+  body.full.side-closed .side-tab { display: inline-flex; animation: tabIn .3s .18s both cubic-bezier(.2, .8, .2, 1); }
+  @keyframes tabIn { from { opacity: 0; transform: translateX(12px); } }
   .side-tab { position: fixed; z-index: 15; right: 12px; top: calc(var(--bar, 53px) + 12px); align-items: center; gap: 6px; padding: 7px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel); color: var(--ink); font: 600 13px inherit; cursor: pointer; box-shadow: 0 4px 16px #0002; }
-  .side-pane { position: absolute; inset: 0; display: flex; flex-direction: column; }
+  .side-pane { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--panel); transition: transform .34s cubic-bezier(.2, .8, .2, 1), opacity .34s; }
+  /* Layer two slides in over the list; the list eases left and fades. */
+  #sideDetail { transform: translateX(100%); }
+  .side.detail #sideDetail { transform: none; }
+  .side.detail #sideList { transform: translateX(-22%); opacity: 0; }
+  .side.opening .srow, .side.entering #detailBody > * { animation: rowIn .38s both cubic-bezier(.2, .8, .2, 1); animation-delay: calc(var(--i, 0) * 28ms + 80ms); }
+  .side.entering #detailBody > * { animation-delay: 140ms; }
+  @keyframes rowIn { from { opacity: 0; transform: translateX(14px); } }
+  @media (prefers-reduced-motion: reduce) {
+    body.full.side-closed #officeWrap, .side, .side-pane { transition: none; }
+    .side.opening .srow, .side.entering #detailBody > *, body.full.side-closed .side-tab { animation: none; }
+  }
   .side-head { flex: none; display: flex; align-items: center; gap: 8px; padding: 12px 12px 10px 16px; border-bottom: 1px solid var(--line); font-size: 14px; }
   #detailTitle { display: flex; align-items: center; gap: 7px; }
   .side-head b { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -216,9 +230,9 @@
   @media (max-width: 760px) {
     body.full .side { width: min(340px, 88vw); }
     body.full #officeWrap { margin-right: 0; }
-    body.full h1, body.full .summary, body.full #fullLabel { display: none; }
-    body.full .controls { min-width: 0; overflow-x: auto; scrollbar-width: none; }
-    body.full .controls::-webkit-scrollbar { display: none; }
+    body.full h1, body.full .summary { display: none; }
+    body.full header { flex-wrap: wrap; }
+    body.full .controls { flex-wrap: wrap; row-gap: 6px; }
   }
   .stuck { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--error); white-space: nowrap; }
   .ui-ico { width: 14px; height: 14px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
@@ -322,7 +336,6 @@
       </div>
       <span class="toolbar-space" aria-hidden="true"></span>
       <button class="btn" id="pipBtn" hidden></button>
-      <button class="btn" id="fullBtn" aria-pressed="false"><svg class="ui-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><span id="fullLabel"></span></button>
       <details class="settings" id="todayMenu">
         <summary class="btn" aria-controls="todayPanel"><svg class="ui-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 20.5h17"/><rect x="5" y="11" width="3.2" height="7" rx="1"/><rect x="10.4" y="6" width="3.2" height="12" rx="1"/><rect x="15.8" y="13.5" width="3.2" height="4.5" rx="1"/></svg><span data-t="today"></span> <span class="today-tokens" id="todayTokens"></span></summary>
         <div class="settings-panel today-panel" id="todayPanel"></div>
@@ -375,7 +388,7 @@
         <button class="icon-btn" id="sideHide"><svg class="ui-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5L21 12l-6.5 6.5M3 12h17"/></svg></button></div>
       <div class="side-body" id="sideRows"></div>
     </div>
-    <div class="side-pane" id="sideDetail" hidden>
+    <div class="side-pane" id="sideDetail" inert>
       <div class="side-head"><button class="icon-btn" id="sideBack"><svg class="ui-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg></button><b id="detailTitle"></b></div>
       <div class="side-body" id="detailBody"></div>
     </div>
@@ -428,7 +441,7 @@ const store = (() => {
   return { get, set };
 })();
 
-const PREF_DEFAULTS = { view: 'office', quality: 'mid', scene: 'office', agent: 'all', showSub: false, showIdle: false, showAgent: true, sound: false, full: true, side: true, lang: 'auto' };
+const PREF_DEFAULTS = { view: 'office', quality: 'mid', scene: 'office', agent: 'all', showSub: false, showIdle: false, showAgent: true, sound: false, side: true, lang: 'auto' };
 function validPreference(k, v) {
   if (!Object.hasOwn(PREF_DEFAULTS, k)) return false;
   if (typeof PREF_DEFAULTS[k] === 'boolean') return typeof v === 'boolean';
@@ -461,6 +474,8 @@ if (PIP) document.body.classList.add('pip');
 
 const state = {
   ...readPreferences(),
+  // The dashboard is always the full-window office with the agent panel; the pop-out keeps its compact views.
+  full: !PIP,
   scenes: [],
   data: { now: Date.now(), sessions: [] },
   skew: 0,
@@ -637,7 +652,7 @@ function render() {
     .map(agent => `<span>${agentLogo(agent)}${esc(AGENT_NAME[agent])}</span>`).join('');
   if (legend.innerHTML !== labels) legend.innerHTML = labels;
   legend.hidden = !state.showAgent || !labels;
-  document.getElementById('idleToggle').style.display = officeMode ? 'none' : '';
+  document.getElementById('idleToggle').style.display = officeMode && !state.full ? 'none' : '';
   if (poppedOut) {
     document.getElementById('officeWrap').style.display = 'none';
     main.innerHTML = `<div class="empty">${esc(L.pipOn)}</div>`;
@@ -787,10 +802,11 @@ showAgent.addEventListener('change', () => { state.showAgent = showAgent.checked
 const notifyBtn = document.getElementById('notify');
 function syncControls() {
   document.querySelectorAll('#agentSeg button').forEach((b) => b.classList.toggle('on', b.dataset.v === state.agent));
+  const view = state.full ? 'office' : state.view;
   document.querySelectorAll('#viewSeg button').forEach((b) => b.classList.toggle('on', b.dataset.v === state.view));
   document.querySelectorAll('#qualSeg button').forEach((b) => b.classList.toggle('on', b.dataset.v === state.quality));
-  document.getElementById('qualSeg').style.display = state.view === 'office' ? '' : 'none';
-  document.getElementById('sceneGroup').hidden = state.view !== 'office' || state.quality !== 'high';
+  document.getElementById('qualSeg').style.display = view === 'office' ? '' : 'none';
+  document.getElementById('sceneGroup').hidden = view !== 'office' || state.quality !== 'high';
   const activeFilter = document.getElementById('activeFilter');
   activeFilter.hidden = state.agent === 'all';
   activeFilter.textContent = AGENT_NAME[state.agent] || '';
@@ -799,8 +815,8 @@ function syncControls() {
   showIdle.checked = state.showIdle;
   soundBox.checked = state.sound;
   showAgent.checked = state.showAgent;
-  document.getElementById('agentBadgeToggle').style.display = state.view === 'office' ? '' : 'none';
-  popout?.sync(PIP, state.view);
+  document.getElementById('agentBadgeToggle').style.display = view === 'office' ? '' : 'none';
+  popout?.sync(PIP, view);
   if (!window.Notification) notifyBtn.style.display = 'none';
   else if (Notification.permission === 'granted') { notifyBtn.textContent = L.notifyOn; notifyBtn.disabled = true; }
 }
@@ -1018,7 +1034,6 @@ scenesReady.then(() => makeOffice());
 connect();
 // ---- full screen: the office fills the window; agents and their recent
 // conversation live in a side panel (list first, one agent on click).
-const fullBtn = document.getElementById('fullBtn');
 const sideEl = document.getElementById('side');
 let sel = null;              // key of the agent open in the panel
 let convo = { key: null, at: null, messages: null, private: false, busy: false };
@@ -1030,33 +1045,21 @@ function hhmm(ms) {
   if (!ms) return '';
   return new Date(ms).toLocaleTimeString(langCode || undefined, { hour: '2-digit', minute: '2-digit' });
 }
-function setFull(on, user) {
-  state.full = on; store.set('full', on);
-  document.body.classList.toggle('full', on);
-  if (on && state.view !== 'office') { state.view = 'office'; store.set('view', 'office'); syncControls(); }
-  // On a phone the panel would cover the office, so it starts folded away.
-  if (on && user && matchMedia('(max-width: 760px)').matches) setSide(false);
-  // Browser full screen needs a click or key press, so only when the person asked.
-  if (user) {
-    try {
-      if (on && !document.fullscreenElement) document.documentElement.requestFullscreen?.().catch(() => {});
-      if (!on && document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
-    } catch {}
-  }
-  if (!on) closeDetail();
-  measureBar(); syncFull(); render();
-}
-function setSide(open) {
-  state.side = open; store.set('side', open);
+function setSide(open, remember = true) {
+  state.side = open;
+  if (remember) store.set('side', open);
   document.body.classList.toggle('side-closed', !open);
+  if (open) {
+    // Rows slide in one after another each time the panel opens.
+    sideEl.classList.remove('opening'); void sideEl.offsetWidth; sideEl.classList.add('opening');
+    clearTimeout(setSide.t); setSide.t = setTimeout(() => sideEl.classList.remove('opening'), 900);
+  }
 }
 function measureBar() {
   const h = document.querySelector('header').getBoundingClientRect().height;
   document.documentElement.style.setProperty('--bar', `${Math.round(h)}px`);
 }
 function syncFull() {
-  fullBtn.setAttribute('aria-pressed', state.full);
-  document.getElementById('fullLabel').textContent = state.full ? L.exitFull : L.full;
   document.getElementById('sideTitle').textContent = L.agentsTitle;
   document.getElementById('sideHide').title = L.hidePanel;
   document.getElementById('sideHide').setAttribute('aria-label', L.hidePanel);
@@ -1075,32 +1078,38 @@ function renderSide() {
   const rows = GROUPS.map((g) => {
     const items = list.filter((s) => g.match(s.status));
     if (!items.length) return '';
-    return `<div class="side-group">${esc(L[g.key])} · ${items.length}</div>` + items.map((s) => {
+    return `<div class="side-group">${esc(L[g.key])} · ${items.length}</div>` + items.map((s, i) => {
       const act = s.stuck ? L.stuck(s.stuck) : s.activity || (s.status === 'done' && s.reply) || s.title || '';
-      return `<button class="srow${s.subagent ? ' sub' : ''}" data-key="${esc(s.key)}" style="--s:${statusColor(s.status)}">
+      return `<button class="srow${s.subagent ? ' sub' : ''}" data-key="${esc(s.key)}" style="--s:${statusColor(s.status)};--i:${Math.min(i + (g.key === 'working' ? 3 : g.key === 'finished' ? 8 : 0), 14)}">
         ${agentLogo(s.agent) || '<span></span>'}<span class="nm">${esc(s.project || AGENT_NAME[s.agent] || s.agent)}</span>
-        <span class="tm" data-time="${esc(s.key)}">${esc(timeLabel(s, now))}</span>
+        <span class="tm" data-time="${esc(s.key)}"></span>
         <span class="st"><i></i><b>${esc(L[s.status] || s.status)}</b>${act ? `<span>${esc(act)}</span>` : ''}</span></button>`;
     }).join('');
   }).join('');
   const box = document.getElementById('sideRows');
   const html = rows || `<div class="msgs-note">${esc(L.empty)}</div>`;
-  if (box.dataset.html !== html) { box.innerHTML = html; box.dataset.html = html; }
+  if (box.dataset.html !== html) {
+    box.innerHTML = html; box.dataset.html = html;
+    box.querySelectorAll('[data-time]').forEach((el) => { const s = list.find((x) => x.key === el.dataset.time); if (s) el.textContent = timeLabel(s, now); });
+  }
   if (sel) renderDetail();
 }
 
 function openDetail(key) {
   sel = key;
   if (!state.side) setSide(true);
-  document.getElementById('sideList').hidden = true;
-  document.getElementById('sideDetail').hidden = false;
+  sideEl.classList.add('detail', 'entering');
+  clearTimeout(openDetail.t); openDetail.t = setTimeout(() => sideEl.classList.remove('entering'), 800);
+  document.getElementById('sideList').inert = true;
+  document.getElementById('sideDetail').inert = false;
   if (convo.key !== key) convo = { key, at: null, messages: null, private: false, busy: false };
   renderDetail(true);
 }
 function closeDetail() {
   sel = null;
-  document.getElementById('sideList').hidden = false;
-  document.getElementById('sideDetail').hidden = true;
+  sideEl.classList.remove('detail');
+  document.getElementById('sideList').inert = false;
+  document.getElementById('sideDetail').inert = true;
 }
 
 function renderDetail(scrollDown) {
@@ -1126,14 +1135,16 @@ function renderDetail(scrollDown) {
       <dt>${esc(L.modelL)}</dt><dd>${esc(s.model || '—')}${s.subagent ? ` · ${esc(L.sub)}` : ''}</dd>
       <dt>${esc(L.folderL)}</dt><dd class="mono" title="${esc(s.cwd || '')}">${esc(s.cwd || '—')}</dd>
       <dt>${esc(L.today)}</dt><dd>${s.today ? `${s.today.turns} ${esc(L.turnsL)} · ${fmtTokens(s.today.tokens)} ${esc(L.tokensL)}` : '—'}</dd>
-      <dt></dt><dd data-time="${esc(s.key)}">${esc(timeLabel(s, now))}</dd>
+      <dt></dt><dd data-time="${esc(s.key)}"></dd>
     </dl>
     ${contextBar(s.context)}
     ${resume ? `<div class="dactions"><button class="copy" data-copy="${esc(resume)}">${L.copy}</button></div>` : ''}
     <div class="side-sec">${esc(L.recent)}</div>
     ${msgs}`;
+  // The turn timer ticks on its own (tickTimes), so the panel only redraws when something changed.
   if (body.dataset.html !== html) {
     body.innerHTML = html; body.dataset.html = html;
+    const t = body.querySelector('[data-time]'); if (t) t.textContent = timeLabel(s, now);
     if (scrollDown || nearBottom) body.scrollTop = body.scrollHeight;
   }
 }
@@ -1154,7 +1165,6 @@ async function loadConvo(s) {
   if (sel === key) renderDetail();
 }
 
-fullBtn.addEventListener('click', () => setFull(!state.full, true));
 document.getElementById('sideHide').addEventListener('click', () => setSide(false));
 document.getElementById('sideTab').addEventListener('click', () => setSide(true));
 document.getElementById('sideBack').addEventListener('click', closeDetail);
@@ -1163,14 +1173,16 @@ document.getElementById('sideRows').addEventListener('click', (e) => {
 });
 document.addEventListener('keydown', (e) => {
   if (e.target.closest?.('input, select, textarea, [contenteditable]') || e.metaKey || e.ctrlKey || e.altKey) return;
-  if ((e.key === 'f' || e.key === 'F') && !PIP) setFull(!state.full, true);
-  else if (e.key === 'Escape' && state.full && sel) closeDetail();
+  if (e.key === 'Escape' && state.full && sel) closeDetail();
 });
 addEventListener('resize', () => state.full && measureBar());
-if (PIP) fullBtn.hidden = true;
-setSide(state.side);
-if (state.full && !PIP) { document.body.classList.add('full'); requestAnimationFrame(measureBar); }
-syncFull();
+if (state.full) {
+  document.body.classList.add('full');
+  requestAnimationFrame(measureBar);
+  // On a phone the panel would cover the office, so it starts folded away.
+  setSide(state.side && !matchMedia('(max-width: 760px)').matches, false);
+  syncFull();
+}
 
 setInterval(tickTimes, 1000);
 </script>

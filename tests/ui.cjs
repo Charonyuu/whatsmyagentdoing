@@ -39,6 +39,11 @@ async function badges(target){
   office.frame(performance.now());office.agentBadge=original;return found;
  });
 }
+// The agent panel replaced the list view on the dashboard.
+async function rowKeys(t){return t.locator('#side .srow').evaluateAll(rows=>rows.map(r=>r.dataset.key))}
+async function openAgent(t,key){await t.click(`#side .srow[data-key="${key}"]`);await t.waitForFunction(()=>document.getElementById('side').classList.contains('detail'))}
+async function backToList(t){await t.click('#sideBack');await t.waitForFunction(()=>!document.getElementById('side').classList.contains('detail'))}
+async function resumeOf(t,key){await openAgent(t,key);const b=t.locator('#detailBody .copy');const v=(await b.count())?await b.getAttribute('data-copy'):null;await backToList(t);return v}
 async function drawnLogos(target) {
  await target.waitForFunction(()=>Object.values(OFFICE_AGENT_BADGES).every(b=>b.image.complete&&b.image.naturalWidth>0));
  return target.evaluate(()=>{
@@ -76,18 +81,18 @@ async function drawnLogos(target) {
   assert.equal(await page.evaluate(()=>state.full&&document.body.classList.contains('full')),true,'full screen is the default');
   assert.equal(await page.locator('#side .srow').count()>0,true,'the agent panel lists the team');
   check('full screen with the agent panel is the default');
-  // The checks below cover the regular layout, which people get after leaving full screen.
-  await page.evaluate(()=>localStorage.setItem('wmad.full','false'));await page.reload();await stable(page);
+  assert.equal(await page.locator('#fullBtn').count(),0,'there is no way back to the old layout');
   assert.equal(await page.locator('h1 [data-t]').innerText(),"What's my agent doing");
   assert.equal(await page.evaluate(()=>state.showSub),false,'subagents stay hidden by default for every provider');
   await openSettings(page);await page.check('#showSub');await page.keyboard.press('Escape');
   const ompChild={key:'omp:child',id:'child',agent:'omp',project:'omp-project',cwd:'/demo/omp-project',title:'Worker > Child',status:'thinking',subagent:true,parentId:'real-omp-id',resumeCommand:null,lastEventAt:Date.now(),turnStartedAt:Date.now()};
   await page.evaluate(s=>onData({now:Date.now(),sessions:s}),[...sessions,ompChild]);
-  await page.click('#viewSeg [data-v=list]');
-  assert.equal(await page.locator('.card[data-key="omp:child"] .title').innerText(),'Worker > Child');
-  assert.equal(await page.locator('.card[data-key="omp:child"] .copy').count(),0);
+  await openAgent(page,'omp:child');
+  assert.equal(await page.locator('#detailBody .dtitle').innerText(),'Worker > Child');
+  assert.equal(await page.locator('#detailBody .copy').count(),0);
+  await backToList(page);
   assert.equal(await page.evaluate(()=>officeOpts.label(state.data.sessions.find(s=>s.key==='omp:child'))),'Worker > Child');
-  await page.click('#viewSeg [data-v=office]');await page.evaluate(s=>onData({now:Date.now(),sessions:s}),sessions);
+  await page.evaluate(s=>onData({now:Date.now(),sessions:s}),sessions);
   await openSettings(page);await page.uncheck('#showSub');await page.keyboard.press('Escape');
   check('OMP subagents show their name without an invalid Resume command');
   await page.evaluate(()=>{window.__chimes=[];chime=k=>window.__chimes.push(k);state.sound=true;});
@@ -98,13 +103,11 @@ async function drawnLogos(target) {
     onData({now:Date.now(),sessions:s.map(x=>x.key===b.key?{...b,status:'tool',stuck:12}:x)});
     onData({now:Date.now(),sessions:s.map(x=>x.key===b.key?{...b,status:'tool',stuck:13}:x)});},[sessions,lead]);
   assert.deepEqual(await page.evaluate(()=>window.__chimes),['attention','attention'],'one chime for waiting, one when it first looks stuck');
-  await page.click('#viewSeg [data-v=list]');
-  assert.match(await page.locator(`.card[data-key="${lead.key}"] .stuck`).innerText(),/13/);
-  assert.equal(await page.locator(`.card[data-key="${lead.key}"]`).evaluate(e=>e.classList.contains('is-stuck')),true);
+  assert.match(await page.locator(`#side .srow[data-key="${lead.key}"] .st`).innerText(),/13/);
+  await openAgent(page,lead.key);assert.match(await page.locator('#detailBody .stuck').innerText(),/13/);await backToList(page);
   await page.evaluate(s=>{state.sound=false;onData({now:Date.now(),sessions:s})},sessions);
-  await page.click('#viewSeg [data-v=office]');
   assert.equal(await page.locator('#sound').isChecked(),false,'sound is off by default');
-  check('needs-you and stuck alerts chime once, and stuck sessions are flagged in the list');
+  check('needs-you and stuck alerts chime once, and stuck sessions are flagged in the agent panel');
   await page.evaluate(s=>onData({now:Date.now(),sessions:s.map((x,i)=>({...x,context:i===0?{used:180000,window:200000}:null})),
     summary:JSON.parse('{"day":"d","turns":12,"tokens":2460000,"agents":2,"byAgent":{"claude":{"sessions":1,"turns":8,"tokens":2000000},"codex":{"sessions":1,"turns":4,"tokens":460000}},"projects":{"__proto__":8,"api":4}}')}),sessions);
   assert.equal(await page.locator('#todayTokens').innerText(),'2.46M');
@@ -113,27 +116,29 @@ async function drawnLogos(target) {
   assert.match(await page.locator('#todayPanel').innerText(),/12[\s\S]*2\.46M[\s\S]*__proto__/);
   await page.keyboard.press('Escape');
   assert.equal(await page.locator('#todayPanel').isVisible(),false);
-  await page.click('#viewSeg [data-v=list]');
-  assert.equal(await page.locator('.ctx.full').count(),1,'a 90% context fill is shown as nearly full');
-  await page.click('#viewSeg [data-v=office]');await page.evaluate(s=>onData({now:Date.now(),sessions:s}),sessions);
+  await openAgent(page,sessions[0].key);
+  assert.equal(await page.locator('#detailBody .ctx.full').count(),1,'a 90% context fill is shown as nearly full');
+  await backToList(page);
+  await page.evaluate(s=>onData({now:Date.now(),sessions:s}),sessions);
   check('the Today panel and context bars show usage and close with Escape');
   assert.equal(await page.locator('#showAgent').isChecked(),true);
   assert.deepEqual([...new Set(await badges(page))].sort(),['Cl','Cx','G','OMP']);
   assert.deepEqual(await drawnLogos(page),['claude','codex','gemini','omp']);
   assert.equal(await page.locator('#agentLegend img').evaluateAll(imgs=>imgs.length===4&&imgs.every(img=>img.complete&&img.naturalWidth>0)),true);
   check('all four agent icons load and show in 2D and the legend; OMP uses a neutral mark');
-  await openSettings(page);await page.click('#agentSeg [data-v=omp]');
-  await page.click('#viewSeg [data-v=list]');
-  assert.equal(await page.locator('.card').count(),1);
-  assert.equal(await page.locator('.card .agent.omp').innerText(),'OMP');
-  assert.equal(await page.locator('.card .copy').getAttribute('data-copy'),sessions.find(s=>s.agent==='omp').resumeCommand);
+  await openSettings(page);await page.click('#agentSeg [data-v=omp]');await page.keyboard.press('Escape');
+  assert.deepEqual(await rowKeys(page),['omp:four']);
+  assert.equal(await page.locator('#side .srow img').getAttribute('src'),'/assets/agents/omp.svg');
+  await openAgent(page,'omp:four');
+  assert.equal(await page.locator('#detailBody .copy').getAttribute('data-copy'),sessions.find(s=>s.agent==='omp').resumeCommand);
   await page.evaluate(()=>{window.__copied=null;Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.__copied=text}}})});
-  await page.click('.card .copy');
+  await page.click('#detailBody .copy');
   assert.equal(await page.evaluate(()=>window.__copied),sessions.find(s=>s.agent==='omp').resumeCommand);
+  await backToList(page);
   await page.reload();await page.waitForFunction(()=>state.loaded);
-  assert.equal(await page.evaluate(()=>state.agent),'omp');assert.equal(await page.locator('.card').count(),1);
-  check('OMP filter, list, Resume copy and saved filter work');
-  await openSettings(page);await page.click('#agentSeg [data-v=all]');await page.click('#viewSeg [data-v=office]');
+  assert.equal(await page.evaluate(()=>state.agent),'omp');assert.deepEqual(await rowKeys(page),['omp:four']);
+  check('OMP filter, agent panel, Resume copy and saved filter work');
+  await openSettings(page);await page.click('#agentSeg [data-v=all]');
   await openSettings(page);await page.check('#showSub');
   assert.equal((await badges(page)).length,6);
   check('2D shows four providers and subagents without duplicate badges');
@@ -223,8 +228,6 @@ async function drawnLogos(target) {
   assert.equal(await fallback.evaluate(()=>__stream.getTracks().every(t=>t.readyState==='ended')),true);
   assert.equal(await fallback.evaluate(()=>document.getElementById('pipVideo').srcObject),null);
   check('video fallback captures 3D + overlay, survives renderer changes and releases media tracks on stop');
-  await fallback.click('#viewSeg [data-v=list]');assert.equal(await fallback.locator('#pipBtn').isVisible(),false);
-  check('view-only fallback is offered only for office mode');
   const compact=await context.newPage();await compact.goto(base+'/?pip=1&view=list');
   await compact.waitForFunction(()=>state.loaded);
   await compact.evaluate(()=>{__events.close();onData({now:Date.now(),sessions:[]})});
@@ -246,30 +249,28 @@ async function drawnLogos(target) {
    {key:'magpie:remote',id:'remote',agent:'magpie',agentName:'Magpie',source:'magpie',status:'idle',lastEventAt:Date.now()},
   ];
   await page.evaluate(s=>onData({now:Date.now(),sessions:s}),magpieSessions);
-  await page.click('#viewSeg [data-v=list]');
-  assert.equal(await page.locator('[data-key="opencode:remote"] .agent').innerText(),'OpenCode');
-  assert.equal(await page.locator('[data-key="opencode:remote"] .copy').count(),0);
-  assert.equal(await page.locator('[data-key="omp:remote"] .copy').count(),0);
-  assert.equal(await page.locator('[data-key="omp:four"] .copy').count(),1);
-  assert.equal(await page.locator('[data-key="claude:one"] .copy').count(),1);
-  await openSettings(page);await page.click('#agentSeg [data-v=opencode]');
-  assert.equal(await page.locator('.card').count(),1);
+  assert.equal(await page.locator('#side .srow[data-key="opencode:remote"] .nm').innerText(),'OpenCode');
+  assert.equal(await resumeOf(page,'opencode:remote'),null);
+  assert.equal(await resumeOf(page,'omp:remote'),null);
+  assert.ok(await resumeOf(page,'omp:four'));
+  assert.ok(await resumeOf(page,'claude:one'));
+  await openSettings(page);await page.click('#agentSeg [data-v=opencode]');await page.keyboard.press('Escape');
+  assert.equal(await page.locator('#side .srow').count(),1);
   assert.equal(await page.locator('#activeFilter').innerText(),'OpenCode');
   await page.evaluate(s=>onData({now:Date.now(),sessions:s.map(x=>x.source==='magpie'?{...x,status:'idle'}:x)}),magpieSessions);
-  assert.equal(await page.locator('.card').count(),0);
-  await openSettings(page);await page.check('#showIdle');
-  assert.equal(await page.locator('.card').count(),1);
+  assert.equal(await page.locator('#side .srow').count(),0);
+  await openSettings(page);await page.check('#showIdle');await page.keyboard.press('Escape');
+  assert.equal(await page.locator('#side .srow').count(),1);
   await page.reload();await page.waitForFunction(()=>state.loaded);
   await page.evaluate(s=>{__events.close();onData({now:Date.now(),sessions:s})},magpieSessions);
   assert.equal(await page.evaluate(()=>state.agent),'opencode');
-  await openSettings(page);await page.click('#agentSeg [data-v=all]');
-  await page.click('#viewSeg [data-v=office]');
+  await openSettings(page);await page.click('#agentSeg [data-v=all]');await page.keyboard.press('Escape');
   for (const quality of ['mid','high']) {
    await page.click(`#qualSeg [data-v=${quality}]`);
    await page.waitForFunction(q=>officeKind.startsWith(q)&&office.framesShown>4&&(q!=='high'||office.loaded),quality);
    assert.equal(await page.evaluate(()=>office.people.has('opencode:remote')),true);
   }
-  check('Magpie clients reuse list, filters, idle visibility and both offices without invalid resume commands');
+  check('Magpie clients reuse the agent panel, filters, idle visibility and both offices without invalid resume commands');
   const nativeClients = [
    {key:'kimi:one',id:'one',sessionId:'one',agent:'kimi',status:'thinking',cwd:'/demo/kimi'},
    {key:'dsh:two',id:'two',agent:'dsh',status:'waiting',activity:'Shell',cwd:'/demo/dsh'},
@@ -289,19 +290,17 @@ async function drawnLogos(target) {
    assert.equal(await logo.evaluate(img=>img.complete&&img.naturalWidth>0),true);
    assert.equal(await page.locator(`#agentLegend img[src="/assets/agents/${agent}.svg"]`).count(),1);
   }
-  await page.click('#viewSeg [data-v=list]');
-  assert.equal(await page.locator('.card').count(),3);
-  assert.match(await page.locator('[data-key="dsh:two"] .copy').getAttribute('data-copy'),/dsh tui --resume 'two'/);
-  assert.match(await page.locator('[data-key="kimi:one"] .copy').getAttribute('data-copy'),/kimi --session 'one'/);
-  assert.match(await page.locator('[data-key="grok:three"] .copy').getAttribute('data-copy'),/grok --resume 'three'/);
+  assert.equal(await page.locator('#side .srow').count(),3);
+  assert.match(await resumeOf(page,'dsh:two'),/dsh tui --resume 'two'/);
+  assert.match(await resumeOf(page,'kimi:one'),/kimi --session 'one'/);
+  assert.match(await resumeOf(page,'grok:three'),/grok --resume 'three'/);
   await openSettings(page);await page.click('#agentSeg [data-v=kimi] img');
-  assert.equal(await page.locator('.card').count(),1);
+  assert.equal(await page.locator('#side .srow').count(),1);
   assert.equal(await page.locator('#agentLegend img').count(),1);
   assert.equal(await page.locator('#agentLegend img').getAttribute('src'),'/assets/agents/kimi.svg');
   await openSettings(page);await page.check('#showSub');
-  assert.equal(await page.locator('.card').count(),2);
-  await openSettings(page);await page.click('#agentSeg [data-v=all]');
-  await page.click('#viewSeg [data-v=office]');
+  assert.equal(await page.locator('#side .srow').count(),2);
+  await openSettings(page);await page.click('#agentSeg [data-v=all]');await page.keyboard.press('Escape');
   for (const quality of ['mid','high']) {
    await page.click(`#qualSeg [data-v=${quality}]`);
    await page.waitForFunction(q=>officeKind.startsWith(q)&&office.framesShown>4&&(q!=='high'||office.loaded),quality);
@@ -323,16 +322,18 @@ async function drawnLogos(target) {
   check('agent legends follow current sessions and filters, disappear when empty and return without duplicates in 2D/3D');
   for (const colorScheme of ['light','dark']) {
    await page.emulateMedia({colorScheme});
-   await page.click('#viewSeg [data-v=list]');
    await openSettings(page);
    for (const agent of ['kimi','dsh','grok']) {
     const selector=`#agentSeg [data-v="${agent}"] img`;
     const filter=await page.locator(selector).evaluate(img=>getComputedStyle(img).filter);
     assert.equal(filter,colorScheme==='dark'&&agent!=='dsh'?'invert(1)':'none');
    }
-   await screenshot(page,`list-${colorScheme}`);
+   for (const agent of ['kimi','grok']) {
+    const filter=await page.locator(`#side .srow img[src="/assets/agents/${agent}.svg"]`).first().evaluate(img=>getComputedStyle(img).filter);
+    assert.equal(filter,colorScheme==='dark'?'invert(1)':'none');
+   }
+   await screenshot(page,`panel-${colorScheme}`);
    await page.locator('#settingsMenu > summary').press('Escape');
-   await page.click('#viewSeg [data-v=office]');
    for(const quality of ['mid','high']) {
     await page.click(`#qualSeg [data-v=${quality}]`);
     await page.waitForFunction(q=>officeKind.startsWith(q)&&office.framesShown>4&&(q!=='high'||office.loaded),quality);
@@ -340,7 +341,7 @@ async function drawnLogos(target) {
     await screenshot(page,`office-${quality}-${colorScheme}`);
    }
   }
-  check('list, filters, legend and both offices preserve light/dark native logos');
+  check('agent panel, filters, legend and both offices preserve light/dark native logos');
   const fallbackPage=await context.newPage();
   await fallbackPage.route('**/assets/agents/kimi.svg',route=>route.abort());
   await fallbackPage.goto(base);

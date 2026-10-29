@@ -42,7 +42,7 @@ Two looks: **Medium** is a hand-drawn 2D canvas (zero dependencies). **High (3D)
 
 **Scenes (3D):** the office is built in; other scenes are small downloadable packs (Haunted Hollow, Pirate Cove, Café, Space Station and Castle are 100–230 KB each), fetched only when you pick one from the scene buttons, run `--scene pirate`, or ask your agent for it. Packs are data only (a manifest plus Kenney CC0 models) and are checked against a pinned SHA-256 before they're installed into `~/.whatsmyagentdoing/scenes`.
 
-Prefer plain cards? Switch to **List**. Either way, each session updates in real time:
+Each session updates in real time:
 
 | Status | Meaning |
 |---|---|
@@ -55,13 +55,13 @@ Prefer plain cards? Switch to **List**. Either way, each session updates in real
 
 The UI speaks English, 繁體中文, 简体中文, 日本語, 한국어, Español, Français, Deutsch and Português. By default it uses the language you write your prompts in (falling back to your browser's); pick one from the 🌐 menu to override.
 
-In list view, sessions are grouped into **Needs you → Working → Finished**, with a live timer for the current turn, a copy button for the resume command (`claude --resume …` / `codex resume …` / `copilot --resume …`), optional browser notifications when an agent finishes, and filters per agent and for subagents. The tab title shows how many agents are working.
+In the agent panel, sessions are grouped into **Needs you → Working → Finished**, with a live timer for the current turn, a copy button for the resume command (`claude --resume …` / `codex resume …` / `copilot --resume …`), optional browser notifications when an agent finishes, and filters per agent and for subagents. The tab title shows how many agents are working.
 
 **Alerts:** when an agent needs you (a question, an approval or an error), the page can send a browser notification and, with **Settings → Sound**, play a short chime. A tool that runs for more than 10 minutes, or thinking that goes silent for 8, is flagged as *No progress*, so a hung command or a lost prompt doesn't cost you an hour.
 
 **Today:** the Today panel adds up today's turns and tokens by agent and by project, from Claude Code and Codex usage records since local midnight. Each card also shows how full the model's context window is (amber from 60%, red from 85%). Very large logs are read head + tail, so their counts can be low.
 
-**Full screen (default):** the office fills the window, with the agents listed in a side panel grouped by Needs you → Working → Finished. Click an agent there, or a person in the office, to open its status, model, folder, usage, resume command and recent conversation — your messages, its replies and the tools it ran, read from the end of its own log (full text for Claude Code and Codex). The panel folds away with its arrow; **Exit full screen** (or `F`) returns to the regular layout, and the choice is remembered. With `--private` the conversation is never sent to the page.
+**Layout:** the office fills the window, with the agents listed in a side panel grouped by Needs you → Working → Finished. Click an agent there, or a person in the office, to open its status, model, folder, usage, resume command and recent conversation — your messages, its replies and the tools it ran, read from the end of its own log (full text for Claude Code and Codex). The panel slides away with its arrow and comes back from the tab at the top right; on phones it starts folded away. With `--private` the conversation is never sent to the page.
 
 **Agent badges:** in both 2D and 3D, each provider's logo identifies its agents beside their names, including subagents. The same icons appear in the legend, list cards and filters. Open **Settings → Agent badges** to hide the office markers and legend; your choice is saved. Icons are bundled locally, with initials as a fallback if an image cannot load. See [icon sources and attribution](assets/agents/README.md).
 
