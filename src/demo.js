@@ -64,6 +64,12 @@ class DemoWatcher extends EventEmitter {
       offset: (i * 7.3) % 37,
       // A couple of them sometimes stop to ask you something.
       asks: i === 2 || i === 6,
+      history: [
+        { role: 'user', text: prompt, at: now - 900_000 },
+        { role: 'tool', text: TOOLS[agent][0], at: now - 860_000 },
+        { role: 'tool', text: TOOLS[agent][1], at: now - 820_000 },
+        { role: 'assistant', text: REPLIES[i % REPLIES.length], at: now - 780_000 },
+      ],
       // Made-up usage for the Today panel and context bars.
       daily: { day: dayKey(now), turns: 3 + ((i * 5) % 11), tokens: 40_000 + ((i * 73_919) % 410_000) },
       context: 30_000 + ((i * 41_017) % 165_000),
@@ -102,11 +108,21 @@ class DemoWatcher extends EventEmitter {
       s.activity = status === 'tool' ? tools[(cycle * 3 + step + s.offset | 0) % tools.length]
         : status === 'waiting' ? 'AskUserQuestion' : null;
       if (status === 'done') s.reply = REPLIES[(cycle + (s.offset | 0)) % REPLIES.length];
+      // A made-up conversation for the side panel.
+      const say = (role, text) => { s.history.push({ role, text, at: now }); if (s.history.length > 30) s.history.shift(); };
+      if (step === 0) say('user', s.prompt);
+      if (status === 'tool') say('tool', s.activity);
+      if (status === 'done') say('assistant', s.reply);
     }
     if (changed) this.emit('change');
   }
 
   sessions() { return this.list; }
+
+  transcript(key) {
+    const s = this.list.find((x) => `${x.agent}:${x.id}` === key);
+    return s ? s.history.slice() : null;
+  }
 }
 
 module.exports = { DemoWatcher };

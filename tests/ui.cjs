@@ -73,6 +73,11 @@ async function drawnLogos(target) {
   },sessions);
   context.on('page',p=>p.on('pageerror',e=>errors.push(String(e))));
   const page=await context.newPage();await page.goto(base);await stable(page);
+  assert.equal(await page.evaluate(()=>state.full&&document.body.classList.contains('full')),true,'full screen is the default');
+  assert.equal(await page.locator('#side .srow').count()>0,true,'the agent panel lists the team');
+  check('full screen with the agent panel is the default');
+  // The checks below cover the regular layout, which people get after leaving full screen.
+  await page.evaluate(()=>localStorage.setItem('wmad.full','false'));await page.reload();await stable(page);
   assert.equal(await page.locator('h1 [data-t]').innerText(),"What's my agent doing");
   assert.equal(await page.evaluate(()=>state.showSub),false,'subagents stay hidden by default for every provider');
   await openSettings(page);await page.check('#showSub');await page.keyboard.press('Escape');

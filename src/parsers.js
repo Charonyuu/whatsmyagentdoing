@@ -644,4 +644,4 @@ function applyOMP(s, d) {
   else set(s, 'thinking', null);
 }
 
-module.exports = { dayKey, newSession, applyClaude, applyCodex, applyGemini, applyGeminiDocument, applyCopilot, applyOMP, clean };
+module.exports = { dayKey, newSession, applyClaude, applyCodex, applyGemini, applyGeminiDocument, applyCopilot, applyOMP, clean, describeClaudeTool, describeCodexCall, codexText };

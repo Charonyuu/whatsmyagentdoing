@@ -153,6 +153,73 @@
   .ctx .bar i { display: block; height: 100%; border-radius: 2px; background: var(--done); }
   .ctx.warn .bar i { background: var(--waiting); }
   .ctx.full .bar i { background: var(--error); }
+  /* ---- full-screen mode: the office fills the window, agents in a side panel */
+  .ui-ico { stroke-width: 1.8; }
+  #fullBtn { display: inline-flex; align-items: center; gap: 6px; }
+  .side, .side-tab { display: none; }
+  body.full { overflow: hidden; padding: 0; margin: 0; height: 100dvh; }
+  body.full .wrap { max-width: none; height: 100dvh; padding: 0; display: flex; flex-direction: column; }
+  body.full header { flex-wrap: nowrap; gap: 14px; margin: 0; padding: 8px 14px; border-bottom: 1px solid var(--line); background: var(--panel); }
+  body.full h1 { font-size: 15px; white-space: nowrap; }
+  body.full .summary { margin-left: 0; flex-wrap: nowrap; }
+  body.full .controls { width: auto; flex: 1; padding: 0; border: 0; flex-wrap: nowrap; }
+  body.full #viewSeg, body.full .newver { display: none; }
+  body.full #officeWrap { position: relative; flex: 1; min-height: 0; margin-right: var(--side, 340px); transition: margin-right .2s ease; }
+  body.full .office { height: 100%; min-height: 0; border: 0; border-radius: 0; }
+  body.full .legend { position: absolute; left: 12px; bottom: 10px; margin: 0; padding: 6px 10px; border-radius: 10px; background: color-mix(in srgb, var(--panel) 85%, transparent); backdrop-filter: blur(6px); }
+  body.full #agentLegend { bottom: 44px; }
+  body.full #main { display: none; }
+  body.full .side { display: block; position: fixed; z-index: 15; right: 0; bottom: 0; top: var(--bar, 53px); width: 340px; border-left: 1px solid var(--line); background: var(--panel); transition: transform .2s ease; }
+  body.full.side-closed { --side: 0px; }
+  body.full.side-closed .side { transform: translateX(100%); }
+  body.full.side-closed .side-tab { display: inline-flex; }
+  .side-tab { position: fixed; z-index: 15; right: 12px; top: calc(var(--bar, 53px) + 12px); align-items: center; gap: 6px; padding: 7px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel); color: var(--ink); font: 600 13px inherit; cursor: pointer; box-shadow: 0 4px 16px #0002; }
+  .side-pane { position: absolute; inset: 0; display: flex; flex-direction: column; }
+  .side-head { flex: none; display: flex; align-items: center; gap: 8px; padding: 12px 12px 10px 16px; border-bottom: 1px solid var(--line); font-size: 14px; }
+  #detailTitle { display: flex; align-items: center; gap: 7px; }
+  .side-head b { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .side-count { color: var(--muted); font-size: 12px; }
+  .icon-btn { flex: none; display: grid; place-items: center; width: 30px; height: 30px; border: 1px solid var(--line); border-radius: 8px; background: none; color: var(--muted); cursor: pointer; }
+  .icon-btn:hover { color: var(--ink); }
+  .side-body { flex: 1; overflow-y: auto; overscroll-behavior: contain; padding: 8px 10px 16px; }
+  .side-group { margin: 10px 6px 4px; font-size: 11.5px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  .srow { width: 100%; display: grid; grid-template-columns: 18px 1fr auto; gap: 2px 9px; align-items: center; text-align: left; padding: 9px 10px; border: 0; border-radius: 10px; background: none; color: var(--ink); font: inherit; cursor: pointer; }
+  .srow:hover, .srow:focus-visible { background: color-mix(in srgb, var(--ink) 6%, transparent); outline: none; }
+  .srow .agent-logo { width: 16px; height: 16px; margin: 0; }
+  .srow .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13.5px; font-weight: 600; }
+  .srow .tm { font-size: 11.5px; color: var(--faint); font-variant-numeric: tabular-nums; }
+  .srow .st { grid-column: 2 / 4; display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 12px; color: var(--muted); }
+  .srow .st i { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--s); }
+  .srow .st span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .srow .st b { flex: none; color: var(--s); font-weight: 600; }
+  .srow.sub .nm { font-weight: 500; color: var(--muted); }
+  .dmeta { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 10px 6px 12px; font-size: 12.5px; }
+  .dmeta dt { color: var(--faint); }
+  .dmeta dd { margin: 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .dmeta dd.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px; }
+  .dstatus { display: flex; align-items: center; gap: 7px; margin: 8px 6px 0; font-size: 13px; flex-wrap: wrap; }
+  .dstatus i { width: 8px; height: 8px; border-radius: 50%; background: var(--s); }
+  .dstatus b { color: var(--s); }
+  .dstatus .act { color: var(--muted); }
+  .dtitle { margin: 4px 6px 0; font-size: 13px; color: var(--muted); }
+  .dactions { display: flex; gap: 8px; margin: 0 6px 6px; }
+  .dactions .copy { font-size: 12px; }
+  .side .ctx { margin: 0 6px 10px; }
+  .msgs { display: flex; flex-direction: column; gap: 8px; margin: 6px 4px 0; }
+  .msg { max-width: 92%; padding: 8px 11px; border-radius: 12px; font-size: 13px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .msg.user { align-self: flex-end; background: color-mix(in srgb, var(--tool) 16%, var(--panel)); }
+  .msg.assistant { align-self: flex-start; background: color-mix(in srgb, var(--ink) 6%, var(--panel)); border: 1px solid var(--line); }
+  .msg.tool { align-self: flex-start; display: flex; align-items: center; gap: 6px; padding: 3px 4px; color: var(--muted); font: 11.5px ui-monospace, SFMono-Regular, Menlo, monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .msg .at { display: block; margin-top: 3px; font-size: 10.5px; color: var(--faint); }
+  .msgs-note { margin: 12px 6px; font-size: 12.5px; color: var(--muted); }
+  .side-sec { margin: 14px 6px 4px; font-size: 11.5px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  @media (max-width: 760px) {
+    body.full .side { width: min(340px, 88vw); }
+    body.full #officeWrap { margin-right: 0; }
+    body.full h1, body.full .summary, body.full #fullLabel { display: none; }
+    body.full .controls { min-width: 0; overflow-x: auto; scrollbar-width: none; }
+    body.full .controls::-webkit-scrollbar { display: none; }
+  }
   .stuck { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--error); white-space: nowrap; }
   .ui-ico { width: 14px; height: 14px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
   .card.is-stuck { border-color: color-mix(in srgb, var(--error) 45%, var(--line)); }
@@ -255,6 +322,7 @@
       </div>
       <span class="toolbar-space" aria-hidden="true"></span>
       <button class="btn" id="pipBtn" hidden></button>
+      <button class="btn" id="fullBtn" aria-pressed="false"><svg class="ui-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><span id="fullLabel"></span></button>
       <details class="settings" id="todayMenu">
         <summary class="btn" aria-controls="todayPanel"><svg class="ui-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 20.5h17"/><rect x="5" y="11" width="3.2" height="7" rx="1"/><rect x="10.4" y="6" width="3.2" height="12" rx="1"/><rect x="15.8" y="13.5" width="3.2" height="4.5" rx="1"/></svg><span data-t="today"></span> <span class="today-tokens" id="todayTokens"></span></summary>
         <div class="settings-panel today-panel" id="todayPanel"></div>
@@ -301,6 +369,18 @@
     <div class="legend" id="legend"></div>
     <div class="legend" id="agentLegend" hidden></div>
   </div>
+  <aside class="side" id="side" aria-label="Agents">
+    <div class="side-pane" id="sideList">
+      <div class="side-head"><b id="sideTitle"></b><span class="side-count" id="sideCount"></span>
+        <button class="icon-btn" id="sideHide"><svg class="ui-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5L21 12l-6.5 6.5M3 12h17"/></svg></button></div>
+      <div class="side-body" id="sideRows"></div>
+    </div>
+    <div class="side-pane" id="sideDetail" hidden>
+      <div class="side-head"><button class="icon-btn" id="sideBack"><svg class="ui-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg></button><b id="detailTitle"></b></div>
+      <div class="side-body" id="detailBody"></div>
+    </div>
+  </aside>
+  <button class="side-tab" id="sideTab"><svg class="ui-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 5.5L3 12l6.5 6.5M21 12H4"/></svg><span id="sideTabCount"></span></button>
   <main id="main"></main>
 </div>
 <div class="conn" id="conn" data-t="disconnected"></div>
@@ -348,7 +428,7 @@ const store = (() => {
   return { get, set };
 })();
 
-const PREF_DEFAULTS = { view: 'office', quality: 'mid', scene: 'office', agent: 'all', showSub: false, showIdle: false, showAgent: true, sound: false, lang: 'auto' };
+const PREF_DEFAULTS = { view: 'office', quality: 'mid', scene: 'office', agent: 'all', showSub: false, showIdle: false, showAgent: true, sound: false, full: true, side: true, lang: 'auto' };
 function validPreference(k, v) {
   if (!Object.hasOwn(PREF_DEFAULTS, k)) return false;
   if (typeof PREF_DEFAULTS[k] === 'boolean') return typeof v === 'boolean';
@@ -533,12 +613,13 @@ function render() {
   }).join('');
 
   renderToday();
+  renderSide();
   const working = count((s) => ACTIVE.has(s));
   const needs = count(GROUPS[0].match);
   document.title = (needs ? `(${needs}!) ` : working ? `(${working}) ` : '') + L.title;
 
   const main = document.getElementById('main');
-  const officeMode = state.view === 'office';
+  const officeMode = state.view === 'office' || state.full;
   document.getElementById('officeWrap').style.display = officeMode ? '' : 'none';
   // The office decides who sits at a desk and who wanders around.
   const officeList = all;
@@ -565,7 +646,7 @@ function render() {
   }
   if (officeMode) {
     main.innerHTML = officeList.length ? '' : `<div class="empty">${esc(L.empty)}</div>`;
-    document.getElementById('officeWrap').style.display = officeList.length ? '' : 'none';
+    document.getElementById('officeWrap').style.display = officeList.length || state.full ? '' : 'none';
     refreshTip();
     return;
   }
@@ -756,6 +837,8 @@ const officeOpts = {
   onFrame: (renderer) => popout?.drawPreview(renderer),
   label: (s) => (s.agent === 'omp' && s.subagent && s.title) || s.project || AGENT_NAME[s.agent] || s.agent,
   onHover(s, at, click) {
+    // In full screen a click opens the agent in the side panel instead of pinning a card.
+    if (click && state.full && s) { hideTip(); openDetail(s.key); return; }
     if (click) {
       if (!s) return hideTip();
       tipPinned = true; tip.classList.add('pinned');
@@ -933,6 +1016,162 @@ applyLang(chooseLang(null));
 syncControls();
 scenesReady.then(() => makeOffice());
 connect();
+// ---- full screen: the office fills the window; agents and their recent
+// conversation live in a side panel (list first, one agent on click).
+const fullBtn = document.getElementById('fullBtn');
+const sideEl = document.getElementById('side');
+let sel = null;              // key of the agent open in the panel
+let convo = { key: null, at: null, messages: null, private: false, busy: false };
+
+function statusColor(st) {
+  return { thinking: 'var(--thinking)', tool: 'var(--tool)', typing: 'var(--typing)', waiting: 'var(--waiting)', error: 'var(--error)', done: 'var(--done)' }[st] || 'var(--faint)';
+}
+function hhmm(ms) {
+  if (!ms) return '';
+  return new Date(ms).toLocaleTimeString(langCode || undefined, { hour: '2-digit', minute: '2-digit' });
+}
+function setFull(on, user) {
+  state.full = on; store.set('full', on);
+  document.body.classList.toggle('full', on);
+  if (on && state.view !== 'office') { state.view = 'office'; store.set('view', 'office'); syncControls(); }
+  // On a phone the panel would cover the office, so it starts folded away.
+  if (on && user && matchMedia('(max-width: 760px)').matches) setSide(false);
+  // Browser full screen needs a click or key press, so only when the person asked.
+  if (user) {
+    try {
+      if (on && !document.fullscreenElement) document.documentElement.requestFullscreen?.().catch(() => {});
+      if (!on && document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
+    } catch {}
+  }
+  if (!on) closeDetail();
+  measureBar(); syncFull(); render();
+}
+function setSide(open) {
+  state.side = open; store.set('side', open);
+  document.body.classList.toggle('side-closed', !open);
+}
+function measureBar() {
+  const h = document.querySelector('header').getBoundingClientRect().height;
+  document.documentElement.style.setProperty('--bar', `${Math.round(h)}px`);
+}
+function syncFull() {
+  fullBtn.setAttribute('aria-pressed', state.full);
+  document.getElementById('fullLabel').textContent = state.full ? L.exitFull : L.full;
+  document.getElementById('sideTitle').textContent = L.agentsTitle;
+  document.getElementById('sideHide').title = L.hidePanel;
+  document.getElementById('sideHide').setAttribute('aria-label', L.hidePanel);
+  document.getElementById('sideBack').title = L.back;
+  document.getElementById('sideBack').setAttribute('aria-label', L.back);
+  document.getElementById('sideTab').setAttribute('aria-label', L.showPanel);
+}
+
+function renderSide() {
+  if (!state.full) return;
+  syncFull();
+  const now = Date.now() - state.skew;
+  const list = visible();
+  document.getElementById('sideCount').textContent = list.length;
+  document.getElementById('sideTabCount').textContent = `${L.agentsTitle} · ${list.length}`;
+  const rows = GROUPS.map((g) => {
+    const items = list.filter((s) => g.match(s.status));
+    if (!items.length) return '';
+    return `<div class="side-group">${esc(L[g.key])} · ${items.length}</div>` + items.map((s) => {
+      const act = s.stuck ? L.stuck(s.stuck) : s.activity || (s.status === 'done' && s.reply) || s.title || '';
+      return `<button class="srow${s.subagent ? ' sub' : ''}" data-key="${esc(s.key)}" style="--s:${statusColor(s.status)}">
+        ${agentLogo(s.agent) || '<span></span>'}<span class="nm">${esc(s.project || AGENT_NAME[s.agent] || s.agent)}</span>
+        <span class="tm" data-time="${esc(s.key)}">${esc(timeLabel(s, now))}</span>
+        <span class="st"><i></i><b>${esc(L[s.status] || s.status)}</b>${act ? `<span>${esc(act)}</span>` : ''}</span></button>`;
+    }).join('');
+  }).join('');
+  const box = document.getElementById('sideRows');
+  const html = rows || `<div class="msgs-note">${esc(L.empty)}</div>`;
+  if (box.dataset.html !== html) { box.innerHTML = html; box.dataset.html = html; }
+  if (sel) renderDetail();
+}
+
+function openDetail(key) {
+  sel = key;
+  if (!state.side) setSide(true);
+  document.getElementById('sideList').hidden = true;
+  document.getElementById('sideDetail').hidden = false;
+  if (convo.key !== key) convo = { key, at: null, messages: null, private: false, busy: false };
+  renderDetail(true);
+}
+function closeDetail() {
+  sel = null;
+  document.getElementById('sideList').hidden = false;
+  document.getElementById('sideDetail').hidden = true;
+}
+
+function renderDetail(scrollDown) {
+  const s = state.data.sessions.find((x) => x.key === sel);
+  if (!s) { closeDetail(); return; }
+  const now = Date.now() - state.skew;
+  document.getElementById('detailTitle').innerHTML = `${agentLogo(s.agent)}${esc(s.project || AGENT_NAME[s.agent] || s.agent)}`;
+  // Fetch again whenever the agent logged something new.
+  if (convo.at !== s.lastEventAt && !convo.busy) loadConvo(s);
+  const body = document.getElementById('detailBody');
+  const nearBottom = body.scrollHeight - body.scrollTop - body.clientHeight < 60;
+  const msgs = convo.private ? `<div class="msgs-note">${esc(L.privateNote)}</div>`
+    : convo.messages == null ? `<div class="msgs-note">${esc(L.loadingMsgs)}</div>`
+      : !convo.messages.length ? `<div class="msgs-note">${esc(L.noMessages)}</div>`
+        : `<div class="msgs">${convo.messages.map((m) => m.role === 'tool'
+          ? `<div class="msg tool" title="${esc(m.text)}">${GEAR}${esc(m.text)}</div>`
+          : `<div class="msg ${m.role}">${esc(m.text)}<span class="at">${esc(hhmm(m.at))}</span></div>`).join('')}</div>`;
+  const resume = resumeCmd(s);
+  const html = `
+    ${s.title && s.title !== s.project ? `<div class="dtitle">${esc(s.title)}</div>` : ''}
+    <div class="dstatus" style="--s:${statusColor(s.status)}"><i></i><b>${esc(L[s.status] || s.status)}</b>${s.activity ? `<span class="act">${esc(s.activity)}</span>` : ''}${s.stuck ? `<span class="stuck">${esc(L.stuck(s.stuck))}</span>` : ''}</div>
+    <dl class="dmeta">
+      <dt>${esc(L.modelL)}</dt><dd>${esc(s.model || '—')}${s.subagent ? ` · ${esc(L.sub)}` : ''}</dd>
+      <dt>${esc(L.folderL)}</dt><dd class="mono" title="${esc(s.cwd || '')}">${esc(s.cwd || '—')}</dd>
+      <dt>${esc(L.today)}</dt><dd>${s.today ? `${s.today.turns} ${esc(L.turnsL)} · ${fmtTokens(s.today.tokens)} ${esc(L.tokensL)}` : '—'}</dd>
+      <dt></dt><dd data-time="${esc(s.key)}">${esc(timeLabel(s, now))}</dd>
+    </dl>
+    ${contextBar(s.context)}
+    ${resume ? `<div class="dactions"><button class="copy" data-copy="${esc(resume)}">${L.copy}</button></div>` : ''}
+    <div class="side-sec">${esc(L.recent)}</div>
+    ${msgs}`;
+  if (body.dataset.html !== html) {
+    body.innerHTML = html; body.dataset.html = html;
+    if (scrollDown || nearBottom) body.scrollTop = body.scrollHeight;
+  }
+}
+const GEAR = '<svg class="ui-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8"/></svg>';
+
+async function loadConvo(s) {
+  const key = s.key, at = s.lastEventAt;
+  convo.busy = true;
+  try {
+    const r = await fetch(`/api/transcript?key=${encodeURIComponent(key)}`);
+    const d = await r.json().catch(() => ({}));
+    if (convo.key !== key) return;
+    convo = { key, at, messages: Array.isArray(d.messages) ? d.messages : [], private: !!d.private, busy: false };
+  } catch {
+    if (convo.key === key) convo.busy = false;
+    return;
+  }
+  if (sel === key) renderDetail();
+}
+
+fullBtn.addEventListener('click', () => setFull(!state.full, true));
+document.getElementById('sideHide').addEventListener('click', () => setSide(false));
+document.getElementById('sideTab').addEventListener('click', () => setSide(true));
+document.getElementById('sideBack').addEventListener('click', closeDetail);
+document.getElementById('sideRows').addEventListener('click', (e) => {
+  const b = e.target.closest('.srow'); if (b) openDetail(b.dataset.key);
+});
+document.addEventListener('keydown', (e) => {
+  if (e.target.closest?.('input, select, textarea, [contenteditable]') || e.metaKey || e.ctrlKey || e.altKey) return;
+  if ((e.key === 'f' || e.key === 'F') && !PIP) setFull(!state.full, true);
+  else if (e.key === 'Escape' && state.full && sel) closeDetail();
+});
+addEventListener('resize', () => state.full && measureBar());
+if (PIP) fullBtn.hidden = true;
+setSide(state.side);
+if (state.full && !PIP) { document.body.classList.add('full'); requestAnimationFrame(measureBar); }
+syncFull();
+
 setInterval(tickTimes, 1000);
 </script>
 </body>

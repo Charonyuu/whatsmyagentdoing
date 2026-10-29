@@ -183,6 +183,12 @@ function createServer(watcher, opts, { onShutdown, onRestart } = {}) {
         (x) => { res.writeHead(200, { 'content-type': 'application/json' }); res.end(JSON.stringify({ ok: true, id: x.id })); },
         (e) => { res.writeHead(400, { 'content-type': 'application/json' }); res.end(JSON.stringify({ ok: false, error: String(e.message || e) })); },
       );
+    } else if (url.pathname === '/api/transcript') {
+      // --private hides prompts and replies everywhere, so it hides the conversation too.
+      const key = url.searchParams.get('key') || '';
+      const messages = opts.privacy || key.length > 600 ? null : watcher.transcript?.(key);
+      res.writeHead(messages ? 200 : opts.privacy ? 403 : 404, { 'content-type': 'application/json', 'cache-control': 'no-store' });
+      res.end(JSON.stringify(messages ? { messages } : { messages: [], private: !!opts.privacy }));
     } else if (url.pathname === '/api/sessions') {
       res.writeHead(200, { 'content-type': 'application/json' });
       res.end(JSON.stringify(snapshot(watcher, opts)));

@@ -15,6 +15,7 @@ const { Magpie } = require('./magpie');
 const { clientFiles, metadata, applyKimi, applyDsh, applyGrok, readDsh } = require('./clients');
 const { ompDirs } = require('./omp');
 const hook = require('./hook');
+const { transcript } = require('./transcript');
 
 const HEAD_BYTES = 128 * 1024;
 const TAIL_BYTES = 768 * 1024;
@@ -505,6 +506,14 @@ class Watcher extends EventEmitter {
     const changed = key(next) !== key(this.waiting);
     this.waiting = next;
     return changed;
+  }
+
+  // Recent messages of one tracked session, looked up by its key — never by a path from the client.
+  transcript(key) {
+    for (const t of this.trackers.values()) {
+      if (`${t.session.agent}:${t.session.id}` === key) return transcript(t.session, t.apply);
+    }
+    return null;
   }
 
   sessions() {
