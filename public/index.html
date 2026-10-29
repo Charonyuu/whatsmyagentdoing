@@ -1088,8 +1088,11 @@ function renderSide() {
   }).join('');
   const box = document.getElementById('sideRows');
   const html = rows || `<div class="msgs-note">${esc(L.empty)}</div>`;
-  if (box.dataset.html !== html) {
-    box.innerHTML = html; box.dataset.html = html;
+  // Rows re-sort as statuses change; hold them still while the pointer is on
+  // the list so a click lands on the agent you aimed at, and catch up on leave.
+  if (box.dataset.html !== html && box.matches(':hover') && box.dataset.html) { box.dataset.stale = '1'; }
+  else if (box.dataset.html !== html) {
+    box.innerHTML = html; box.dataset.html = html; delete box.dataset.stale;
     box.querySelectorAll('[data-time]').forEach((el) => { const s = list.find((x) => x.key === el.dataset.time); if (s) el.textContent = timeLabel(s, now); });
   }
   if (sel) renderDetail();
@@ -1168,6 +1171,7 @@ async function loadConvo(s) {
 document.getElementById('sideHide').addEventListener('click', () => setSide(false));
 document.getElementById('sideTab').addEventListener('click', () => setSide(true));
 document.getElementById('sideBack').addEventListener('click', closeDetail);
+document.getElementById('sideRows').addEventListener('mouseleave', (e) => { if (e.currentTarget.dataset.stale) renderSide(); });
 document.getElementById('sideRows').addEventListener('click', (e) => {
   const b = e.target.closest('.srow'); if (b) openDetail(b.dataset.key);
 });

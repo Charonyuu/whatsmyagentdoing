@@ -76,7 +76,7 @@ function view(s, now, { privacy }) {
   if (s.agent === 'omp' && s.source !== 'magpie') {
     out.ompProfile = s.ompProfile || null;
     // OMP subagents can't be resumed on their own.
-    out.resumeCommand = s.subagent ? null : ompResumeCommand(s);
+    out.resumeCommand = s.subagent || !s.file ? null : ompResumeCommand(s);
   }
   if (privacy) {
     out.prompt = out.reply = out.title = null;
