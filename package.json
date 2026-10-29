@@ -1,6 +1,6 @@
 {
   "name": "whatsmyagentdoing",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Live office for Claude Code, Codex, Gemini CLI and OMP sessions.",
   "bin": {
     "whatsmyagentdoing": "bin/cli.js"
