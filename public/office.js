@@ -600,6 +600,23 @@
 
     setVisible(v) { this.visible = v; if (v) this.resize(); }
 
+    // Room on the right covered by an overlay (the agent panel). The canvas
+    // keeps its size; the view eases over so the room stays centred in what
+    // is still visible, instead of the canvas resizing under the slide.
+    setInset(px, animate = true) {
+      const now = performance.now();
+      this.insetFrom = animate ? this.inset(now) : px;
+      this.insetTo = px;
+      this.insetT0 = animate ? now : -Infinity;
+    }
+    inset(now = performance.now()) {
+      if (this.insetTo == null) return 0;
+      const k = Math.min(1, (now - this.insetT0) / 340);
+      const e = 1 - Math.pow(1 - k, 3); // ease out, like the panel's slide
+      return this.insetFrom + (this.insetTo - this.insetFrom) * e;
+    }
+    insetMoving(now = performance.now()) { return this.insetTo != null && now - this.insetT0 < 360; }
+
     // ------------------------------------------------------------ camera / input
 
     resize() {
@@ -618,9 +635,12 @@
       const { W, D } = this.plan;
       const left = this.iso(0, D, 0).x, right = this.iso(W, 0, 0).x;
       const top = this.iso(0, 0, WALL_H).y - 20, bottom = this.iso(W, D, 0).y + 10;
-      const zoom = Math.min(this.cw / (right - left + 30), this.ch / (bottom - top + 30), 2);
-      const want = { zoom, ox: this.cw / 2 - ((left + right) / 2) * zoom, oy: this.ch / 2 - ((top + bottom) / 2) * zoom };
-      if (!this.cam) this.cam = want;
+      const inset = this.inset();
+      const vw = Math.max(120, this.cw - inset);
+      const zoom = Math.min(vw / (right - left + 30), this.ch / (bottom - top + 30), 2);
+      const want = { zoom, ox: vw / 2 - ((left + right) / 2) * zoom, oy: this.ch / 2 - ((top + bottom) / 2) * zoom };
+      // While the inset eases, follow it exactly; otherwise settle gently.
+      if (!this.cam || this.insetMoving()) this.cam = want;
       else for (const k of ['zoom', 'ox', 'oy']) this.cam[k] += (want[k] - this.cam[k]) * 0.1;
     }
 

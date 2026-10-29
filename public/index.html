@@ -195,10 +195,9 @@
   body.full .summary { margin-left: 0; flex-wrap: nowrap; }
   body.full .controls { width: auto; flex: 1; min-width: 0; padding: 0; border: 0; flex-wrap: wrap; row-gap: 6px; }
   body.full #viewSeg, body.full .newver { display: none; }
-  /* Only the panel slides; the office resizes once (at once when opening, after
-     the slide when closing), because resizing the canvas every frame blanks it. */
-  body.full #officeWrap { position: relative; flex: 1; min-height: 0; margin-right: var(--side, 340px); }
-  body.full.side-closed #officeWrap { transition: margin-right 0s .32s; }
+  /* The panel floats over a full-width office; the office pans its view to keep
+     the room clear of it (setInset), so the canvas never resizes during the slide. */
+  body.full #officeWrap { position: relative; flex: 1; min-height: 0; }
   body.full .office { height: 100%; min-height: 0; border: 0; border-radius: 0; }
   body.full .legend { position: absolute; left: 12px; bottom: 10px; margin: 0; padding: 6px 10px; border-radius: 10px; background: color-mix(in srgb, var(--panel) 85%, transparent); backdrop-filter: blur(6px); }
   body.full #agentLegend { bottom: 44px; }
@@ -223,7 +222,7 @@
   .side.entering #detailBody > * { animation-delay: 140ms; }
   @keyframes rowIn { from { opacity: 0; transform: translateX(14px); } }
   @media (prefers-reduced-motion: reduce) {
-    body.full.side-closed #officeWrap, .side, .side-pane { transition: none; }
+    .side, .side-pane { transition: none; }
     .side.opening .srow, .side.entering #detailBody > *, body.full.side-closed .side-tab { animation: none; }
   }
   .side-head { flex: none; display: flex; align-items: center; gap: 8px; padding: 12px 12px 10px 16px; border-bottom: 1px solid var(--line); font-size: 14px; }
@@ -288,7 +287,6 @@
   @media (max-width: 359px) { body.full #sceneName { display: none; } }
   @media (max-width: 760px) {
     body.full .side { width: min(340px, 88vw); }
-    body.full #officeWrap { margin-right: 0; }
     body.full h1, body.full .summary { display: none; }
     body.full header { flex-wrap: wrap; }
     /* Menus span the screen under the toolbar instead of hanging off their button. */
@@ -973,6 +971,7 @@ async function makeOffice() {
   }
   office = mine;
   office.offDutyLabel = L.wentHome;
+  office.setInset(panelInset(), false);
   render();
   const ok = await mine.ready;
   if (office !== mine) return;
@@ -1140,10 +1139,17 @@ function hhmm(ms) {
   if (!ms) return '';
   return new Date(ms).toLocaleTimeString(langCode || undefined, { hour: '2-digit', minute: '2-digit' });
 }
+// How much of the office the open panel covers. On phones the panel is an
+// overlay over most of the screen, so the view doesn't move for it.
+function panelInset() {
+  return state.full && state.side && !matchMedia('(max-width: 760px)').matches ? sideEl.getBoundingClientRect().width || 340 : 0;
+}
 function setSide(open, remember = true) {
   state.side = open;
   if (remember) store.set('side', open);
   document.body.classList.toggle('side-closed', !open);
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  office?.setInset(panelInset(), !still);
   if (open) {
     // Rows slide in one after another each time the panel opens.
     sideEl.classList.remove('opening'); void sideEl.offsetWidth; sideEl.classList.add('opening');
@@ -1233,12 +1239,17 @@ function renderSide() {
 function openDetail(key) {
   sel = key;
   if (!state.side) setSide(true);
-  sideEl.classList.add('detail', 'entering');
-  clearTimeout(openDetail.t); openDetail.t = setTimeout(() => sideEl.classList.remove('entering'), 800);
   document.getElementById('sideList').inert = true;
   document.getElementById('sideDetail').inert = false;
   if (convo.key !== key) convo = { key, at: null, messages: null, private: false, busy: false };
+  // Build the details off-screen this frame and start the slide on the next,
+  // so the click doesn't also pay for layout in the slide's first frame.
   renderDetail(true);
+  requestAnimationFrame(() => {
+    if (sel !== key) return;
+    sideEl.classList.add('detail', 'entering');
+    clearTimeout(openDetail.t); openDetail.t = setTimeout(() => sideEl.classList.remove('entering'), 800);
+  });
 }
 function closeDetail() {
   sel = null;
@@ -1311,7 +1322,7 @@ document.addEventListener('keydown', (e) => {
   if (e.target.closest?.('input, select, textarea, [contenteditable]') || e.metaKey || e.ctrlKey || e.altKey) return;
   if (e.key === 'Escape' && state.full && sel) closeDetail();
 });
-addEventListener('resize', () => state.full && measureBar());
+addEventListener('resize', () => { if (!state.full) return; measureBar(); office?.setInset(panelInset(), false); });
 if (state.full) {
   document.body.classList.add('full');
   requestAnimationFrame(measureBar);

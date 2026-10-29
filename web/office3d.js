@@ -955,13 +955,17 @@ export class Office3D extends window.Office {
       const v = new THREE.Vector3(x, y, z).applyMatrix4(inv);
       minX = Math.min(minX, v.x); maxX = Math.max(maxX, v.x); minY = Math.min(minY, v.y); maxY = Math.max(maxY, v.y);
     }
-    const aspect = this.cw / this.ch;
+    // Fit the room into the part of the canvas the panel leaves visible, then
+    // extend the frustum over the covered part so the canvas never resizes.
+    const vw = Math.max(120, this.cw - this.inset());
+    const aspect = vw / this.ch;
     let w = (maxX - minX) * 1.06, h = (maxY - minY) * 1.1;
     // Leave room for screen-space badges and bubbles in a small PiP window.
     if (this.compact) h *= this.ch / Math.max(80, this.ch - 48);
     if (w / h > aspect) h = w / aspect; else w = h * aspect;
     const cxv = (minX + maxX) / 2, cyv = (minY + maxY) / 2;
-    Object.assign(this.camera, { left: cxv - w / 2, right: cxv + w / 2, top: cyv + h / 2, bottom: cyv - h / 2 });
+    const full = w * (this.cw / vw);
+    Object.assign(this.camera, { left: cxv - w / 2, right: cxv - w / 2 + full, top: cyv + h / 2, bottom: cyv - h / 2 });
     this.camera.updateProjectionMatrix();
     // Sun casts shadows over the whole room.
     this.sun.position.set(center.x - 6, 14, center.z - 3);
@@ -970,6 +974,12 @@ export class Office3D extends window.Office {
     const r = Math.max(W, D) * 0.75;
     Object.assign(sc, { left: -r, right: r, top: r, bottom: -r, near: 1, far: 50 });
     sc.updateProjectionMatrix();
+  }
+
+  setInset(px, animate = true) {
+    super.setInset(px, animate);
+    this.insetSettling = true;
+    if (!animate && this.room) this.fitCamera3D(false);
   }
 
   resize() {
@@ -1198,6 +1208,7 @@ export class Office3D extends window.Office {
     this.updateBall();
 
     this.syncActors(dt);
+    if (this.insetMoving() || this.insetSettling) { this.fitCamera3D(false); this.insetSettling = this.insetMoving(); }
     this.controls.update();
     this.gl.render(this.scene, this.camera);
 
