@@ -171,6 +171,11 @@
   body.full .legend { position: absolute; left: 12px; bottom: 10px; margin: 0; padding: 6px 10px; border-radius: 10px; background: color-mix(in srgb, var(--panel) 85%, transparent); backdrop-filter: blur(6px); }
   body.full #agentLegend { bottom: 44px; }
   body.full #main { display: none; }
+  /* The video pop-out preview and its errors float over the office instead of pushing it down. */
+  body.full .pip-preview { position: fixed; z-index: 25; left: 16px; bottom: 84px; width: min(360px, calc(100vw - 32px)); margin: 0; padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); box-shadow: 0 12px 40px #0004; }
+  body.full .pip-preview video { width: 100%; height: auto; border-radius: 8px; }
+  body.full .pip-preview p { margin: 0 0 8px; font-size: 12px; }
+  body.full .pip-error { position: fixed; z-index: 25; left: 50%; top: calc(var(--bar, 53px) + 12px); transform: translateX(-50%); margin: 0; padding: 8px 14px; border-radius: 10px; background: var(--panel); border: 1px solid var(--line); box-shadow: 0 8px 24px #0003; }
   body.full .side { display: block; position: fixed; z-index: 15; right: 0; bottom: 0; top: var(--bar, 53px); width: 340px; border-left: 1px solid var(--line); background: var(--panel); transition: transform .32s cubic-bezier(.2, .8, .2, 1), box-shadow .32s; overflow: hidden; }
   body.full.side-closed { --side: 0px; }
   body.full.side-closed .side { transform: translateX(100%); box-shadow: none; }

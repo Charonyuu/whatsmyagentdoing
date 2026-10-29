@@ -25,7 +25,7 @@
     }
 
     get documentSupported() {
-      return window.top === window && typeof window.documentPictureInPicture?.requestWindow === 'function';
+      return !this.documentBroken && window.top === window && typeof window.documentPictureInPicture?.requestWindow === 'function';
     }
 
     get videoSupported() {
@@ -57,8 +57,18 @@
       this.busy = true;
       this.changed();
       try {
-        if (this.documentSupported) await this.openDocument();
-        else await this.startPreview();
+        if (this.documentSupported) {
+          try {
+            await this.openDocument();
+          } catch (e) {
+            // Some embedded browsers (app web views) expose the API but can't
+            // open a window ("no window"). Use the video pop-out there instead,
+            // and skip the window from now on.
+            if (e.name !== 'InvalidStateError' || !this.videoSupported) throw e;
+            this.documentBroken = true;
+            await this.startPreview();
+          }
+        } else await this.startPreview();
       } catch (e) {
         console.warn('Could not open picture-in-picture:', e);
         this.close();

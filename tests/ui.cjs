@@ -208,6 +208,15 @@ async function drawnLogos(target) {
   assert.equal(await page.evaluate(()=>office.visible),true);
   assert.equal(await page.locator('#pipBtn').isEnabled(),true);
   check('request failure gives a translated error and leaves the dashboard usable');
+  // App web views expose Document PiP but can't open its window: fall back to the video pop-out.
+  await page.evaluate(()=>{const e=new Error('Internal error: no window');e.name='InvalidStateError';documentPictureInPicture.requestWindow=()=>Promise.reject(e)});
+  await page.click('#pipBtn');await page.waitForFunction(()=>!popout.busy&&!!popout.stream);
+  assert.equal(await page.locator('#pipError').isVisible(),false,'no error when the video pop-out can stand in');
+  assert.equal(await page.locator('#pipPreview').isVisible(),true);
+  await page.click('#closePreview');await page.waitForFunction(()=>!popout.stream);
+  assert.equal(await page.evaluate(()=>popout.documentBroken),true,'later clicks go straight to the video pop-out');
+  await page.evaluate(()=>{popout.documentBroken=false});
+  check('a browser that cannot open the pop-out window falls back to the video pop-out');
   // Force only the capability branch; rendering and MediaStream remain real.
   const fallback=await context.newPage();
   await fallback.addInitScript(()=>Object.defineProperty(window,'documentPictureInPicture',{value:undefined}));
