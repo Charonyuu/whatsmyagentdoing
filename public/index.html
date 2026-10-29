@@ -84,18 +84,14 @@
   .settings-panel { position: absolute; z-index: 20; right: 0; top: calc(100% + 10px); width: min(360px, calc(100vw - 32px)); max-height: calc(100dvh - 180px); overflow-y: auto; overscroll-behavior: contain; padding: 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); box-shadow: 0 12px 40px #0003; }
   .setting-group + .setting-group { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); }
   .setting-label { display: block; color: var(--muted); font-size: 12px; margin-bottom: 9px; }
-  #sceneGroup[hidden] + .setting-group { margin-top: 0; padding-top: 0; border-top: 0; }
   #sceneSeg { display: grid; grid-template-columns: 1fr 1fr; border: 0; padding: 0; gap: 6px; }
   #sceneSeg button { text-align: left; padding: 8px 10px; background: var(--bg); }
   #sceneSeg button.on { background: var(--line); color: var(--ink); box-shadow: inset 0 0 0 1px var(--faint); }
-  #agentSeg { display: flex; flex-wrap: wrap; }
-  #agentSeg button { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; padding: 8px 6px; }
   .setting-toggles { display: grid; gap: 12px; margin-top: 14px; }
   .setting-toggles .tog { color: var(--ink); gap: 8px; }
   .tog input { accent-color: var(--tool); margin: 0; width: 15px; height: 15px; }
   .setting-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
   .setting-row .setting-label { margin: 0; }
-  #langSel { max-width: 70%; }
   #notify { width: 100%; margin-top: 14px; padding: 8px; }
   #notify:disabled { cursor: default; opacity: .65; }
   @media (max-width: 640px) {
@@ -154,15 +150,56 @@
   .ctx .bar i { display: block; height: 100%; border-radius: 2px; background: var(--done); }
   .ctx.warn .bar i { background: var(--waiting); }
   .ctx.full .bar i { background: var(--error); }
+  /* ---- toolbar menus and controls, styled to match (no browser defaults) */
+  details.menu > summary { gap: 7px; }
+  .scene-ico { display: inline-flex; }
+  #sceneName, #langName { max-width: 11em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .scene-panel { width: min(400px, calc(100vw - 32px)); right: auto; left: 0; }
+  .scene-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 10px; }
+  .scene-grid button { display: flex; flex-direction: column; gap: 6px; padding: 6px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); color: var(--ink); font: inherit; text-align: left; cursor: pointer; transition: border-color .15s, transform .15s; }
+  .scene-grid button:hover { border-color: color-mix(in srgb, var(--ink) 30%, var(--line)); transform: translateY(-1px); }
+  .scene-grid button.on { border-color: var(--tool); box-shadow: 0 0 0 1px var(--tool); }
+  .scene-grid .thumb { display: grid; place-items: center; aspect-ratio: 16 / 10; border-radius: 8px; overflow: hidden; background: color-mix(in srgb, var(--ink) 6%, var(--panel)); color: var(--muted); }
+  .scene-grid .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .scene-grid .thumb .ui-ico { width: 28px; height: 28px; }
+  .scene-grid .nm { display: flex; align-items: center; gap: 6px; padding: 0 4px; font-size: 13px; font-weight: 600; }
+  .scene-grid small { display: flex; align-items: center; gap: 4px; padding: 0 4px 2px; color: var(--muted); font-size: 11.5px; }
+  .lang-panel { width: 240px; }
+  .lang-list { display: flex; flex-direction: column; margin-top: 8px; }
+  .lang-list button { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 0; border-radius: 8px; background: none; color: var(--ink); font: inherit; font-size: 13.5px; text-align: left; cursor: pointer; }
+  .lang-list button:hover { background: color-mix(in srgb, var(--ink) 7%, transparent); }
+  .lang-list button small { color: var(--faint); font-size: 12px; }
+  .lang-list .chk { margin-left: auto; opacity: 0; color: var(--tool); }
+  .lang-list button.on { font-weight: 600; }
+  .lang-list button.on .chk { opacity: 1; }
+  .prefs-panel { width: 280px; }
+  .prefs-panel .setting-toggles { display: flex; flex-direction: column; gap: 2px; margin: 0 0 12px; }
+  /* Switches instead of checkboxes */
+  .prefs-panel label.tog { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 2px; font-size: 13.5px; color: var(--ink); cursor: pointer; }
+  .tog input { appearance: none; -webkit-appearance: none; flex: none; position: relative; width: 36px; height: 21px; margin: 0; border-radius: 999px; background: color-mix(in srgb, var(--ink) 18%, var(--panel)); cursor: pointer; transition: background .18s; }
+  .tog input::after { content: ""; position: absolute; top: 2.5px; left: 2.5px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px #0004; transition: transform .18s cubic-bezier(.2, .8, .2, 1); }
+  .tog input:checked { background: var(--tool); }
+  .tog input:checked::after { transform: translateX(15px); }
+  .tog input:focus-visible { outline: 2px solid var(--tool); outline-offset: 2px; }
+  .prefs-panel #notify { width: 100%; margin: 0; }
+  /* Agent filter chips at the top of the panel */
+  .agent-chips { flex: none; display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+  .chip-f { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 9px; border: 1px solid var(--line); border-radius: 999px; background: none; color: var(--muted); font: 600 12.5px inherit; cursor: pointer; transition: background .15s, border-color .15s, color .15s; }
+  .chip-f:hover { color: var(--ink); border-color: color-mix(in srgb, var(--ink) 25%, var(--line)); }
+  .chip-f .agent-logo { width: 15px; height: 15px; margin: 0; }
+  .chip-f b { font-weight: 600; font-size: 11.5px; color: var(--faint); font-variant-numeric: tabular-nums; }
+  .chip-f .ini { font-size: 11px; }
+  .chip-f.on { color: var(--ink); background: color-mix(in srgb, var(--tool) 16%, var(--panel)); border-color: color-mix(in srgb, var(--tool) 55%, var(--line)); }
+  .chip-f.on b { color: var(--muted); }
   /* ---- full-screen mode: the office fills the window, agents in a side panel */
   .ui-ico { stroke-width: 1.8; }
   .side, .side-tab { display: none; }
   body.full { overflow: hidden; padding: 0; margin: 0; height: 100dvh; }
   body.full .wrap { max-width: none; height: 100dvh; padding: 0; display: flex; flex-direction: column; }
-  body.full header { flex-wrap: nowrap; gap: 14px; margin: 0; padding: 8px 14px; border-bottom: 1px solid var(--line); background: var(--panel); }
+  body.full header { flex-wrap: wrap; gap: 8px 14px; margin: 0; padding: 8px 14px; border-bottom: 1px solid var(--line); background: var(--panel); }
   body.full h1 { font-size: 15px; white-space: nowrap; }
   body.full .summary { margin-left: 0; flex-wrap: nowrap; }
-  body.full .controls { width: auto; flex: 1; padding: 0; border: 0; flex-wrap: nowrap; }
+  body.full .controls { width: auto; flex: 1; min-width: 0; padding: 0; border: 0; flex-wrap: wrap; row-gap: 6px; }
   body.full #viewSeg, body.full .newver { display: none; }
   /* Only the panel slides; the office resizes once (at once when opening, after
      the slide when closing), because resizing the canvas every frame blanks it. */
@@ -233,11 +270,17 @@
   .msg .at { display: block; margin-top: 3px; font-size: 10.5px; color: var(--faint); }
   .msgs-note { margin: 12px 6px; font-size: 12.5px; color: var(--muted); }
   .side-sec { margin: 14px 6px 4px; font-size: 11.5px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  /* The panel's group headings already count Needs you / Working / Finished, so the
+     toolbar drops those chips (and then the title) before it would wrap. */
+  @media (max-width: 1240px) { body.full .summary { display: none; } }
+  @media (max-width: 900px) { body.full h1 { display: none; } }
   @media (max-width: 760px) {
     body.full .side { width: min(340px, 88vw); }
     body.full #officeWrap { margin-right: 0; }
     body.full h1, body.full .summary { display: none; }
     body.full header { flex-wrap: wrap; }
+    /* Menus span the screen under the toolbar instead of hanging off their button. */
+    body.full .settings-panel { position: fixed; left: 12px; right: 12px; width: auto; top: calc(var(--bar, 53px) + 6px); max-height: calc(100dvh - var(--bar, 53px) - 24px); }
     body.full .controls { flex-wrap: wrap; row-gap: 6px; }
   }
   .stuck { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--error); white-space: nowrap; }
@@ -340,38 +383,36 @@
         <button data-v="mid" data-t="qMid"></button>
         <button data-v="high" data-t="qHigh"></button>
       </div>
+      <details class="settings menu" id="sceneMenu">
+        <summary class="btn" aria-controls="scenePanel"><span class="scene-ico" id="sceneIco"></span><span id="sceneName"></span></summary>
+        <div class="settings-panel scene-panel" id="scenePanel">
+          <div class="setting-label" data-t="scene"></div>
+          <div class="scene-grid" id="sceneSeg" role="group"></div>
+        </div>
+      </details>
       <span class="toolbar-space" aria-hidden="true"></span>
       <button class="btn" id="pipBtn" hidden></button>
-      <details class="settings" id="todayMenu">
+      <details class="settings menu" id="todayMenu">
         <summary class="btn" aria-controls="todayPanel"><svg class="ui-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 20.5h17"/><rect x="5" y="11" width="3.2" height="7" rx="1"/><rect x="10.4" y="6" width="3.2" height="12" rx="1"/><rect x="15.8" y="13.5" width="3.2" height="4.5" rx="1"/></svg><span data-t="today"></span> <span class="today-tokens" id="todayTokens"></span></summary>
         <div class="settings-panel today-panel" id="todayPanel"></div>
       </details>
-      <details class="settings" id="settingsMenu">
-        <summary class="btn" aria-controls="settingsPanel"><span data-t="settings"></span><span class="filter-active" id="activeFilter" hidden></span></summary>
-        <div class="settings-panel" id="settingsPanel">
-          <div class="setting-group" id="sceneGroup">
-            <span class="setting-label" id="sceneLabel" data-t="scene"></span>
-            <div class="seg" id="sceneSeg" role="group" aria-labelledby="sceneLabel"></div>
+      <details class="settings menu" id="langMenu">
+        <summary class="btn" aria-controls="langPanel"><svg class="ui-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.8"/><path d="M3.4 12h17.2M12 3.2c2.6 2.6 3.7 5.6 3.7 8.8s-1.1 6.2-3.7 8.8M12 3.2C9.4 5.8 8.3 8.8 8.3 12s1.1 6.2 3.7 8.8"/></svg><span id="langName"></span></summary>
+        <div class="settings-panel lang-panel" id="langPanel">
+          <div class="setting-label" data-t="language"></div>
+          <div class="lang-list" id="langList" role="listbox"></div>
+        </div>
+      </details>
+      <details class="settings menu" id="settingsMenu">
+        <summary class="btn" aria-controls="settingsPanel"><span data-t="settings"></span></summary>
+        <div class="settings-panel prefs-panel" id="settingsPanel">
+          <div class="setting-toggles">
+            <label class="tog"><span data-t="subagents"></span><input type="checkbox" role="switch" id="showSub"></label>
+            <label class="tog" id="idleToggle"><span data-t="showIdle"></span><input type="checkbox" role="switch" id="showIdle"></label>
+            <label class="tog" id="agentBadgeToggle"><span data-t="showAgent"></span><input type="checkbox" role="switch" id="showAgent"></label>
+            <label class="tog" id="soundToggle"><span data-t="sound"></span><input type="checkbox" role="switch" id="sound"></label>
           </div>
-          <div class="setting-group">
-            <span class="setting-label" id="filterLabel" data-t="agents"></span>
-            <div class="seg" id="agentSeg" role="group" aria-labelledby="filterLabel">
-              <button data-v="all" class="on" data-t="all"></button>
-            </div>
-            <div class="setting-toggles">
-              <label class="tog"><input type="checkbox" id="showSub"> <span data-t="subagents"></span></label>
-              <label class="tog" id="idleToggle"><input type="checkbox" id="showIdle"> <span data-t="showIdle"></span></label>
-              <label class="tog" id="agentBadgeToggle"><input type="checkbox" id="showAgent"> <span data-t="showAgent"></span></label>
-              <label class="tog" id="soundToggle"><input type="checkbox" id="sound"> <span data-t="sound"></span></label>
-            </div>
-          </div>
-          <div class="setting-group">
-            <div class="setting-row">
-              <label class="setting-label" for="langSel" data-t="language"></label>
-              <select class="btn" id="langSel"></select>
-            </div>
-            <button class="btn" id="notify" data-t="notify"></button>
-          </div>
+          <button class="btn" id="notify" data-t="notify"></button>
         </div>
       </details>
     </div>
@@ -392,6 +433,7 @@
     <div class="side-pane" id="sideList">
       <div class="side-head"><b id="sideTitle"></b><span class="side-count" id="sideCount"></span>
         <button class="icon-btn" id="sideHide"><svg class="ui-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5L21 12l-6.5 6.5M3 12h17"/></svg></button></div>
+      <div class="agent-chips" id="agentChips" role="group"></div>
       <div class="side-body" id="sideRows"></div>
     </div>
     <div class="side-pane" id="sideDetail" inert>
@@ -432,8 +474,7 @@ function applyLang(code) {
   const legend = document.getElementById('legend');
   if (legend) legend.innerHTML = ['thinking', 'tool', 'typing', 'waiting', 'done', 'error']
     .map((k) => `<span data-s="${k}"><span class="dot" style="color:var(--s)"></span>${L[k]}</span>`).join('');
-  const sel = document.getElementById('langSel');
-  if (sel) sel.options[0].textContent = `🌐 ${L.auto}`;
+  if (typeof renderLangMenu === 'function') renderLangMenu();
   if (typeof office !== 'undefined' && office) office.offDutyLabel = L.wentHome;
   if (typeof syncControls === 'function') syncControls();
   if (typeof renderSceneSel === 'function') renderSceneSel();
@@ -447,15 +488,25 @@ const store = (() => {
   return { get, set };
 })();
 
-const PREF_DEFAULTS = { view: 'office', quality: 'mid', scene: 'office', agent: 'all', showSub: false, showIdle: false, showAgent: true, sound: false, side: true, lang: 'auto' };
+const PREF_DEFAULTS = { view: 'office', quality: 'mid', scene: 'office', agents: [], showSub: false, showIdle: false, showAgent: true, sound: false, side: true, lang: 'auto' };
+function validAgentId(v) {
+  return typeof v === 'string' && v !== 'all' && /^[a-zA-Z][a-zA-Z0-9_-]{0,63}$/.test(v) && !Object.hasOwn(Object.prototype, v);
+}
 function validPreference(k, v) {
   if (!Object.hasOwn(PREF_DEFAULTS, k)) return false;
   if (typeof PREF_DEFAULTS[k] === 'boolean') return typeof v === 'boolean';
   if (k === 'view') return ['office', 'list'].includes(v);
   if (k === 'quality') return ['mid', 'high'].includes(v);
-  if (k === 'agent') return typeof v === 'string' && /^[a-zA-Z][a-zA-Z0-9_-]{0,63}$/.test(v) && !Object.hasOwn(Object.prototype, v);
+  // Which agents to show; none selected means all of them.
+  if (k === 'agents') return Array.isArray(v) && v.length <= 32 && v.every(validAgentId);
   if (k === 'lang') return v === 'auto' || Object.hasOwn(I18N, v);
   return typeof v === 'string' && /^[a-z0-9-]+$/.test(v);
+}
+// The filter used to be one agent or 'all'; carry an old single choice over once.
+{
+  const old = store.get('agent', 'all');
+  if (validAgentId(old) && !store.get('agents', []).length) store.set('agents', [old]);
+  if (old !== 'all') store.set('agent', 'all');
 }
 function readPreferences() {
   return Object.fromEntries(Object.entries(PREF_DEFAULTS).map(([k, d]) => {
@@ -549,12 +600,6 @@ function agentLogo(agent) {
   return badge ? `<img class="agent-logo${badge.mono ? ' mono' : ''}" src="${badge.logo}" alt="" aria-hidden="true">` : '';
 }
 
-function addAgentFilter(agent, name = AGENT_NAME[agent] || agent) {
-  const button = document.createElement('button');
-  button.dataset.v = agent;
-  button.innerHTML = `${agentLogo(agent)}${esc(name)}`;
-  document.getElementById('agentSeg').append(button);
-}
 
 function fmtTokens(n) {
   if (n < 1000) return String(n);
@@ -614,9 +659,10 @@ function card(s, now) {
   </div>`;
 }
 
+const matchAgent = (s) => !state.agents.length || state.agents.includes(s.agent);
 function visible() {
   return state.data.sessions.filter((s) =>
-    (state.agent === 'all' || s.agent === state.agent) &&
+    matchAgent(s) &&
     (state.showSub || !s.subagent) &&
     (state.showIdle || s.status !== 'idle'));
 }
@@ -624,7 +670,7 @@ function visible() {
 function render() {
   const now = Date.now() - state.skew;
   const list = visible();
-  const all = state.data.sessions.filter((s) => (state.agent === 'all' || s.agent === state.agent) && (state.showSub || !s.subagent));
+  const all = state.data.sessions.filter((s) => matchAgent(s) && (state.showSub || !s.subagent));
 
   const count = (f) => all.filter((s) => f(s.status)).length;
   document.getElementById('summary').innerHTML = GROUPS.slice(0, 3).map((g) => {
@@ -695,11 +741,8 @@ function tickTimes() {
 
 function onData(data) {
   for (const s of data.sessions) {
-    if (!validPreference('agent', s.agent)) continue;
+    if (!validAgentId(s.agent)) continue;
     if (!Object.hasOwn(AGENT_NAME, s.agent)) AGENT_NAME[s.agent] = s.agentName || s.agent;
-    if (!document.querySelector(`#agentSeg button[data-v="${s.agent}"]`)) {
-      addAgentFilter(s.agent, s.agentName || AGENT_NAME[s.agent] || s.agent);
-    }
   }
   state.skew = Date.now() - data.now;
   const first = state.prev.size === 0;
@@ -763,21 +806,15 @@ function connect() {
 // Native disclosure keeps settings keyboard-accessible without a modal focus trap.
 const settingsMenu = document.getElementById('settingsMenu');
 const todayMenu = document.getElementById('todayMenu');
-todayMenu.addEventListener('toggle', () => { if (todayMenu.open) settingsMenu.open = false; });
-settingsMenu.addEventListener('toggle', () => { if (settingsMenu.open) todayMenu.open = false; });
-document.addEventListener('click', (e) => {
-  if (!settingsMenu.contains(e.target)) settingsMenu.open = false;
-  if (!todayMenu.contains(e.target)) todayMenu.open = false;
-});
+// Toolbar menus: one open at a time; a click outside or Escape closes them.
+const MENUS = [...document.querySelectorAll('details.menu')];
+function closeMenus() { for (const m of MENUS) m.open = false; }
+for (const m of MENUS) m.addEventListener('toggle', () => { if (m.open) for (const o of MENUS) if (o !== m) o.open = false; });
+document.addEventListener('click', (e) => { for (const m of MENUS) if (!m.contains(e.target)) m.open = false; });
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && settingsMenu.open) {
-    settingsMenu.open = false;
-    settingsMenu.querySelector('summary').focus();
-  }
-  if (e.key === 'Escape' && todayMenu.open) {
-    todayMenu.open = false;
-    todayMenu.querySelector('summary').focus();
-  }
+  if (e.key !== 'Escape') return;
+  const m = MENUS.find((x) => x.open);
+  if (m) { m.open = false; m.querySelector('summary').focus(); }
 });
 settingsMenu.addEventListener('toggle', () => { if (settingsMenu.open) hideTip(); });
 
@@ -788,10 +825,6 @@ document.getElementById('qualSeg').addEventListener('click', (e) => {
 document.getElementById('viewSeg').addEventListener('click', (e) => {
   const b = e.target.closest('button'); if (!b) return;
   state.view = b.dataset.v; store.set('view', state.view); hideTip(); syncControls(); render();
-});
-document.getElementById('agentSeg').addEventListener('click', (e) => {
-  const b = e.target.closest('button'); if (!b) return;
-  state.agent = b.dataset.v; store.set('agent', state.agent); syncControls(); render();
 });
 const showSub = document.getElementById('showSub');
 const showIdle = document.getElementById('showIdle');
@@ -807,15 +840,11 @@ showAgent.addEventListener('change', () => { state.showAgent = showAgent.checked
 
 const notifyBtn = document.getElementById('notify');
 function syncControls() {
-  document.querySelectorAll('#agentSeg button').forEach((b) => b.classList.toggle('on', b.dataset.v === state.agent));
   const view = state.full ? 'office' : state.view;
   document.querySelectorAll('#viewSeg button').forEach((b) => b.classList.toggle('on', b.dataset.v === state.view));
   document.querySelectorAll('#qualSeg button').forEach((b) => b.classList.toggle('on', b.dataset.v === state.quality));
   document.getElementById('qualSeg').style.display = view === 'office' ? '' : 'none';
-  document.getElementById('sceneGroup').hidden = view !== 'office' || state.quality !== 'high';
-  const activeFilter = document.getElementById('activeFilter');
-  activeFilter.hidden = state.agent === 'all';
-  activeFilter.textContent = AGENT_NAME[state.agent] || '';
+  document.getElementById('sceneMenu').hidden = view !== 'office' || state.quality !== 'high';
   document.querySelectorAll('.seg button').forEach(b => b.setAttribute('aria-pressed', b.classList.contains('on')));
   showSub.checked = state.showSub;
   showIdle.checked = state.showIdle;
@@ -928,15 +957,34 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') hideTip();
 // Scenes (3D only): the built-in office plus any installed scene packs.
 const sceneSel = document.getElementById('sceneSeg');
 state.available = [];
+// Scene icons are drawn, one per known pack; any other pack gets a map.
+const SCENE_PATHS = {
+  office: '<rect x="5" y="3.2" width="14" height="17.6" rx="1.6"/><path d="M9 7.2h1.8M13.2 7.2H15M9 10.8h1.8M13.2 10.8H15M9 14.4h1.8M13.2 14.4H15M10.4 20.8v-3h3.2v3"/>',
+  graveyard: '<path d="M12 7.2c-4.9 0-8 2.7-8 6.6S7.1 20.5 12 20.5s8-2.8 8-6.7-3.1-6.6-8-6.6z"/><path d="M12 7.2c-1.9 1.9-1.9 11.4 0 13.3M12 7.2c1.9 1.9 1.9 11.4 0 13.3M12 7.2c0-2 .8-3.2 2.4-3.8"/>',
+  pirate: '<path d="M3.5 15.5h17l-2.3 4.3H5.8z"/><path d="M12 3.5v12M12 4.5l5.8 8.3H12M12 6.8L7 12.8h5"/>',
+  cafe: '<path d="M5 9h11v5a5 5 0 0 1-5 5h-1a5 5 0 0 1-5-5z"/><path d="M16 10.5h1.4a2.4 2.4 0 0 1 0 4.8H16M8.5 3.5c-.8 1 .8 2 0 3M11.8 3.5c-.8 1 .8 2 0 3"/>',
+  station: '<path d="M12 2.8c3.6 1.9 5.6 5.6 5.6 9.6l-1.9 3.3H8.3l-1.9-3.3c0-4 2-7.7 5.6-9.6z"/><circle cx="12" cy="9.8" r="1.9"/><path d="M9.6 18.6l-.9 2.3M14.4 18.6l.9 2.3M12 18.8v2.6"/>',
+  castle: '<path d="M4 20.5V9.5h2.8V6.8h2.4v2.7h1.6V6.8h2.4v2.7h1.6V6.8h2.4v2.7H20v11z"/><path d="M10 20.5v-4.2a2 2 0 0 1 4 0v4.2"/>',
+  map: '<path d="M3.5 6.5l5.5-2.5 6 2.5 5.5-2.5v13.5l-5.5 2.5-6-2.5-5.5 2.5z"/><path d="M9 4v13.5M15 6.5V20"/>',
+};
+const SCENE_THUMBS = new Set(['office', 'graveyard', 'pirate', 'cafe', 'station', 'castle']);
+const sceneIcon = (id) => `<svg class="ui-ico" viewBox="0 0 24 24" aria-hidden="true">${SCENE_PATHS[id] || SCENE_PATHS.map}</svg>`;
+const DOWNLOAD = '<svg class="ui-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/></svg>';
 function renderSceneSel() {
   const name = (x) => (x.name && (x.name[langCode] || x.name.en)) || x.id;
   const kb = (n) => (n >= 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
   const current = state.scenes.some((x) => x.id === state.scene) ? state.scene : 'office';
   const btn = (v, label, title = '') =>
     `<button data-v="${esc(v)}" class="${v === current ? 'on' : ''}" aria-pressed="${v === current}"${title ? ` title="${esc(title)}"` : ''}>${label}</button>`;
-  sceneSel.innerHTML = btn('office', `🏢 ${esc(L.office)}`) +
-    state.scenes.map((x) => btn(x.id, `${esc(x.icon || '🗺️')} ${esc(name(x))}`, x.credits || '')).join('') +
-    state.available.map((x) => btn(`dl:${x.id}`, `⬇ ${esc(x.icon || '')} ${esc(name(x))} <small>${kb(x.size)}</small>`, `${L.dl} ${kb(x.size)}`)).join('');
+  const card = (id, v, label, sub, title) => btn(v,
+    `<span class="thumb">${SCENE_THUMBS.has(id) ? `<img src="/assets/scenes/${id}.jpg" alt="" loading="lazy">` : sceneIcon(id)}</span>` +
+    `<span class="nm">${sceneIcon(id)}<span>${label}</span></span>${sub ? `<small>${sub}</small>` : ''}`, title);
+  sceneSel.innerHTML = card('office', 'office', esc(L.office)) +
+    state.scenes.map((x) => card(x.id, x.id, esc(name(x)), '', x.credits || '')).join('') +
+    state.available.map((x) => card(x.id, `dl:${x.id}`, esc(name(x)), `${DOWNLOAD}${kb(x.size)}`, `${L.dl} ${kb(x.size)}`)).join('');
+  const cur = current === 'office' ? L.office : name(state.scenes.find((x) => x.id === current) || { id: current });
+  document.getElementById('sceneIco').innerHTML = sceneIcon(current);
+  document.getElementById('sceneName').textContent = cur;
 }
 function loadScenes() {
   return fetch('/api/scenes').then((r) => r.json()).then((d) => {
@@ -962,6 +1010,7 @@ sceneSel.addEventListener('click', async (e) => {
     if (!r.ok) { setLoading(true, L.installFailed); setTimeout(() => setLoading(false), 2000); renderSceneSel(); return; }
   }
   state.scene = id; store.set('scene', id); renderSceneSel(); makeOffice();
+  closeMenus();
 });
 // Know the installed scenes before building the first office, so a saved
 // scene choice doesn't build the default office first and then swap.
@@ -1005,16 +1054,23 @@ function loadVersion() {
 loadVersion();
 setInterval(loadVersion, 30 * 60 * 1000);
 
-const langSel = document.getElementById('langSel');
-langSel.innerHTML = '<option value="auto"></option>' +
-  Object.entries(I18N).map(([k, v]) => `<option value="${k}">${v.langName}</option>`).join('');
-langSel.value = store.get('lang', 'auto');
-langSel.addEventListener('change', () => {
-  store.set('lang', langSel.value);
+// Language: a list of the nine translations plus Auto, in a toolbar menu.
+const CHECK = '<svg class="ui-ico chk" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+function renderLangMenu() {
+  const pick = store.get('lang', 'auto');
+  document.getElementById('langName').textContent = pick === 'auto' ? L.auto : I18N[pick]?.langName || L.auto;
+  const item = (v, label, sub) => `<button role="option" aria-selected="${v === pick}" data-lang="${v}" class="${v === pick ? 'on' : ''}"><span>${esc(label)}</span>${sub ? `<small>${esc(sub)}</small>` : ''}${CHECK}</button>`;
+  document.getElementById('langList').innerHTML = item('auto', L.auto, I18N[chooseLangAuto()]?.langName) +
+    Object.entries(I18N).map(([k, v]) => item(k, v.langName)).join('');
+}
+function chooseLangAuto() { return (state.data.lang && I18N[state.data.lang] ? state.data.lang : i18nFromBrowser(navigator.languages || [navigator.language])) || 'en'; }
+document.getElementById('langList').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-lang]'); if (!b) return;
+  store.set('lang', b.dataset.lang); state.lang = b.dataset.lang;
   applyLang(chooseLang(state.data.lang));
-  render();
+  renderLangMenu(); render();
+  closeMenus();
 });
-for (const agent of ['claude', 'codex', 'gemini', 'copilot', 'omp']) addAgentFilter(agent);
 popout = new OfficePopout({
   preferences: () => ({ ...Object.fromEntries(Object.keys(PREF_DEFAULTS).map((k) => [k, state[k]])), lang: store.get('lang', 'auto') }),
   office: () => office,
@@ -1026,7 +1082,7 @@ popout = new OfficePopout({
 window.addEventListener('storage', (e) => {
   if (e.key !== null && !Object.keys(PREF_DEFAULTS).some((k) => e.key === 'wmad.' + k)) return;
   Object.assign(state, readPreferences());
-  langSel.value = state.lang;
+  renderLangMenu();
   hideTip();
   applyLang(chooseLang(state.data.lang));
   syncControls();
@@ -1074,9 +1130,38 @@ function syncFull() {
   document.getElementById('sideTab').setAttribute('aria-label', L.showPanel);
 }
 
+// Agent filter: one chip per client in use, any number selected; none means all.
+function renderChips() {
+  const pool = state.data.sessions.filter((s) => (state.showSub || !s.subagent) && (state.showIdle || s.status !== 'idle'));
+  const count = new Map();
+  for (const s of pool) count.set(s.agent, (count.get(s.agent) || 0) + 1);
+  const order = Object.keys(OFFICE_AGENT_BADGES);
+  const agents = [...new Set([...count.keys(), ...state.agents])]
+    .sort((a, b) => (order.indexOf(a) + 1 || 99) - (order.indexOf(b) + 1 || 99) || a.localeCompare(b));
+  const all = !state.agents.length;
+  const chip = (v, inner, on, name) => `<button class="chip-f${on ? ' on' : ''}" data-v="${esc(v)}" aria-pressed="${on}" title="${esc(name)}" aria-label="${esc(name)}">${inner}</button>`;
+  const html = chip('all', `<span>${esc(L.all)}</span><b>${pool.length}</b>`, all, L.all) + agents.map((a) => {
+    const logo = agentLogo(a) || `<span class="ini">${esc((AGENT_NAME[a] || a).slice(0, 2))}</span>`;
+    return chip(a, `${logo}<b>${count.get(a) || 0}</b>`, !all && state.agents.includes(a), AGENT_NAME[a] || a);
+  }).join('');
+  const box = document.getElementById('agentChips');
+  if (box.dataset.html !== html) { box.innerHTML = html; box.dataset.html = html; }
+}
+document.getElementById('agentChips').addEventListener('click', (e) => {
+  const b = e.target.closest('.chip-f'); if (!b) return;
+  const v = b.dataset.v;
+  let next = v === 'all' ? [] : state.agents.includes(v) ? state.agents.filter((x) => x !== v) : [...state.agents, v];
+  // Every client picked is the same as all of them.
+  const present = new Set(state.data.sessions.map((s) => s.agent));
+  if (next.length && [...present].every((a) => next.includes(a))) next = [];
+  state.agents = next; store.set('agents', next);
+  syncControls(); render();
+});
+
 function renderSide() {
   if (!state.full) return;
   syncFull();
+  renderChips();
   const now = Date.now() - state.skew;
   const list = visible();
   document.getElementById('sideCount').textContent = list.length;
