@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="256" height="256">
+  <title>whatsmyagentdoing</title>
+  <rect width="32" height="32" rx="9" fill="#ff6a4d"/>
+  <rect x="5.5" y="7.5" width="21" height="15" rx="4" fill="#fff"/>
+  <path d="M13 22h6l1 3h-8z" fill="#fff"/>
+  <rect x="10" y="24.6" width="12" height="2.2" rx="1.1" fill="#fff"/>
+  <ellipse cx="12.6" cy="15" rx="2.3" ry="3" fill="#1a1a1a"/>
+  <ellipse cx="19.4" cy="15" rx="2.3" ry="3" fill="#1a1a1a"/>
+  <circle cx="13.3" cy="13.9" r=".8" fill="#fff"/>
+  <circle cx="20.1" cy="13.9" r=".8" fill="#fff"/>
+  <circle cx="25.2" cy="7.6" r="3.6" fill="#22a874" stroke="#ff6a4d" stroke-width="1.6"/>
+</svg>

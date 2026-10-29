@@ -9,7 +9,7 @@
 <meta property="og:description" content="A Claude Code / Codex skill: a live office of every agent on your machine.">
 <meta property="og:image" content="https://charonyuu.github.io/whatsmyagentdoing/site/img/scene-office.jpg">
 <meta name="theme-color" content="#0b0c0e">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%23ff6a4d'/%3E%3Cellipse cx='11' cy='16' rx='4.6' ry='5.8' fill='%23fff'/%3E%3Cellipse cx='21' cy='16' rx='4.6' ry='5.8' fill='%23fff'/%3E%3Ccircle cx='12.6' cy='17.4' r='2.1' fill='%231a1a1a'/%3E%3Ccircle cx='22.6' cy='17.4' r='2.1' fill='%231a1a1a'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E %3Crect width=%2232%22 height=%2232%22 rx=%229%22 fill=%22%23ff6a4d%22/%3E %3Crect x=%225.5%22 y=%227.5%22 width=%2221%22 height=%2215%22 rx=%224%22 fill=%22%23fff%22/%3E %3Cpath d=%22M13 22h6l1 3h-8z%22 fill=%22%23fff%22/%3E %3Crect x=%2210%22 y=%2224.6%22 width=%2212%22 height=%222.2%22 rx=%221.1%22 fill=%22%23fff%22/%3E %3Cellipse cx=%2212.6%22 cy=%2215%22 rx=%222.3%22 ry=%223%22 fill=%22%231a1a1a%22/%3E %3Cellipse cx=%2219.4%22 cy=%2215%22 rx=%222.3%22 ry=%223%22 fill=%22%231a1a1a%22/%3E %3Ccircle cx=%2213.3%22 cy=%2213.9%22 r=%22.8%22 fill=%22%23fff%22/%3E %3Ccircle cx=%2220.1%22 cy=%2213.9%22 r=%22.8%22 fill=%22%23fff%22/%3E %3Ccircle cx=%2225.2%22 cy=%227.6%22 r=%223.6%22 fill=%22%2322a874%22 stroke=%22%23ff6a4d%22 stroke-width=%221.6%22/%3E %3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400..700&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -39,8 +39,13 @@
   nav { position: sticky; top: 0; z-index: 30; background: rgba(11, 12, 14, .88); backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
   nav .wrap { display: flex; align-items: center; gap: 20px; height: 60px; }
   .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; text-decoration: none; }
-  .brand .mark { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; background: var(--accent); box-shadow: 0 0 18px rgba(255, 106, 77, .35); }
-  .mark-svg { width: 22px; height: 22px; }
+  .brand .mark { width: 30px; height: 30px; flex: none; border-radius: 9px; box-shadow: 0 0 18px rgba(255, 106, 77, .3); overflow: visible; }
+  /* The mark watches the room and its status light cycles Thinking → Running → Done. */
+  .mark .eyes { animation: glance 9s ease-in-out infinite; }
+  .mark .status { animation: status 9s steps(1) infinite; }
+  @keyframes glance { 0%, 30% { transform: none; } 36%, 52% { transform: translateX(1.6px); } 58%, 74% { transform: translateX(-1.6px); } 80%, 100% { transform: none; } }
+  @keyframes status { 0% { fill: #8b6be6; } 33.3% { fill: #3b8ee0; } 66.6% { fill: #22a874; } }
+  @media (prefers-reduced-motion: reduce) { .mark .eyes, .mark .status { animation: none; } }
   svg.ic-svg, svg.cap-svg, svg.btn-svg { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
   .ic-svg { width: 20px; height: 20px; }
   .cap-svg { width: 17px; height: 17px; color: var(--ink); }
@@ -62,7 +67,7 @@
   .hero-bg { position: absolute; z-index: 0; top: -61px; left: 50%; width: 100vw; height: 900px; transform: translateX(-50%); overflow: hidden; pointer-events: none;
     -webkit-mask-image: linear-gradient(#000 45%, transparent); mask-image: linear-gradient(#000 45%, transparent); }
   .hero-bg video { width: 100%; height: 100%; object-fit: cover; transform: scale(1.12); opacity: .85; }
-  .hero-bg::after { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse 46% 42% at 50% 36%, rgba(9, 9, 9, .62), rgba(9, 9, 9, .38) 70%, rgba(9, 9, 9, .5)); }
+  .hero-bg::after { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse 44% 40% at 50% 36%, rgba(9, 9, 9, .6), rgba(9, 9, 9, .22) 72%, rgba(9, 9, 9, .3)); }
   @media (max-width: 640px) { .hero-bg { height: 760px; } .hero-bg video { opacity: .7; } }
   .pill { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 5px 14px 5px 6px; text-decoration: none; }
   .pill b { color: var(--ink); font-weight: 600; }
@@ -133,7 +138,9 @@
   .agents { padding: 64px 0 0; text-align: center; }
   .marquee { position: relative; overflow: hidden; margin-top: 18px; -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); }
   .track { display: flex; width: max-content; animation: marquee 36s linear infinite; }
-  .marquee:hover .track { animation-play-state: paused; }
+  .marquee + .marquee { margin-top: 10px; }
+  .marquee.rev .track { animation-direction: reverse; animation-duration: 42s; }
+  .agents:hover .track { animation-play-state: paused; }
   .logos { display: flex; gap: 10px; padding-right: 10px; }
   @keyframes marquee { to { transform: translateX(-50%); } }
   @media (prefers-reduced-motion: reduce) {
@@ -141,6 +148,7 @@
     .track { animation: none; width: auto; justify-content: center; }
     .track .logos { flex-wrap: wrap; justify-content: center; padding: 0; }
     .track .logos[aria-hidden] { display: none; }
+    .marquee.rev { display: none; }
   }
   .logo { flex: none; white-space: nowrap; display: inline-flex; align-items: center; gap: 9px; padding: 7px 14px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel); font-size: 14px; color: var(--muted); }
   .logo img { width: 18px; height: 18px; }
@@ -253,7 +261,6 @@
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
-    <symbol id="i-eyes" viewBox="0 0 24 24"><ellipse cx="7.6" cy="12" rx="4.1" ry="5.2" fill="#fff" stroke="none"/><ellipse cx="16.4" cy="12" rx="4.1" ry="5.2" fill="#fff" stroke="none"/><circle cx="9" cy="13.2" r="1.9" fill="#1a1a1a" stroke="none"/><circle cx="17.8" cy="13.2" r="1.9" fill="#1a1a1a" stroke="none"/></symbol>
     <symbol id="i-office" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8.5 20h7M12 16v4"/><path d="M7 8.5h4M7 11.5h7"/></symbol>
     <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16.5v-5a6 6 0 0 1 12 0v5l1.6 2H4.4z"/><path d="M10 21a2.2 2.2 0 0 0 4 0"/></symbol>
     <symbol id="i-approve" viewBox="0 0 24 24"><path d="M12 3l7.5 3v5.6c0 4.4-3.1 8.2-7.5 9.4-4.4-1.2-7.5-5-7.5-9.4V6z"/><path d="M8.8 12.2l2.3 2.3 4.4-4.6"/></symbol>
@@ -277,7 +284,14 @@
 </svg>
 <nav id="nav">
   <div class="wrap">
-    <a class="brand" href="#top"><span class="mark"><svg class="mark-svg" aria-hidden="true"><use href="#i-eyes"/></svg></span>whatsmyagentdoing <code>/myoffice</code></a>
+    <a class="brand" href="#top"><svg class="mark" viewBox="0 0 32 32" aria-hidden="true">
+        <rect width="32" height="32" rx="9" fill="#ff6a4d"/>
+        <rect x="5.5" y="7.5" width="21" height="15" rx="4" fill="#fff"/>
+        <path d="M13 22h6l1 3h-8z" fill="#fff"/>
+        <rect x="10" y="24.6" width="12" height="2.2" rx="1.1" fill="#fff"/>
+        <g class="eyes"><ellipse cx="12.6" cy="15" rx="2.3" ry="3" fill="#1a1a1a"/><ellipse cx="19.4" cy="15" rx="2.3" ry="3" fill="#1a1a1a"/><circle cx="13.3" cy="13.9" r=".8" fill="#fff"/><circle cx="20.1" cy="13.9" r=".8" fill="#fff"/></g>
+        <circle class="status" cx="25.2" cy="7.6" r="3.6" fill="#22a874" stroke="#ff6a4d" stroke-width="1.6"/>
+      </svg>whatsmyagentdoing <code>/myoffice</code></a>
     <div class="links">
       <a class="nl hide-sm" href="#features" data-i="navFeatures">Features</a>
       <a class="nl hide-sm" href="#scenes" data-i="navScenes">Scenes</a>
@@ -343,6 +357,30 @@
   <div class="agents wrap">
     <div class="eyebrow" data-i="worksWith">Works with the agents you already run</div>
     <div class="marquee" id="marquee">
+      <div class="track">
+        <div class="logos">
+          <span class="logo"><img src="site/img/agents/claude.png" alt="">Claude Code</span>
+          <span class="logo"><img src="site/img/agents/codex.png" alt="">Codex</span>
+          <span class="logo"><img src="site/img/agents/gemini.png" alt="">Gemini CLI</span>
+          <span class="logo"><img class="mono" src="site/img/agents/copilot.svg" alt="">Copilot CLI</span>
+          <span class="logo"><img src="site/img/agents/omp.svg" alt="">OMP</span>
+          <span class="logo"><img class="mono" src="site/img/agents/kimi.svg" alt="">Kimi Code</span>
+          <span class="logo"><img src="site/img/agents/dsh.svg" alt="">DeepSeek Harness</span>
+          <span class="logo"><img class="mono" src="site/img/agents/grok.svg" alt="">Grok Build</span>
+        </div>
+        <div class="logos" aria-hidden="true">
+          <span class="logo"><img src="site/img/agents/claude.png" alt="">Claude Code</span>
+          <span class="logo"><img src="site/img/agents/codex.png" alt="">Codex</span>
+          <span class="logo"><img src="site/img/agents/gemini.png" alt="">Gemini CLI</span>
+          <span class="logo"><img class="mono" src="site/img/agents/copilot.svg" alt="">Copilot CLI</span>
+          <span class="logo"><img src="site/img/agents/omp.svg" alt="">OMP</span>
+          <span class="logo"><img class="mono" src="site/img/agents/kimi.svg" alt="">Kimi Code</span>
+          <span class="logo"><img src="site/img/agents/dsh.svg" alt="">DeepSeek Harness</span>
+          <span class="logo"><img class="mono" src="site/img/agents/grok.svg" alt="">Grok Build</span>
+        </div>
+      </div>
+    </div>
+    <div class="marquee rev" aria-hidden="true">
       <div class="track">
         <div class="logos">
           <span class="logo"><img src="site/img/agents/claude.png" alt="">Claude Code</span>
