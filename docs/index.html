@@ -111,7 +111,7 @@
   .bar { display: flex; align-items: center; gap: 7px; padding: 4px 8px 10px; }
   .bar i { width: 10px; height: 10px; border-radius: 50%; background: var(--line2); }
   .bar span { margin-left: 10px; font: 12px var(--mono); color: var(--faint); }
-  .stage { cursor: zoom-in; position: relative; border-radius: 16px; overflow: hidden; aspect-ratio: 1600 / 861; background: var(--inset); outline: none; touch-action: pan-y; }
+  .stage { cursor: zoom-in; position: relative; border-radius: 16px; overflow: hidden; aspect-ratio: 1920 / 994; background: var(--inset); outline: none; touch-action: pan-y; }
   .stage:focus-visible { box-shadow: 0 0 0 2px var(--accent); }
   .slide { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .8s ease; }
   .slide { pointer-events: none; display: block; }
@@ -308,7 +308,7 @@
 <main id="top">
   <header class="hero wrap">
     <div class="hero-bg" aria-hidden="true">
-      <video id="heroBg" muted loop playsinline preload="none" poster="site/video/hero-bg.jpg"><source src="site/video/hero-bg.mp4" type="video/mp4"></video>
+      <video id="heroBg" muted loop playsinline preload="none" poster="site/video/hero-bg.jpg"></video>
     </div>
     <a class="pill" href="#scenes"><span class="tag">v0.4</span><span data-i="pill">New: <b>Haunted Hollow</b>, approval alerts and a Today panel</span></a>
     <h1 data-i="h1">See what every coding agent is doing.</h1>
@@ -334,12 +334,12 @@
     <div class="show reveal" id="show" aria-roledescription="carousel" aria-label="3D scenes">
       <div class="bar"><i></i><i></i><i></i><span id="showUrl">localhost:4545</span></div>
       <div class="stage" id="stage" tabindex="0">
-          <video class="slide on" muted loop playsinline preload="none" poster="site/video/office.jpg" data-src="site/video/office.mp4" data-k="office" width="1180" height="606"></video>
-          <video class="slide" muted loop playsinline preload="none" poster="site/video/graveyard.jpg" data-src="site/video/graveyard.mp4" data-k="graveyard" width="1180" height="606"></video>
-          <video class="slide" muted loop playsinline preload="none" poster="site/video/pirate.jpg" data-src="site/video/pirate.mp4" data-k="pirate" width="1180" height="606"></video>
-          <video class="slide" muted loop playsinline preload="none" poster="site/video/cafe.jpg" data-src="site/video/cafe.mp4" data-k="cafe" width="1180" height="606"></video>
-          <video class="slide" muted loop playsinline preload="none" poster="site/video/station.jpg" data-src="site/video/station.mp4" data-k="station" width="1180" height="606"></video>
-          <video class="slide" muted loop playsinline preload="none" poster="site/video/castle.jpg" data-src="site/video/castle.mp4" data-k="castle" width="1180" height="606"></video>
+          <video class="slide on" muted loop playsinline preload="none" poster="site/video/office.jpg" data-src="site/video/office.mp4" data-k="office" width="1920" height="994"></video>
+          <video class="slide" muted loop playsinline preload="none" poster="site/video/graveyard.jpg" data-src="site/video/graveyard.mp4" data-k="graveyard" width="1920" height="994"></video>
+          <video class="slide" muted loop playsinline preload="none" poster="site/video/pirate.jpg" data-src="site/video/pirate.mp4" data-k="pirate" width="1920" height="994"></video>
+          <video class="slide" muted loop playsinline preload="none" poster="site/video/cafe.jpg" data-src="site/video/cafe.mp4" data-k="cafe" width="1920" height="994"></video>
+          <video class="slide" muted loop playsinline preload="none" poster="site/video/station.jpg" data-src="site/video/station.mp4" data-k="station" width="1920" height="994"></video>
+          <video class="slide" muted loop playsinline preload="none" poster="site/video/castle.jpg" data-src="site/video/castle.mp4" data-k="castle" width="1920" height="994"></video>
         <button class="snav prev" type="button" id="prevBtn" aria-label="Previous scene"><svg class="btn-svg" aria-hidden="true"><use href="#i-left"/></svg></button>
         <button class="snav next" type="button" id="nextBtn" aria-label="Next scene"><svg class="btn-svg" aria-hidden="true"><use href="#i-right"/></svg></button>
       </div>
@@ -679,7 +679,11 @@ const playSafe = (v) => { const p = v.play(); if (p) p.catch(() => {}); };
 // Blurred office behind the hero.
 (() => {
   const v = document.getElementById('heroBg');
+  // Phones get a portrait crop at native resolution instead of a wide clip zoomed 2×.
+  const phone = matchMedia('(max-width: 640px)').matches;
+  if (phone) v.poster = 'site/video/hero-bg-mobile.jpg';
   if (STILL) return;
+  v.src = phone ? 'site/video/hero-bg-mobile.mp4' : 'site/video/hero-bg.mp4';
   v.preload = 'auto';
   playSafe(v);
   document.addEventListener('visibilitychange', () => (document.hidden ? v.pause() : playSafe(v)));
