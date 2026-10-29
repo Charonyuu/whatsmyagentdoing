@@ -40,7 +40,7 @@ It opens an isometric **office**. Agents that are working sit at cubicle desks: 
 
 Two looks: **Medium** is a hand-drawn 2D canvas (zero dependencies). **High (3D)** renders the same office with real-time lighting and shadows using [Kenney](https://kenney.nl)'s CC0 *Mini Characters* (with their walk / sit / interact animations) and *Furniture Kit*; drag to rotate, scroll to zoom. The 3D bundle (three.js, ~180 KB gzipped) and models (~1.3 MB, meshopt-compressed) only load when you pick High.
 
-**Scenes (3D):** the office is built in; other scenes are small downloadable packs (Haunted Hollow, Pirate Cove, Café, Space Station and Castle are 100–230 KB each), fetched only when you pick one from the scene buttons, run `--scene pirate`, or ask your agent for it. Packs are data only (a manifest plus Kenney CC0 models) and are checked against a pinned SHA-256 before they're installed into `~/.whatsmyagentdoing/scenes`.
+**Scenes (3D):** the office is built in; other scenes are small downloadable packs (Haunted Hollow, Pirate Cove, Café, Space Station and Castle are 100–230 KB each), fetched only when you pick one from the scene menu next to 2D/3D, run `--scene pirate`, or ask your agent for it. Packs are data only (a manifest plus Kenney CC0 models) and are checked against a pinned SHA-256 before they're installed into `~/.whatsmyagentdoing/scenes`.
 
 Each session updates in real time:
 
@@ -53,9 +53,9 @@ Each session updates in real time:
 | ✅ Done | turn finished, with the last reply |
 | ■ Interrupted / ❗ Error / – Idle | |
 
-The UI speaks English, 繁體中文, 简体中文, 日本語, 한국어, Español, Français, Deutsch and Português. By default it uses the language you write your prompts in (falling back to your browser's); pick one from the 🌐 menu to override.
+The UI speaks English, 繁體中文, 简体中文, 日本語, 한국어, Español, Français, Deutsch and Português. By default it uses the language you write your prompts in (falling back to your browser's); pick one from the language menu in the toolbar to override.
 
-In the agent panel, sessions are grouped into **Needs you → Working → Finished**, with a live timer for the current turn, a copy button for the resume command (`claude --resume …` / `codex resume …` / `copilot --resume …`), optional browser notifications when an agent finishes, and filters per agent and for subagents. The tab title shows how many agents are working.
+In the agent panel, sessions are grouped into **Needs you → Working → Finished**, with a live timer for the current turn, a copy button for the resume command (`claude --resume …` / `codex resume …` / `copilot --resume …`), optional browser notifications when an agent finishes, and a toolbar filter to show any mix of agents (or all of them), plus subagents and idle sessions. The tab title shows how many agents are working.
 
 **Alerts:** when an agent needs you (a question, an approval or an error), the page can send a browser notification and, with **Settings → Sound**, play a short chime. A tool that runs for more than 10 minutes, or thinking that goes silent for 8, is flagged as *No progress*, so a hung command or a lost prompt doesn't cost you an hour.
 
