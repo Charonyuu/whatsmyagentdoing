@@ -22,6 +22,15 @@ test('Claude counts each API response once, tracks context fill and counts real 
   assert.equal(s.contextWindow, 1_000_000, 'more than 200k in context means a 1M window');
 });
 
+test('Claude titles come from ai-title, but a /rename custom-title wins', () => {
+  const s = newSession('claude', 'c', null);
+  applyClaude(s, { type: 'ai-title', aiTitle: 'Generated', sessionId: 'c' });
+  assert.equal(s.title, 'Generated');
+  applyClaude(s, { type: 'custom-title', customTitle: 'Mine', sessionId: 'c' });
+  applyClaude(s, { type: 'ai-title', aiTitle: 'Regenerated', sessionId: 'c' });
+  assert.equal(s.title, 'Mine');
+});
+
 test('Codex reads token_count events and resets at a new day', () => {
   const s = newSession('codex', 'b', null);
   const yesterday = NOW - 86_400_000;
