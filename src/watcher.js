@@ -163,6 +163,19 @@ function antigravityFiles(sinceMs) {
   return out;
 }
 
+// A protobuf text-format string body: non-ASCII text is written as octal
+// UTF-8 bytes (\346\226\207), alongside the usual C escapes.
+function pbtxtString(raw) {
+  const out = [];
+  for (const m of raw.matchAll(/\\(?:([0-7]{1,3})|x([0-9a-fA-F]{1,2})|([\s\S]))|([^\\]+)/g)) {
+    if (m[4]) out.push(Buffer.from(m[4]));
+    else if (m[1]) out.push(Buffer.from([parseInt(m[1], 8) & 255]));
+    else if (m[2]) out.push(Buffer.from([parseInt(m[2], 16)]));
+    else out.push(Buffer.from({ n: '\n', t: '\t', r: '\r' }[m[3]] ?? m[3]));
+  }
+  return Buffer.concat(out).toString('utf8');
+}
+
 function ompFiles(sinceMs, roots) {
   const out = [], seen = new Set();
   const add = (dir, profile, parentFile = null, depth = 0) => {
@@ -294,7 +307,7 @@ class Watcher extends EventEmitter {
     try {
       const raw = readRange(file, 0, Math.min(st.size, 4096));
       const m = raw.match(/title:\s*"((?:[^"\\]|\\.)*)"/);
-      if (m) title = m[1].replace(/\\"/g, '"');
+      if (m) title = pbtxtString(m[1]).replace(/\s+/g, ' ').trim() || null;
     } catch {}
     this.antigravityTitles.set(id, { mtime: st.mtimeMs, title });
     return title;
@@ -598,10 +611,9 @@ class Watcher extends EventEmitter {
       }
       if (s.agent === 'antigravity') {
         if (!s.cwd) s.cwd = this.antigravityWorkspaces.get(s.id) || (s.parentId && this.antigravityWorkspaces.get(s.parentId)) || null;
-        if (!s.title) {
-          const t = this.antigravityTitle(s.id);
-          if (t) s.title = t;
-        }
+        // Cached by mtime, so a renamed conversation picks up its new title.
+        const t = this.antigravityTitle(s.id);
+        if (t) s.title = t;
       }
       // A permission prompt from the optional Claude Code hook, until the log moves on.
       const wait = s.agent === 'claude' && !s.subagent && this.waiting.get(s.id);

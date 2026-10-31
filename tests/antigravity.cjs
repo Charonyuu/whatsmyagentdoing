@@ -299,4 +299,11 @@ test('Watcher discovers Antigravity sessions, resolves cwd from history.jsonl, a
   assert.equal(childSession.parentId, parentId);
   assert.equal(childSession.status, 'tool');
   assert.equal(childSession.activity, 'Bash: echo test');
+
+  // A rename is picked up, with octal UTF-8 escapes decoded ("修正 \"登入\"").
+  const note = path.join(annotationsDir, `${parentId}.pbtxt`);
+  fs.writeFileSync(note, 'title: "\\344\\277\\256\\346\\255\\243 \\"\\347\\231\\273\\345\\205\\245\\""\n');
+  const later = new Date(Date.now() + 5000);
+  fs.utimesSync(note, later, later);
+  assert.equal(watcher.sessions().find((s) => s.id === parentId).title, '修正 "登入"');
 });
