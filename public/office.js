@@ -19,6 +19,7 @@
     gemini: ['#4f7cf0', '#6b8ff5', '#3d66d6', '#8aa6f8'],
     copilot: ['#8f5cf5', '#a06af7', '#7a47d5', '#c5a4ff'],
     omp: ['#a96926', '#c78942', '#8d531e', '#dca45c'],
+    antigravity: ['#0ea5e9', '#38bdf8', '#0284c7', '#7dd3fc'],
   };
   // Official product icons, shared by both renderers and the page UI (OMP: a neutral monogram).
   // Load once per page from the same origin so video capture stays readable.
@@ -32,6 +33,7 @@
     dsh: { label: 'DSH', short: 'Ds', logo: '/assets/agents/dsh.svg' },
     grok: { label: 'Grok Build', short: 'Gr', logo: '/assets/agents/grok.svg', mono: true },
     omp: { label: 'OMP', short: 'OMP', color: '#a96926', logo: '/assets/agents/omp.svg' },
+    antigravity: { label: 'Antigravity', short: 'Ag', color: '#0ea5e9', logo: '/assets/agents/antigravity.png' },
   };
   for (const badge of Object.values(AGENT_BADGES)) {
     badge.image = new Image();

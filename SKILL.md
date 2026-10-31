@@ -1,6 +1,6 @@
 ---
 name: myoffice
-description: Open a live office view of every Claude Code, Codex, Gemini CLI, Copilot CLI, OMP, Kimi Code, DeepSeek Harness and Grok Build agent on this machine — who is thinking, running a tool, writing a reply, waiting for the user, or done. Use when the user types /myoffice, asks what their agents are doing, wants to see all running sessions, or which agent is stuck or finished ("我的 agent 在幹嘛", "show my agents").
+description: Open a live office view of every Claude Code, Codex, Gemini CLI, Antigravity CLI, Copilot CLI, OMP, Kimi Code, DeepSeek Harness and Grok Build agent on this machine — who is thinking, running a tool, writing a reply, waiting for the user, or done. Use when the user types /myoffice, asks what their agents are doing, wants to see all running sessions, or which agent is stuck or finished ("我的 agent 在幹嘛", "show my agents").
 ---
 
 # myoffice
@@ -63,5 +63,5 @@ It adds one Notification hook to their Claude Code settings; `--uninstall-hook` 
 Ask before running it, since it changes their settings.
 
 Everything is read locally from the agents' own session folders (`~/.claude/projects`,
-`~/.codex/sessions`, `~/.gemini/tmp`, `~/.copilot/session-state`, `~/.omp`, `~/.kimi-code`,
+`~/.codex/sessions`, `~/.gemini/tmp`, `~/.gemini/antigravity-cli`, `~/.copilot/session-state`, `~/.omp`, `~/.kimi-code`,
 `~/.dsh`, `~/.grok`); the server listens on 127.0.0.1 only and sends nothing anywhere.

@@ -649,4 +649,100 @@ function applyOMP(s, d) {
   else set(s, 'thinking', null);
 }
 
-module.exports = { dayKey, newSession, applyClaude, applyCodex, applyGemini, applyGeminiDocument, applyCopilot, applyOMP, clean, describeClaudeTool, describeCodexCall, codexText };
+// ---------------------------------------------------------------- Antigravity
+
+function unq(v) {
+  if (typeof v !== 'string') return '';
+  return v.startsWith('"') && v.endsWith('"') ? v.slice(1, -1) : v;
+}
+
+function describeAntigravityTool(call = {}) {
+  const base = (p) => (p ? path.basename(String(p)) : '');
+  const name = call.name || 'tool';
+  const args = call.args || {};
+  if (name === 'ask_question') return 'Waiting for your answer';
+  if (name === 'run_command') return `Bash: ${short(unq(args.toolSummary) || unq(args.CommandLine), 60)}`;
+  if (['read_file', 'view_file', 'write_file', 'edit_file'].includes(name)) return `${name} ${base(unq(args.Path || args.AbsolutePath))}`.trim();
+  if (['grep_search', 'find_by_name'].includes(name)) return `${name} ${short(unq(args.Query || args.Pattern), 60)}`;
+  if (name === 'search_web') return `WebSearch “${short(unq(args.query), 60)}”`;
+  if (name === 'invoke_subagent') return `Subagent: ${short(unq(args.Role || args.TypeName), 60)}`;
+  if (name === 'call_mcp_tool') return [unq(args.ServerName) || 'mcp', unq(args.ToolName)].filter(Boolean).join(' · ');
+  return short(name, 60);
+}
+
+// Gemini models have a 1M window; Claude follows the same rule as Claude Code.
+// Unknown models get no context bar rather than a guess.
+function antigravityWindow(model, context) {
+  if (/gemini/i.test(model || '')) return 1_000_000;
+  if (/claude/i.test(model || '')) return context > 200_000 ? 1_000_000 : 200_000;
+  return null;
+}
+
+function applyAntigravity(s, d) {
+  if (!d || typeof d !== 'object') return;
+  const ts = stamp(s, d.created_at || d.timestamp);
+  switch (d.type) {
+    case 'USER_INPUT': {
+      // Only the user's own settings change names the model; tool output may quote the same text.
+      const model = typeof d.content === 'string' && d.content.match(/`Model Selection` from .+? to ([^\n]+?)(?:\.\s|\.$|\n|$)/);
+      if (model) s.model = model[1].trim();
+      const reqMatch = typeof d.content === 'string' ? d.content.match(/<USER_REQUEST>([\s\S]*?)<\/USER_REQUEST>/) : null;
+      const text = clean(reqMatch ? reqMatch[1] : d.content);
+      if (!text) return;
+      s.prompt = text;
+      s.reply = null;
+      s.turnStartedAt = ts || s.turnStartedAt;
+      countTurn(s, ts);
+      set(s, 'thinking', null);
+      return;
+    }
+    case 'SYSTEM_MESSAGE': {
+      if (typeof d.content === 'string') {
+        const senderMatch = d.content.match(/sender=([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/);
+        if (d.step_index === 0 && senderMatch) {
+          s.subagent = true;
+          s.parentId = senderMatch[1];
+          const contentMatch = d.content.match(/content=([\s\S]*?)(?:<\/SYSTEM_MESSAGE>|$)/);
+          const text = clean(contentMatch ? contentMatch[1] : '');
+          if (text) s.prompt = text;
+          s.reply = null;
+          s.turnStartedAt = ts || s.turnStartedAt;
+          countTurn(s, ts);
+        }
+      }
+      // Later system messages (e.g. a subagent reporting back) continue the current turn.
+      set(s, 'thinking', null);
+      return;
+    }
+    case 'PLANNER_RESPONSE': {
+      const rawIn = Number(d.input_tokens) || 0;
+      const cacheTok = Number(d.cache_read_tokens) || 0;
+      const outTok = Number(d.output_tokens) || 0;
+      if (rawIn + cacheTok + outTok > 0) usage(s, ts, { context: rawIn + cacheTok + outTok, window: antigravityWindow(s.model, rawIn + cacheTok + outTok), tokens: rawIn + outTok });
+      if (d.status === 'ERROR') {
+        set(s, 'error', null);
+        s.error = short(d.content || 'Error', 120);
+        return;
+      }
+      const calls = Array.isArray(d.tool_calls) ? d.tool_calls : [];
+      const text = clean(d.content);
+      if (text) s.reply = text;
+      if (calls.length > 0) {
+        const waiting = calls.find((c) => c && c.name === 'ask_question');
+        if (waiting) set(s, 'waiting', describeAntigravityTool(waiting));
+        else set(s, 'tool', describeAntigravityTool(calls[calls.length - 1]));
+      } else if (text) {
+        set(s, 'done', null);
+      } else {
+        set(s, 'thinking', null);
+      }
+      return;
+    }
+    case 'GENERIC': {
+      if (s.status === 'tool' || s.status === 'waiting') set(s, 'thinking', null);
+      return;
+    }
+  }
+}
+
+module.exports = { dayKey, newSession, applyClaude, applyCodex, applyGemini, applyGeminiDocument, applyCopilot, applyOMP, applyAntigravity, clean, describeClaudeTool, describeCodexCall, describeAntigravityTool, codexText };

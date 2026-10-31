@@ -10,7 +10,7 @@ const path = require('path');
 const { EventEmitter } = require('events');
 const { StringDecoder } = require('string_decoder');
 const crypto = require('crypto');
-const { newSession, applyClaude, applyCodex, applyGemini, applyGeminiDocument, applyCopilot, applyOMP } = require('./parsers');
+const { newSession, applyClaude, applyCodex, applyGemini, applyGeminiDocument, applyCopilot, applyOMP, applyAntigravity } = require('./parsers');
 const { Magpie } = require('./magpie');
 const { clientFiles, metadata, applyKimi, applyDsh, applyGrok, readDsh } = require('./clients');
 const { ompDirs } = require('./omp');
@@ -37,6 +37,10 @@ const GEMINI_HOMES = [
 ];
 const GEMINI_DIR = path.join(GEMINI_HOMES[0], 'tmp');
 const COPILOT_DIR = path.join(home, '.copilot', 'session-state');
+const ANTIGRAVITY_HOME = process.env.ANTIGRAVITY_HOME || path.join(home, '.gemini', 'antigravity-cli');
+const ANTIGRAVITY_DIR = path.join(ANTIGRAVITY_HOME, 'brain');
+const ANTIGRAVITY_HISTORY = path.join(ANTIGRAVITY_HOME, 'history.jsonl');
+const ANTIGRAVITY_ANNOTATIONS = path.join(ANTIGRAVITY_HOME, 'annotations');
 const CLIENT_DIRS = {
   kimi: path.join(process.env.KIMI_CODE_HOME || path.join(home, '.kimi-code'), 'sessions'),
   dsh: path.join(process.env.DSH_HOME || path.join(home, '.dsh'), 'sessions'),
@@ -147,6 +151,18 @@ function copilotFiles() {
   return out;
 }
 
+function antigravityFiles(sinceMs) {
+  const out = [];
+  for (const e of ls(ANTIGRAVITY_DIR)) {
+    if (!e.isDirectory()) continue;
+    const file = path.join(ANTIGRAVITY_DIR, e.name, '.system_generated', 'logs', 'transcript.jsonl');
+    const st = statSafe(file);
+    if (!st || st.mtimeMs < sinceMs) continue;
+    out.push({ agent: 'antigravity', file, id: e.name });
+  }
+  return out;
+}
+
 function ompFiles(sinceMs, roots) {
   const out = [], seen = new Set();
   const add = (dir, profile, parentFile = null, depth = 0) => {
@@ -226,6 +242,9 @@ class Watcher extends EventEmitter {
     this.ompDir = ompDir;
     this.ompParentIds = new Map(); // parent log -> { mtime, size, id }
     this.waiting = new Map(); // Claude session ID -> { at, message } from the optional hook
+    this.antigravityWorkspaces = new Map();
+    this.antigravityHistoryMtime = 0;
+    this.antigravityTitles = new Map();
   }
 
   start() {
@@ -249,6 +268,36 @@ class Watcher extends EventEmitter {
       } catch {}
     }
     return true;
+  }
+
+  loadAntigravityHistory() {
+    const st = statSafe(ANTIGRAVITY_HISTORY);
+    if (!st || st.mtimeMs === this.antigravityHistoryMtime) return false;
+    this.antigravityHistoryMtime = st.mtimeMs;
+    const start = Math.max(0, st.size - 2 * 1024 * 1024);
+    for (const line of readRange(ANTIGRAVITY_HISTORY, start, st.size).split('\n')) {
+      try {
+        const d = JSON.parse(line);
+        if (d.conversationId && d.workspace) this.antigravityWorkspaces.set(d.conversationId, d.workspace);
+      } catch {}
+    }
+    return true;
+  }
+
+  antigravityTitle(id) {
+    const file = path.join(ANTIGRAVITY_ANNOTATIONS, `${id}.pbtxt`);
+    const st = statSafe(file);
+    if (!st) return null;
+    const cached = this.antigravityTitles.get(id);
+    if (cached && cached.mtime === st.mtimeMs) return cached.title;
+    let title = null;
+    try {
+      const raw = readRange(file, 0, Math.min(st.size, 4096));
+      const m = raw.match(/title:\s*"((?:[^"\\]|\\.)*)"/);
+      if (m) title = m[1].replace(/\\"/g, '"');
+    } catch {}
+    this.antigravityTitles.set(id, { mtime: st.mtimeMs, title });
+    return title;
   }
 
   // ~/.gemini/projects.json maps project paths to the short slugs used as
@@ -277,12 +326,14 @@ class Watcher extends EventEmitter {
     let changed = this.loadCodexIndex();
     if (this.loadWaiting(since)) changed = true;
     if (this.loadGeminiProjects()) changed = true;
+    if (this.loadAntigravityHistory()) changed = true;
 
     // Directory walk every 5s; stat known files every tick.
     if (now - this.lastScan > 5000) {
       this.lastScan = now;
       this.candidates = [...claudeFiles(), ...codexFiles(since), ...geminiFiles(), ...copilotFiles(),
-        ...clientFiles(CLIENT_DIRS, since), ...ompFiles(since, ompDirs(this.ompDir, process.env, home, process.platform))];
+        ...clientFiles(CLIENT_DIRS, since), ...ompFiles(since, ompDirs(this.ompDir, process.env, home, process.platform)),
+        ...antigravityFiles(since)];
     }
 
     for (const c of this.candidates) {
@@ -374,7 +425,7 @@ class Watcher extends EventEmitter {
     if (c.parentId) { session.parentId = c.parentId; session.subagent = true; }
     session.mtime = st.mtimeMs;
     if (c.agent === 'gemini') session.geminiProject = c.project;
-    const apply = { claude: applyClaude, codex: applyCodex, gemini: applyGemini, copilot: applyCopilot, kimi: applyKimi, dsh: applyDsh, grok: applyGrok, omp: applyOMP }[c.agent];
+    const apply = { claude: applyClaude, codex: applyCodex, gemini: applyGemini, copilot: applyCopilot, kimi: applyKimi, dsh: applyDsh, grok: applyGrok, omp: applyOMP, antigravity: applyAntigravity }[c.agent];
     const t = { session, offset: st.size, partial: '', apply, mtime: st.mtimeMs };
     if (c.agent === 'dsh') {
       t.whole = true;
@@ -545,6 +596,13 @@ class Watcher extends EventEmitter {
         const name = this.codexNames.get(s.id);
         if (name) s.title = name;
       }
+      if (s.agent === 'antigravity') {
+        if (!s.cwd) s.cwd = this.antigravityWorkspaces.get(s.id) || (s.parentId && this.antigravityWorkspaces.get(s.parentId)) || null;
+        if (!s.title) {
+          const t = this.antigravityTitle(s.id);
+          if (t) s.title = t;
+        }
+      }
       // A permission prompt from the optional Claude Code hook, until the log moves on.
       const wait = s.agent === 'claude' && !s.subagent && this.waiting.get(s.id);
       if (wait && wait.at > (s.lastEventAt || 0)) {
@@ -586,4 +644,4 @@ class Watcher extends EventEmitter {
   }
 }
 
-module.exports = { Watcher, CLAUDE_DIR, CODEX_DIR, GEMINI_DIR, CLIENT_DIRS, ompDirs };
+module.exports = { Watcher, CLAUDE_DIR, CODEX_DIR, GEMINI_DIR, CLIENT_DIRS, ompDirs, ANTIGRAVITY_DIR };

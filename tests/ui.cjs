@@ -351,6 +351,20 @@ async function drawnLogos(target) {
   }
   check('Kimi, DSH and Grok support filters, subagents, resume commands and packaged logos in both offices');
   check('agent legends follow current sessions and filters, disappear when empty and return without duplicates in 2D/3D');
+  const antigravity = [
+   {key:'antigravity:conv-1',id:'conv-1',agent:'antigravity',status:'tool',activity:'Bash: npm test',cwd:'/demo/agy'},
+   {key:'antigravity:conv-2',id:'conv-2',parentId:'conv-1',subagent:true,agent:'antigravity',status:'thinking',cwd:'/demo/agy'},
+  ].map(s=>({...s,lastEventAt:Date.now()}));
+  await page.evaluate(s=>onData({now:Date.now(),sessions:s}),antigravity);
+  await page.waitForFunction(()=>{
+   const img=document.querySelector('#agentLegend img[src="/assets/agents/antigravity.png"]');
+   return img?.complete&&img.naturalWidth>0;
+  });
+  assert.match(await resumeOf(page,'antigravity:conv-1'),/agy --conversation 'conv-1'/);
+  await page.waitForFunction(keys=>office.people.size===keys.length&&keys.every(k=>office.people.has(k)),antigravity.map(s=>s.key));
+  assert.deepEqual(await drawnLogos(page),['antigravity']);
+  await page.evaluate(s=>onData({now:Date.now(),sessions:s}),nativeClients);
+  check('Antigravity CLI sessions show their logo, subagents and agy --conversation resume command');
   for (const colorScheme of ['light','dark']) {
    await page.emulateMedia({colorScheme});
    await openSettings(page);

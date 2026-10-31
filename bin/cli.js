@@ -3,7 +3,7 @@
 
 const http = require('http');
 const { spawn } = require('child_process');
-const { Watcher, CLAUDE_DIR, CODEX_DIR, GEMINI_DIR, CLIENT_DIRS, ompDirs } = require('../src/watcher');
+const { Watcher, CLAUDE_DIR, CODEX_DIR, GEMINI_DIR, CLIENT_DIRS, ompDirs, ANTIGRAVITY_DIR } = require('../src/watcher');
 const { DemoWatcher } = require('../src/demo');
 const scenes = require('../src/scenes');
 const updater = require('../src/update');
@@ -12,7 +12,7 @@ const { createServer, snapshot } = require('../src/server');
 const pkg = require('../package.json');
 
 const HELP = `whatsmyagentdoing ${pkg.version}
-See what every Claude Code, Codex, Gemini CLI, OMP, Kimi Code, DSH and Grok Build agent is doing, live.
+See what every Claude Code, Codex, Gemini CLI, Antigravity, OMP, Kimi Code, DSH and Grok Build agent is doing, live.
 
 Usage: node bin/cli.js [options]   (or /myoffice as a skill)
 
@@ -37,9 +37,10 @@ Reads (never writes):
   ${CLAUDE_DIR}
   ${CODEX_DIR}
   ${GEMINI_DIR}
+  ${ANTIGRAVITY_DIR}
   ${Object.values(CLIENT_DIRS).join('\n  ')}
   ${ompDirs().map(x => x.dir).join('\n  ')}
-Override with CLAUDE_CONFIG_DIR / CODEX_HOME / GEMINI_CLI_HOME /
+Override with CLAUDE_CONFIG_DIR / CODEX_HOME / GEMINI_CLI_HOME / ANTIGRAVITY_HOME /
   WMAD_OMP_SESSIONS_DIR (or --omp-dir); OMP also honors PI_CODING_AGENT_DIR.
 OMP profiles under ~/.omp/profiles are discovered automatically.
 Other clients: KIMI_CODE_HOME / DSH_HOME / GROK_HOME.
