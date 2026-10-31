@@ -118,7 +118,8 @@ function describeClaudeTool(name, input = {}) {
   }
   switch (name) {
     case 'Bash':
-      return `Bash: ${short(input.description || input.command)}`;
+    case 'PowerShell':
+      return `${name}: ${short(input.description || input.command)}`;
     case 'Read':
     case 'Edit':
     case 'Write':
@@ -150,7 +151,11 @@ function applyClaude(s, d) {
 
   switch (d.type) {
     case 'custom-title':
-      if (d.customTitle) s.title = d.customTitle;
+      if (d.customTitle) { s.title = d.customTitle; s._customTitle = true; }
+      return;
+    case 'ai-title':
+      // Claude Code's generated title; a user's /rename (custom-title) wins.
+      if (d.aiTitle && !s._customTitle) s.title = d.aiTitle;
       return;
     case 'agent-name':
       if (!s.title && d.agentName) s.title = d.agentName;
