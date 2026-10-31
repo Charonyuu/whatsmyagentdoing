@@ -10,6 +10,9 @@ them. The project code license does not grant rights to these trademarks.
 
 Retrieved 2026-10-25, artwork unchanged:
 
+- `antigravity.png`: the official Google Antigravity mark, retrieved 2026-10-31 from
+  https://antigravity.google/assets/image/antigravity-logo.png (linked as an icon by
+  https://antigravity.google/).
 - `claude.png`: Claude's official website favicon, downloaded from
   https://assets.claude.com/95a868946ac8a31e5ff832e2899f294aa368b836.png?w=128&h=128
   (linked by https://claude.com/).

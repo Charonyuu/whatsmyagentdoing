@@ -2,7 +2,7 @@
 
 # whatsmyagentdoing
 
-**A Claude Code / Codex skill: type `/myoffice` and see what every Claude Code, Codex, Gemini CLI, Copilot CLI, OMP (oh-my-pi), Kimi Code, DeepSeek Harness and Grok Build agent on your machine is doing — live, in a little office.**
+**A Claude Code / Codex skill: type `/myoffice` and see what every Claude Code, Codex, Gemini CLI, Antigravity CLI, Copilot CLI, OMP (oh-my-pi), Kimi Code, DeepSeek Harness and Grok Build agent on your machine is doing — live, in a little office.**
 
 **Website:** https://charonyuu.github.io/whatsmyagentdoing/
 
@@ -71,10 +71,10 @@ The toolbar keeps the view, 2D/3D and pop-out controls visible. Scene selection,
 
 When Document PiP isn't available, **Pop out** in office view starts a local, view-only video preview of the 2D or 3D office. Use its video PiP button, or the browser's own video controls/context menu (such as Firefox's), to float it. Stop the preview when finished. No screen-sharing permission is needed and no video is uploaded. Background animation may run at a lower frame rate, depending on browser throttling; this fallback doesn't support list cards or clicking agents.
 
-Works with Claude Code (CLI, desktop, IDE), Codex (CLI, desktop, IDE), Gemini CLI, Copilot CLI,
-OMP, Kimi Code, DeepSeek Harness (DSH) and Grok Build through their local session
-logs. (Google Antigravity keeps its conversations in an undocumented binary
-store and isn't supported yet.)
+Works with Claude Code (CLI, desktop, IDE), Codex (CLI, desktop, IDE), Gemini CLI, Antigravity CLI,
+Copilot CLI, OMP, Kimi Code, DeepSeek Harness (DSH) and Grok Build through their local session
+logs. (The Google Antigravity desktop app keeps its conversations in an undocumented binary
+store and isn't supported yet; its `agy` CLI is.)
 
 ## Options
 
@@ -105,6 +105,7 @@ No hooks, no config, no API keys. Both tools already append every message and to
 - Claude Code: `~/.claude/projects/<project>/<session>.jsonl` (+ `subagents/`)
 - Codex: `~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl`. Date folders record when a chat started; discovery checks all dates and uses log modification times to find recently active chats, including months-old conversations. Inactive log contents are not read.
 - Gemini CLI: `~/.gemini/tmp/<project>/chats/session-*.jsonl` (project paths from `~/.gemini/projects.json`)
+- Antigravity CLI: `~/.gemini/antigravity-cli/brain/<conversation>/.system_generated/logs/transcript.jsonl`, with folders from `history.jsonl` and titles from `annotations/`. Override with `ANTIGRAVITY_HOME`. Subagents appear under their parent; Resume uses `agy --conversation`.
 - Copilot CLI: `~/.copilot/session-state/<session>/events.jsonl`
 - Kimi Code: `~/.kimi-code/sessions/<project>/<session>/agents/<agent>/wire.jsonl`, with names and folders from `state.json`
 - DSH: `~/.dsh/sessions/<project>/<session>/session[.vN].jsonl[.zstd]`; only the latest format in a session folder is read
@@ -217,7 +218,8 @@ including concurrent tools, approvals, explicit turn endings, metadata
 changes, forks, subagents and DSH compressed-log recovery. Compressed checks
 need either Node's zstd support or the `zstd` executable.
 
-`npm run test:copilot` checks Copilot CLI parsing and discovery. `npm run test:hook` checks the optional
+`npm run test:copilot` checks Copilot CLI parsing and discovery. `npm run test:antigravity` checks Antigravity CLI
+parsing, subagents and discovery. `npm run test:hook` checks the optional
 approval hook (marker files, settings install and removal, path validation) and the usage counts behind
 the Today panel and context bars.
 

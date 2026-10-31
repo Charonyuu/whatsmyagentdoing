@@ -18,6 +18,7 @@ const TEAM = [
   ['dsh', 'ml-eval', 'Rerun the eval suite on the new model'],
   ['gemini', 'infra', 'Bump the Postgres instance size'],
   ['grok', 'cost-report', 'Find idle cloud spend'],
+  ['antigravity', 'design-system', 'Tidy up the button tokens'],
 ];
 
 const TOOLS = {
@@ -29,6 +30,7 @@ const TOOLS = {
   kimi: ['Shell: npm run build', 'ReadFile guide.md', 'Edit getting-started.md', 'Shell: npm run lint'],
   dsh: ['Shell: python eval.py', 'Read metrics.json', 'Edit config.yaml', 'Shell: pytest -q'],
   grok: ['Read billing.csv', 'Shell: aws ce get-cost-and-usage', 'Edit report.md', 'Search “idle instances”'],
+  antigravity: ['Bash: npm run lint', 'read_file tokens.css', 'edit_file button.tsx', 'grep_search --color'],
 };
 
 const REPLIES = [
@@ -54,7 +56,7 @@ class DemoWatcher extends EventEmitter {
       cwd: `/home/dev/${project}`,
       title: prompt,
       model: { claude: 'claude-opus-5-5', codex: 'gpt-5-codex', gemini: 'gemini-3-pro', copilot: 'mai-code-1.1-flash',
-        omp: 'claude-sonnet-5-5', kimi: 'kimi-k2', dsh: 'deepseek-v4', grok: 'grok-4' }[agent],
+        omp: 'claude-sonnet-5-5', kimi: 'kimi-k2', dsh: 'deepseek-v4', grok: 'grok-4', antigravity: 'Gemini 3.1 Pro (High)' }[agent],
       subagent: false,
       parentId: null,
       status: 'idle',
