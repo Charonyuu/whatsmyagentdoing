@@ -20,6 +20,8 @@
     copilot: ['#8f5cf5', '#a06af7', '#7a47d5', '#c5a4ff'],
     omp: ['#a96926', '#c78942', '#8d531e', '#dca45c'],
     antigravity: ['#0ea5e9', '#38bdf8', '#0284c7', '#7dd3fc'],
+    opencode: ['#2f6fd0', '#4a86e0', '#2559b0', '#7aa5ee'],
+    hermes: ['#b4622d', '#d07c44', '#96501f', '#e2a374'],
   };
   // Official product icons, shared by both renderers and the page UI (OMP: a neutral monogram).
   // Load once per page from the same origin so video capture stays readable.
@@ -34,6 +36,8 @@
     grok: { label: 'Grok Build', short: 'Gr', logo: '/assets/agents/grok.svg', mono: true },
     omp: { label: 'OMP', short: 'OMP', color: '#a96926', logo: '/assets/agents/omp.svg' },
     antigravity: { label: 'Antigravity', short: 'Ag', color: '#0ea5e9', logo: '/assets/agents/antigravity.png' },
+    opencode: { label: 'OpenCode', short: 'Oc', color: '#2f6fd0', logo: '/assets/agents/opencode.svg', mono: true },
+    hermes: { label: 'Hermes', short: 'He', color: '#b4622d', logo: '/assets/agents/hermes.svg', mono: true },
   };
   for (const badge of Object.values(AGENT_BADGES)) {
     badge.image = new Image();

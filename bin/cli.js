@@ -9,10 +9,12 @@ const scenes = require('../src/scenes');
 const updater = require('../src/update');
 const hook = require('../src/hook');
 const { createServer, snapshot } = require('../src/server');
+const external = require('../src/external');
 const pkg = require('../package.json');
+const EXTERNAL_DIRS = external.location();
 
 const HELP = `whatsmyagentdoing ${pkg.version}
-See what every Claude Code, Codex, Gemini CLI, Antigravity, OMP, Kimi Code, DSH and Grok Build agent is doing, live.
+See what every Claude Code, Codex, Gemini CLI, Antigravity, Copilot CLI, OMP, Kimi Code, DSH, Grok Build, OpenCode and Hermes agent is doing, live.
 
 Usage: node bin/cli.js [options]   (or /myoffice as a skill)
 
@@ -38,9 +40,12 @@ Reads (never writes):
   ${CODEX_DIR}
   ${GEMINI_DIR}
   ${ANTIGRAVITY_DIR}
+  ${EXTERNAL_DIRS.opencode}
+  ${EXTERNAL_DIRS.hermes}
   ${Object.values(CLIENT_DIRS).join('\n  ')}
   ${ompDirs().map(x => x.dir).join('\n  ')}
 Override with CLAUDE_CONFIG_DIR / CODEX_HOME / GEMINI_CLI_HOME / ANTIGRAVITY_HOME /
+  OPENCODE_DB / HERMES_HOME /
   WMAD_OMP_SESSIONS_DIR (or --omp-dir); OMP also honors PI_CODING_AGENT_DIR.
 OMP profiles under ~/.omp/profiles are discovered automatically.
 Other clients: KIMI_CODE_HOME / DSH_HOME / GROK_HOME.
