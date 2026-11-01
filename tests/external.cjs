@@ -103,6 +103,22 @@ test('an unfinished assistant message is still typing', { skip: !sqlite && 'node
   assert.equal(rows[0].status, 'typing');
 });
 
+test('a hermes chat that started before the window but is still in use is kept', { skip: !sqlite && 'node:sqlite is unavailable' }, (t) => {
+  const dir = root(t);
+  const db = new sqlite.DatabaseSync(path.join(dir, 'state.db'));
+  db.exec(`create table sessions (id text, model text, parent_session_id text, started_at real, ended_at real);
+    create table messages (session_id text, role text, content text, timestamp real, finish_reason text, tool_name text);`);
+  // Started 30 hours ago, but the last message is an hour old: still in the 24h window.
+  db.prepare('insert into sessions values (?, ?, ?, ?, ?)').run('s1', 'm', null, (NOW - 30 * HOUR) / 1000, null);
+  db.prepare('insert into messages values (?, ?, ?, ?, ?, ?)').run('s1', 'user', 'still here', (NOW - HOUR) / 1000, null, null);
+  db.prepare('insert into messages values (?, ?, ?, ?, ?, ?)').run('s1', 'assistant', 'yes', (NOW - HOUR + 1000) / 1000, 'stop', null);
+  db.close();
+
+  const rows = poll(NOW - 24 * HOUR, { home: dir, env: { HERMES_HOME: dir } });
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].lastEventAt, NOW - HOUR + 1000);
+});
+
 test('missing databases yield no rows and do not throw', { skip: !sqlite && 'node:sqlite is unavailable' }, (t) => {
   const dir = root(t);
   assert.deepEqual(poll(NOW - HOUR, { home: dir, env: {} }), []);

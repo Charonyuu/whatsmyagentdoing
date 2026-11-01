@@ -155,8 +155,13 @@ function hermesState(message, ended) {
 }
 
 function hermes(db, since) {
-  const rows = db.prepare(`select id, model, parent_session_id, started_at, ended_at
-    from sessions where started_at >= ? order by started_at desc`).all(since / 1000);
+  // Unlike opencode, hermes keeps no "last updated" column, so a long chat that
+  // is still in use would drop out if only the start time were compared.
+  const rows = db.prepare(`select s.id, s.model, s.parent_session_id, s.started_at, s.ended_at
+    from sessions s
+    where s.started_at >= ?
+       or (select max(timestamp) from messages m where m.session_id = s.id) >= ?
+    order by s.started_at desc`).all(since / 1000, since / 1000);
   const lastMessage = db.prepare(`select role, tool_name, content, timestamp, finish_reason
     from messages where session_id = ? order by timestamp desc limit 1`);
   const lastOfRole = db.prepare(`select content, timestamp from messages
