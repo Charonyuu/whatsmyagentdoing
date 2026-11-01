@@ -1,7 +1,10 @@
 # Provider icons
 
 `omp.svg` is a neutral OMP monogram made for this interface. It is not an
-official oh-my-pi logo and contains no external resources.
+official oh-my-pi logo and contains no external resources. `opencode.svg` and
+`hermes.svg` are likewise neutral marks drawn for this interface — a terminal
+prompt and an H in a ring. Neither reproduces an official OpenCode or Hermes
+logo, and neither contains external resources.
 
 These official product icons identify the providers of sessions. They are served
 locally so offline use and canvas/video capture do not depend on a third party.

@@ -8,7 +8,7 @@ const path = require('node:path');
 let sqlite = null;
 try { sqlite = require('node:sqlite'); } catch {}
 
-const { poll } = require('../src/external');
+const { poll, notice } = require('../src/external');
 
 const HOUR = 3600000;
 const NOW = Date.parse('2026-11-01T12:00:00Z');
@@ -122,4 +122,14 @@ test('a hermes chat that started before the window but is still in use is kept',
 test('missing databases yield no rows and do not throw', { skip: !sqlite && 'node:sqlite is unavailable' }, (t) => {
   const dir = root(t);
   assert.deepEqual(poll(NOW - HOUR, { home: dir, env: {} }), []);
+});
+
+test('a Node without node:sqlite is told why the two agents are missing', (t) => {
+  const dir = root(t);
+  const file = path.join(dir, 'opencode.db');
+  fs.writeFileSync(file, '');
+
+  assert.match(notice({ home: dir, env: { OPENCODE_DB: file }, sqlite: null }), /22\.5/);
+  assert.equal(notice({ home: dir, env: {}, sqlite: null }), null, 'nothing to warn about without a database');
+  assert.equal(notice({ home: dir, env: { OPENCODE_DB: file }, sqlite: {} }), null, 'no warning when the module is there');
 });

@@ -213,4 +213,15 @@ function location() {
   return { opencode: paths.opencode[0], hermes: paths.hermes[0] };
 }
 
-module.exports = { poll, location, opencodeState, hermesState };
+// A Node without node:sqlite silently loses both agents, so say it once at
+// startup instead of leaving the user wondering where their sessions went.
+function notice({ home = os.homedir(), env = process.env, sqlite: available = sqliteModule() } = {}) {
+  if (available) return null;
+  const paths = candidates(home, env);
+  const found = [...paths.opencode, ...paths.hermes].filter((file) => fs.existsSync(file));
+  if (!found.length) return null;
+  return `opencode and hermes sessions need Node.js 22.5 or newer (this is ${process.version}); `
+    + 'their databases are being skipped, other agents are unaffected.';
+}
+
+module.exports = { poll, location, notice, opencodeState, hermesState };
