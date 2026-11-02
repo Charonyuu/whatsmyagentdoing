@@ -641,6 +641,24 @@ class Watcher extends EventEmitter {
       }
       out.push(s);
     }
+    // Copied histories (see applyClaude's _rootUuid) are one conversation:
+    // show the copy that was active most recently and hide the rest.
+    const newestByRoot = new Map();
+    for (const s of out) {
+      if (s.agent !== 'claude' || s.subagent || !s._rootUuid) continue;
+      const prev = newestByRoot.get(s._rootUuid);
+      if (!prev || (s.lastEventAt || 0) > (prev.lastEventAt || 0)
+        || ((s.lastEventAt || 0) === (prev.lastEventAt || 0) && (s.mtime || 0) > (prev.mtime || 0))) {
+        newestByRoot.set(s._rootUuid, s);
+      }
+    }
+    if (newestByRoot.size) {
+      const kept = new Set(newestByRoot.values());
+      for (let i = out.length - 1; i >= 0; i--) {
+        const s = out[i];
+        if (s.agent === 'claude' && !s.subagent && s._rootUuid && !kept.has(s)) out.splice(i, 1);
+      }
+    }
     out.push(...this.external);
     if (!this.magpies.length) return out;
     const remote = new Map();

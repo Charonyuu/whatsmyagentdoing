@@ -148,6 +148,9 @@ function describeClaudeTool(name, input = {}) {
 function applyClaude(s, d) {
   const ts = stamp(s, d.timestamp);
   if (d.cwd) s.cwd = d.cwd;
+  // A resumed conversation can be written to a new session file that copies
+  // the whole history; such copies share the root message's uuid.
+  if (!s._rootUuid && d.parentUuid === null && d.uuid) s._rootUuid = d.uuid;
 
   switch (d.type) {
     case 'custom-title':
