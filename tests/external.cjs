@@ -129,7 +129,7 @@ test('a Node without node:sqlite is told why the two agents are missing', (t) =>
   const file = path.join(dir, 'opencode.db');
   fs.writeFileSync(file, '');
 
-  assert.match(notice({ home: dir, env: { OPENCODE_DB: file }, sqlite: null }), /22\.5/);
+  assert.match(notice({ home: dir, env: { OPENCODE_DB: file }, sqlite: null }), /22\.13/);
   assert.equal(notice({ home: dir, env: {}, sqlite: null }), null, 'nothing to warn about without a database');
   assert.equal(notice({ home: dir, env: { OPENCODE_DB: file }, sqlite: {} }), null, 'no warning when the module is there');
 });

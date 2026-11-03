@@ -125,7 +125,7 @@ as a loading fallback. Resume buttons use `kimi --session`,
 `dsh tui --resume` and `grok --resume`, respectively.
 
 OpenCode and Hermes keep every session in one SQLite database instead of a log
-file per session, so they are read through Node's built-in `node:sqlite` (22.5
+file per session, so they are read through Node's built-in `node:sqlite` (22.13
 and newer) rather than tailed. A Node without it simply leaves these two agents
 out. Both databases are opened read-only, and Resume buttons use
 `opencode --session` and `hermes --resume`.
@@ -211,7 +211,7 @@ dashboard's browser.
 - Logs are written per finished block, not per token, so "Writing reply" means a reply block has landed and the turn isn't over — not a live keystroke stream.
 - Claude Code doesn't log permission prompts, so a tool waiting on your approval shows as "Running" until you answer (Codex and Gemini CLI do log it, so those show "Waiting for you"). Run `node bin/cli.js --install-hook` once to add an optional Notification hook to your Claude Code settings: on a permission or question prompt it writes a small marker to `~/.whatsmyagentdoing/waiting`, and the session shows "Waiting for you" until its log moves on. New Claude Code sessions pick it up; `--uninstall-hook` removes it. If you switch Node versions, run `--install-hook` again.
 - Gemini CLI writes its thoughts together with the reply, so between your prompt and its first tool call or reply it simply shows "Thinking".
-- OpenCode and Hermes keep their sessions in SQLite, which is read through Node's built-in `node:sqlite` (Node.js 22.5 and newer). On an older Node those two agents are skipped — the rest of the dashboard is unaffected — and the CLI prints a line saying so at startup.
+- OpenCode and Hermes keep their sessions in SQLite, which is read through Node's built-in `node:sqlite` (Node.js 22.13 and newer). On an older Node those two agents are skipped — the rest of the dashboard is unaffected — and the CLI prints a line saying so at startup.
 - The log formats aren't public APIs. If an update changes them, statuses may degrade — please open an issue.
 
 ## Development checks

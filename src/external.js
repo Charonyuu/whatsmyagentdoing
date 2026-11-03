@@ -220,7 +220,7 @@ function notice({ home = os.homedir(), env = process.env, sqlite: available = sq
   const paths = candidates(home, env);
   const found = [...paths.opencode, ...paths.hermes].filter((file) => fs.existsSync(file));
   if (!found.length) return null;
-  return `opencode and hermes sessions need Node.js 22.5 or newer (this is ${process.version}); `
+  return `opencode and hermes sessions need Node.js 22.13 or newer (this is ${process.version}); `
     + 'their databases are being skipped, other agents are unaffected.';
 }
 

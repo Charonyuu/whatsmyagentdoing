@@ -49,7 +49,7 @@ Override with CLAUDE_CONFIG_DIR / CODEX_HOME / GEMINI_CLI_HOME / ANTIGRAVITY_HOM
   WMAD_OMP_SESSIONS_DIR (or --omp-dir); OMP also honors PI_CODING_AGENT_DIR.
 OMP profiles under ~/.omp/profiles are discovered automatically.
 Other clients: KIMI_CODE_HOME / DSH_HOME / GROK_HOME.
-OpenCode and Hermes need Node.js 22.5+ for its built-in node:sqlite.
+OpenCode and Hermes need Node.js 22.13+ for its built-in node:sqlite.
 Optional Magpie: WMAD_MAGPIE_URL=http://127.0.0.1:3430
 and WMAD_MAGPIE_KEY (web sign-in key, server-side only).
 For multiple local instances, WMAD_MAGPIE_SOURCES is a JSON array

@@ -342,7 +342,7 @@ class Watcher extends EventEmitter {
   loadExternal(since) {
     let rows;
     try { rows = external.poll(since, { home, env: process.env }); } catch { return false; }
-    const key = rows.map((s) => `${s.key}:${s.status}:${s.lastEventAt}`).join('|');
+    const key = rows.map((s) => `${s.agent}:${s.id}:${s.status}:${s.lastEventAt}`).join('|');
     if (key === this.externalKey) return false;
     this.externalKey = key;
     this.external = rows;
