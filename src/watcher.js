@@ -13,6 +13,7 @@ const crypto = require('crypto');
 const { newSession, applyClaude, applyCodex, applyGemini, applyGeminiDocument, applyCopilot, applyOMP, applyAntigravity } = require('./parsers');
 const { Magpie } = require('./magpie');
 const { clientFiles, metadata, applyKimi, applyDsh, applyGrok, readDsh } = require('./clients');
+const external = require('./external');
 const { ompDirs } = require('./omp');
 const hook = require('./hook');
 const { transcript } = require('./transcript');
@@ -258,6 +259,9 @@ class Watcher extends EventEmitter {
     this.antigravityWorkspaces = new Map();
     this.antigravityHistoryMtime = 0;
     this.antigravityTitles = new Map();
+    // opencode and hermes sessions, refreshed from their databases on each scan.
+    this.external = [];
+    this.externalKey = '';
   }
 
   start() {
@@ -333,6 +337,18 @@ class Watcher extends EventEmitter {
     return true;
   }
 
+  // opencode and hermes have no per-session file to tail, so their whole
+  // listing is rebuilt here and every row is compared to the last one.
+  loadExternal(since) {
+    let rows;
+    try { rows = external.poll(since, { home, env: process.env }); } catch { return false; }
+    const key = rows.map((s) => `${s.key}:${s.status}:${s.lastEventAt}`).join('|');
+    if (key === this.externalKey) return false;
+    this.externalKey = key;
+    this.external = rows;
+    return true;
+  }
+
   tick() {
     const now = Date.now();
     const since = now - this.windowMs;
@@ -347,6 +363,8 @@ class Watcher extends EventEmitter {
       this.candidates = [...claudeFiles(), ...codexFiles(since), ...geminiFiles(), ...copilotFiles(),
         ...clientFiles(CLIENT_DIRS, since), ...ompFiles(since, ompDirs(this.ompDir, process.env, home, process.platform)),
         ...antigravityFiles(since)];
+      // These have no file to tail, so they refresh with the walk.
+      if (this.loadExternal(since)) changed = true;
     }
 
     for (const c of this.candidates) {
@@ -623,6 +641,7 @@ class Watcher extends EventEmitter {
       }
       out.push(s);
     }
+    out.push(...this.external);
     if (!this.magpies.length) return out;
     const remote = new Map();
     // Magpie's native records carry richer metadata than gateway projections.

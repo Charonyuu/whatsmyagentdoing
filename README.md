@@ -2,7 +2,7 @@
 
 # whatsmyagentdoing
 
-**A Claude Code / Codex skill: type `/myoffice` and see what every Claude Code, Codex, Gemini CLI, Antigravity CLI, Copilot CLI, OMP (oh-my-pi), Kimi Code, DeepSeek Harness and Grok Build agent on your machine is doing — live, in a little office.**
+**A Claude Code / Codex skill: type `/myoffice` and see what every Claude Code, Codex, Gemini CLI, Antigravity CLI, Copilot CLI, OMP (oh-my-pi), Kimi Code, DeepSeek Harness, Grok Build, OpenCode and Hermes agent on your machine is doing — live, in a little office.**
 
 **Website:** https://charonyuu.github.io/whatsmyagentdoing/
 
@@ -72,8 +72,8 @@ The toolbar keeps the view, 2D/3D and pop-out controls visible. Scene selection,
 When Document PiP isn't available, **Pop out** in office view starts a local, view-only video preview of the 2D or 3D office. Use its video PiP button, or the browser's own video controls/context menu (such as Firefox's), to float it. Stop the preview when finished. No screen-sharing permission is needed and no video is uploaded. Background animation may run at a lower frame rate, depending on browser throttling; this fallback doesn't support list cards or clicking agents.
 
 Works with Claude Code (CLI, desktop, IDE), Codex (CLI, desktop, IDE), Gemini CLI, Antigravity CLI,
-Copilot CLI, OMP, Kimi Code, DeepSeek Harness (DSH) and Grok Build through their local session
-logs. (The Google Antigravity desktop app keeps its conversations in an undocumented binary
+Copilot CLI, OMP, Kimi Code, DeepSeek Harness (DSH), Grok Build, OpenCode and Hermes through their
+local session stores. (The Google Antigravity desktop app keeps its conversations in an undocumented binary
 store and isn't supported yet; its `agy` CLI is.)
 
 ## Options
@@ -111,6 +111,8 @@ No hooks, no config, no API keys. Both tools already append every message and to
 - DSH: `~/.dsh/sessions/<project>/<session>/session[.vN].jsonl[.zstd]`; only the latest format in a session folder is read
 - Grok Build: `~/.grok/sessions/<project>/<session>/updates.jsonl`, with metadata from `summary.json`
 - OMP: `~/.omp/agent/sessions/<project>/*.jsonl`, plus named profiles. Override with `WMAD_OMP_SESSIONS_DIR` or `--omp-dir`. Details: [OMP](docs/omp.md).
+- OpenCode: `~/.local/share/opencode/opencode.db`, sessions and messages from its `session` / `message` / `part` tables. Override with `OPENCODE_DB`.
+- Hermes: `%LOCALAPPDATA%\hermes\state.db`, sessions and messages from its `sessions` / `messages` tables. Override with `HERMES_HOME`.
 
 `whatsmyagentdoing` tails those files (read-only), turns the latest event into a status, and pushes it to the page over Server-Sent Events. Set `CLAUDE_CONFIG_DIR` / `CODEX_HOME` / `GEMINI_CLI_HOME` if yours live elsewhere.
 
@@ -121,6 +123,12 @@ Grok subagent sessions use the existing subagent filter. These clients use
 locally bundled Magpie icons in the existing badge positions, with initials
 as a loading fallback. Resume buttons use `kimi --session`,
 `dsh tui --resume` and `grok --resume`, respectively.
+
+OpenCode and Hermes keep every session in one SQLite database instead of a log
+file per session, so they are read through Node's built-in `node:sqlite` (22.5
+and newer) rather than tailed. A Node without it simply leaves these two agents
+out. Both databases are opened read-only, and Resume buttons use
+`opencode --session` and `hermes --resume`.
 
 The office legend follows the current sessions and client/subagent filters:
 clients appear when present and disappear when no matching sessions remain.
@@ -203,6 +211,7 @@ dashboard's browser.
 - Logs are written per finished block, not per token, so "Writing reply" means a reply block has landed and the turn isn't over — not a live keystroke stream.
 - Claude Code doesn't log permission prompts, so a tool waiting on your approval shows as "Running" until you answer (Codex and Gemini CLI do log it, so those show "Waiting for you"). Run `node bin/cli.js --install-hook` once to add an optional Notification hook to your Claude Code settings: on a permission or question prompt it writes a small marker to `~/.whatsmyagentdoing/waiting`, and the session shows "Waiting for you" until its log moves on. New Claude Code sessions pick it up; `--uninstall-hook` removes it. If you switch Node versions, run `--install-hook` again.
 - Gemini CLI writes its thoughts together with the reply, so between your prompt and its first tool call or reply it simply shows "Thinking".
+- OpenCode and Hermes keep their sessions in SQLite, which is read through Node's built-in `node:sqlite` (Node.js 22.5 and newer). On an older Node those two agents are skipped — the rest of the dashboard is unaffected — and the CLI prints a line saying so at startup.
 - The log formats aren't public APIs. If an update changes them, statuses may degrade — please open an issue.
 
 ## Development checks

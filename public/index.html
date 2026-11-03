@@ -612,6 +612,8 @@ function resumeCmd(s) {
   if (s.agent === 'kimi') return `${cd}kimi --session ${shq(s.sessionId || s.id)}`;
   if (s.agent === 'dsh') return `${cd}dsh tui --resume ${shq(s.id)}`;
   if (s.agent === 'grok') return `${cd}grok --resume ${shq(s.id)}`;
+  if (s.agent === 'opencode') return `${cd}opencode --session ${shq(s.id)}`;
+  if (s.agent === 'hermes') return `${cd}hermes --resume ${shq(s.id)}`;
   return s.agent === 'codex' ? `${cd}codex resume ${shq(s.id)}` : '';
 }
 
