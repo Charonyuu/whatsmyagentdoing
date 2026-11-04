@@ -153,3 +153,20 @@ test('legacy Gemini documents reload when their size changes without an mtime ch
   assert.equal(f.watcher.sessions()[0].status, 'tool');
   assert.equal(f.watcher.sessions()[0].activity, 'read_file config.json');
 });
+
+test('resumed Claude copies of one conversation show as a single session', t => {
+  const f = fixture(t);
+  const claude = (id, root, at) => {
+    const file = path.join(f.root, '.claude/projects/demo', `${id}.jsonl`);
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    const line = (uuid, parentUuid, ms) => JSON.stringify({ type: 'user', uuid, parentUuid, cwd: '/demo',
+      timestamp: new Date(ms).toISOString(), message: { role: 'user', content: 'hi' } }) + '\n';
+    fs.writeFileSync(file, line(root, null, at - 1000) + line(`${root}-next`, root, at));
+    fs.utimesSync(file, new Date(at), new Date(at));
+  };
+  claude('older-copy', 'root-a', NOW - 2 * HOUR);
+  claude('newest-copy', 'root-a', NOW - HOUR);
+  claude('other-chat', 'root-b', NOW - 3 * HOUR);
+  f.watcher.tick();
+  assert.deepEqual(Array.from(f.watcher.sessions(), s => s.id).sort(), ['newest-copy', 'other-chat']);
+});
