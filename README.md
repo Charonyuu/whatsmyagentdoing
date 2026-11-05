@@ -40,7 +40,7 @@ It opens an isometric **office**. Agents that are working sit at cubicle desks: 
 
 Two looks: **Medium** is a hand-drawn 2D canvas (zero dependencies). **High (3D)** renders the same office with real-time lighting and shadows using [Kenney](https://kenney.nl)'s CC0 *Mini Characters* (with their walk / sit / interact animations) and *Furniture Kit*; drag to rotate, scroll to zoom. The 3D bundle (three.js, ~180 KB gzipped) and models (~1.3 MB, meshopt-compressed) only load when you pick High.
 
-**Scenes (3D):** the office is built in; other scenes are small downloadable packs (Haunted Hollow, Pirate Cove, Café, Space Station and Castle are 100–230 KB each), fetched only when you pick one from the scene menu next to 2D/3D, run `--scene pirate`, or ask your agent for it. Packs are data only (a manifest plus Kenney CC0 models) and are checked against a pinned SHA-256 before they're installed into `~/.whatsmyagentdoing/scenes`.
+**Scenes (3D):** the office is built in; other scenes are small downloadable packs (Christmas Cabin, Neon Arcade, Haunted Hollow, Pirate Cove, Café, Space Station and Castle are about 100–290 KB each), fetched only when you pick one from the scene menu next to 2D/3D, run `--scene pirate`, or ask your agent for it. Packs are data only (a manifest plus Kenney CC0 models) and are checked against a pinned SHA-256 before they're installed into `~/.whatsmyagentdoing/scenes`.
 
 Each session updates in real time:
 

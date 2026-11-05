@@ -1,6 +1,25 @@
 {
   "scenes": [
     {
+      "id": "arcade",
+      "version": 1,
+      "name": {
+        "en": "Neon Arcade",
+        "zh-TW": "電玩遊樂場",
+        "zh-CN": "电玩游乐场",
+        "ja": "ネオンゲームセンター",
+        "ko": "네온 오락실",
+        "es": "Salón recreativo neón",
+        "fr": "Salle d'arcade néon",
+        "de": "Neon-Spielhalle",
+        "pt": "Fliperama neon"
+      },
+      "credits": "Models: Kenney Mini Arcade, Furniture Kit (CC0)",
+      "size": 116098,
+      "sha256": "46b650af5f66a063bff09fd6c07c11591fc87c18d6608d7f11fc74b5a8dd4d1a",
+      "url": "https://github.com/Charonyuu/whatsmyagentdoing/releases/download/scenes/arcade-v1.tar.gz"
+    },
+    {
       "id": "cafe",
       "version": 1,
       "name": {
@@ -39,6 +58,25 @@
       "sha256": "cfdc4f138164597ca7ff70ef97284a82b0ceda50731dade94e39602696c5d8b6",
       "url": "https://github.com/Charonyuu/whatsmyagentdoing/releases/download/scenes/castle-v1.tar.gz",
       "icon": "🏰"
+    },
+    {
+      "id": "christmas",
+      "version": 1,
+      "name": {
+        "en": "Christmas Cabin",
+        "zh-TW": "聖誕小屋",
+        "zh-CN": "圣诞小屋",
+        "ja": "クリスマスの小屋",
+        "ko": "크리스마스 오두막",
+        "es": "Cabaña navideña",
+        "fr": "Chalet de Noël",
+        "de": "Weihnachtshütte",
+        "pt": "Cabana de Natal"
+      },
+      "credits": "Models: Kenney Holiday Kit, Furniture Kit (CC0)",
+      "size": 294828,
+      "sha256": "8f699d3a9eb42ddc6f5667143f45bee9bb2ef78c51204f7d70659e331b49f24e",
+      "url": "https://github.com/Charonyuu/whatsmyagentdoing/releases/download/scenes/christmas-v1.tar.gz"
     },
     {
       "id": "graveyard",

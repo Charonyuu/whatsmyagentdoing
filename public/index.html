@@ -996,7 +996,7 @@ state.available = [];
 const CHECK = '<svg class="ui-ico chk" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
 // Scene icons are small illustrations, one per known pack; any other pack gets a map.
 const SCENE_ICONS = new Set(['office', 'graveyard', 'pirate', 'cafe', 'station', 'castle', 'christmas', 'arcade']);
-const SCENE_THUMBS = new Set(['office', 'graveyard', 'pirate', 'cafe', 'station', 'castle']);
+const SCENE_THUMBS = new Set(['office', 'graveyard', 'pirate', 'cafe', 'station', 'castle', 'christmas', 'arcade']);
 const sceneIcon = (id) => `<img class="scene-art" src="/assets/scene-icons/${SCENE_ICONS.has(id) ? id : 'map'}.png" alt="">`;
 const DOWNLOAD = '<svg class="ui-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/></svg>';
 function renderSceneSel() {
