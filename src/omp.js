@@ -33,6 +33,13 @@ function ompDirs(override, env = process.env, home = os.homedir(), platform = pr
   return [{ dir: sessionDir(null), profile: null }, ...Array.from(profiles, profile => ({ dir: sessionDir(profile), profile }))];
 }
 
+// Pi, which OMP grew out of, keeps the same logs: <root>/--<encoded cwd>--/<time>_<id>.jsonl.
+function piDirs(env = process.env, home = os.homedir()) {
+  if (env.PI_CODING_AGENT_SESSION_DIR) return [{ dir: path.resolve(env.PI_CODING_AGENT_SESSION_DIR), profile: null }];
+  const agent = env.PI_CODING_AGENT_DIR ? path.resolve(env.PI_CODING_AGENT_DIR) : path.join(home, '.pi', 'agent');
+  return [{ dir: path.join(agent, 'sessions'), profile: null }];
+}
+
 function ompResumeCommand(s, platform = process.platform) {
   // On Windows the command targets Windows PowerShell 5.1 and PowerShell 7.
   // --cwd avoids needing &&, which PowerShell 5.1 lacks.
@@ -46,4 +53,4 @@ function ompResumeCommand(s, platform = process.platform) {
   return args.join(' ');
 }
 
-module.exports = { ompDirs, ompResumeCommand };
+module.exports = { ompDirs, piDirs, ompResumeCommand };

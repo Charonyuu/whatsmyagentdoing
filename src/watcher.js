@@ -14,7 +14,7 @@ const { newSession, applyClaude, applyCodex, applyGemini, applyGeminiDocument, a
 const { Magpie } = require('./magpie');
 const { clientFiles, metadata, applyKimi, applyDsh, applyGrok, readDsh } = require('./clients');
 const external = require('./external');
-const { ompDirs } = require('./omp');
+const { ompDirs, piDirs } = require('./omp');
 const hook = require('./hook');
 const { transcript } = require('./transcript');
 
@@ -22,6 +22,8 @@ const HEAD_BYTES = 128 * 1024;
 const TAIL_BYTES = 768 * 1024;
 // OMP, Kimi and Grok logs are replayed whole up to this size, then read head + tail like the others.
 const OMP_FULL_BYTES = 32 * 1024 * 1024;
+// Pi writes the logs OMP does, so both take the same path through the watcher.
+const OMP_LIKE = new Set(['omp', 'pi']);
 // DSH logs are decoded and replayed whole, so a busy log is re-read at most this often.
 const DSH_REPLAY_MS = 5000;
 
@@ -177,7 +179,7 @@ function pbtxtString(raw) {
   return Buffer.concat(out).toString('utf8');
 }
 
-function ompFiles(sinceMs, roots) {
+function ompFiles(sinceMs, roots, agent = 'omp') {
   const out = [], seen = new Set();
   const add = (dir, profile, parentFile = null, depth = 0) => {
     if (depth > 20) return;
@@ -193,7 +195,7 @@ function ompFiles(sinceMs, roots) {
       const fresh = st.mtimeMs >= sinceMs;
       if (fresh && !seen.has(file)) {
         seen.add(file);
-        out.push({ agent: 'omp', file, id: null, profile, parentFile });
+        out.push({ agent, file, id: null, profile, parentFile });
       }
       const stem = e.name.slice(0, -6);
       if (!dirs.has(stem)) continue;
@@ -360,8 +362,11 @@ class Watcher extends EventEmitter {
     // Directory walk every 5s; stat known files every tick.
     if (now - this.lastScan > 5000) {
       this.lastScan = now;
+      const ompRoots = ompDirs(this.ompDir, process.env, home, process.platform);
+      // PI_CODING_AGENT_DIR can point both at one directory; its logs stay OMP's then.
+      const piRoots = piDirs(process.env, home).filter((r) => !ompRoots.some((o) => path.resolve(o.dir) === path.resolve(r.dir)));
       this.candidates = [...claudeFiles(), ...codexFiles(since), ...geminiFiles(), ...copilotFiles(),
-        ...clientFiles(CLIENT_DIRS, since), ...ompFiles(since, ompDirs(this.ompDir, process.env, home, process.platform)),
+        ...clientFiles(CLIENT_DIRS, since), ...ompFiles(since, ompRoots), ...ompFiles(since, piRoots, 'pi'),
         ...antigravityFiles(since)];
       // These have no file to tail, so they refresh with the walk.
       if (this.loadExternal(since)) changed = true;
@@ -390,7 +395,7 @@ class Watcher extends EventEmitter {
     }
 
     for (const [file, t] of this.trackers) {
-      const activity = t.session.agent === 'omp' ? Math.max(t.session.lastEventAt || 0, t.session.mtime || 0) : (t.session.lastEventAt || t.session.mtime || 0);
+      const activity = OMP_LIKE.has(t.session.agent) ? Math.max(t.session.lastEventAt || 0, t.session.mtime || 0) : (t.session.lastEventAt || t.session.mtime || 0);
       if (activity < since) { this.trackers.delete(file); changed = true; }
     }
 
@@ -401,13 +406,13 @@ class Watcher extends EventEmitter {
   track(c, since) {
     const st = statSafe(c.file);
     const t = this.trackers.get(c.file);
-    if (!st) return c.agent === 'omp' && this.trackers.delete(c.file);
+    if (!st) return OMP_LIKE.has(c.agent) && this.trackers.delete(c.file);
     if (!t) {
       if (st.mtimeMs < since) return false;
       this.open(c, st);
       return true;
     }
-    if (c.agent === 'omp') {
+    if (OMP_LIKE.has(c.agent)) {
       // The title slot is rewritten in place, sometimes without changing the size.
       const modified = st.mtimeMs !== t.mtime || st.ctimeMs !== t.ctime || st.ino !== t.ino;
       if (st.size < t.offset || (modified && st.size === t.offset) || st.ino !== t.ino) {
@@ -456,7 +461,7 @@ class Watcher extends EventEmitter {
     if (c.parentId) { session.parentId = c.parentId; session.subagent = true; }
     session.mtime = st.mtimeMs;
     if (c.agent === 'gemini') session.geminiProject = c.project;
-    const apply = { claude: applyClaude, codex: applyCodex, gemini: applyGemini, copilot: applyCopilot, kimi: applyKimi, dsh: applyDsh, grok: applyGrok, omp: applyOMP, antigravity: applyAntigravity }[c.agent];
+    const apply = { claude: applyClaude, codex: applyCodex, gemini: applyGemini, copilot: applyCopilot, kimi: applyKimi, dsh: applyDsh, grok: applyGrok, omp: applyOMP, pi: applyOMP, antigravity: applyAntigravity }[c.agent];
     const t = { session, offset: st.size, partial: '', apply, mtime: st.mtimeMs };
     if (c.agent === 'dsh') {
       t.whole = true;
@@ -469,7 +474,7 @@ class Watcher extends EventEmitter {
       this.trackers.set(c.file, t);
       return t;
     }
-    if (c.agent === 'omp') {
+    if (OMP_LIKE.has(c.agent)) {
       session.ompProfile = c.profile;
       if (c.parentFile) {
         session.subagent = true;
@@ -602,7 +607,7 @@ class Watcher extends EventEmitter {
     const out = [];
     for (const t of this.trackers.values()) {
       const s = t.session;
-      if (s.agent === 'omp') {
+      if (OMP_LIKE.has(s.agent)) {
         // Skip stray JSONL files and logs whose header isn't written yet.
         if (!s.sessionId || !s.cwd) continue;
         if (s.subagent && s.ompParentFile) {

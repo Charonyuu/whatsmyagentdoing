@@ -593,8 +593,14 @@ function applyOMP(s, d) {
     if (typeof d.title === 'string') s.title = clean(d.title, 120);
     return;
   }
+  // Pi: /name, and an empty name clears it.
+  if (d.type === 'session_info') {
+    s.title = d.name ? clean(d.name, 120) : null;
+    return;
+  }
   if (d.type === 'model_change') {
     if ((!d.role || d.role === 'default') && d.model) s.model = d.model;
+    else if (d.modelId) s.model = d.provider ? `${d.provider}/${d.modelId}` : d.modelId; // Pi
     return;
   }
   if (d.type === 'custom') {
@@ -641,7 +647,7 @@ function applyOMP(s, d) {
   if (m.stopReason === 'error' || m.stopReason === 'aborted') {
     pending.clear();
     set(s, m.stopReason === 'error' ? 'error' : 'interrupted', null);
-    if (m.stopReason === 'error') s.error = short(m.errorMessage || text || 'OMP error', 120);
+    if (m.stopReason === 'error') s.error = short(m.errorMessage || text || `${s.agent === 'pi' ? 'Pi' : 'OMP'} error`, 120);
     return;
   }
   for (const b of blocks) {

@@ -14,7 +14,7 @@ const pkg = require('../package.json');
 const EXTERNAL_DIRS = external.location();
 
 const HELP = `whatsmyagentdoing ${pkg.version}
-See what every Claude Code, Codex, Gemini CLI, Antigravity, Copilot CLI, OMP, Kimi Code, DSH, Grok Build, OpenCode and Hermes agent is doing, live.
+See what every Claude Code, Codex, Gemini CLI, Antigravity, Copilot CLI, OMP, Pi, Kimi Code, DSH, Grok Build, OpenCode and Hermes agent is doing, live.
 
 Usage: node bin/cli.js [options]   (or /myoffice as a skill)
 
@@ -47,6 +47,7 @@ Reads (never writes):
 Override with CLAUDE_CONFIG_DIR / CODEX_HOME / GEMINI_CLI_HOME / ANTIGRAVITY_HOME /
   OPENCODE_DB / HERMES_HOME /
   WMAD_OMP_SESSIONS_DIR (or --omp-dir); OMP also honors PI_CODING_AGENT_DIR.
+  Pi: PI_CODING_AGENT_SESSION_DIR / PI_CODING_AGENT_DIR.
 OMP profiles under ~/.omp/profiles are discovered automatically.
 Other clients: KIMI_CODE_HOME / DSH_HOME / GROK_HOME.
 OpenCode and Hermes need Node.js 22.13+ for its built-in node:sqlite.

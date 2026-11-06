@@ -8,7 +8,7 @@ const vm = require('node:vm');
 const { createRequire } = require('node:module');
 const { spawnSync } = require('node:child_process');
 const { newSession, applyOMP, applyClaude, applyCodex, applyGemini } = require('../src/parsers');
-const { ompDirs, ompResumeCommand } = require('../src/omp');
+const { ompDirs, piDirs, ompResumeCommand } = require('../src/omp');
 const { snapshot } = require('../src/server');
 const NOW = Date.parse('2026-10-26T10:00:00Z');
 const HOUR = 3600000;
@@ -226,4 +226,56 @@ test('The three existing parsers still handle their formats',()=>{
  const a=newSession('claude','a','a');applyClaude(a,{type:'user',message:{content:'Привет'}});assert.equal(a.status,'thinking');
  const b=newSession('codex','b','b');applyCodex(b,{type:'event_msg',payload:{type:'task_complete',last_agent_message:'Готово'}});assert.equal(b.status,'done');
  const c=newSession('gemini','c','c');applyGemini(c,{type:'gemini',content:'Ответ'});assert.equal(c.status,'typing');
+});
+
+// Pi writes the same log format; these lines follow its docs/session-format.md.
+const piLog = (id) => [
+ {type:'session',version:3,id,timestamp:new Date(NOW-5000).toISOString(),cwd:'/work/pi-project'},
+ {type:'model_change',id:'a',parentId:null,timestamp:new Date(NOW-4900).toISOString(),provider:'openai',modelId:'gpt-5'},
+ {type:'message',id:'b',parentId:'a',timestamp:new Date(NOW-4800).toISOString(),message:{role:'system',content:'',sections:{preamble:'You are…'},timestamp:NOW-4800}},
+ {type:'message',id:'c',parentId:'b',timestamp:new Date(NOW-4000).toISOString(),message:{role:'user',content:'Fix the parser',timestamp:NOW-4000}},
+ {type:'session_info',id:'d',parentId:'c',timestamp:new Date(NOW-3900).toISOString(),name:'Parser work'},
+ {type:'message',id:'e',parentId:'d',timestamp:new Date(NOW-3000).toISOString(),message:{role:'assistant',content:[{type:'toolCall',id:'t1',name:'bash',arguments:{command:'npm test'}}],provider:'anthropic',model:'claude-sonnet-5-5',stopReason:'toolUse',timestamp:NOW-3000}},
+];
+test('Pi: sessions are found under ~/.pi and parsed like OMP',t=>{
+ const f=fixture(t), dir='.pi/agent/sessions/--work-pi-project--/';
+ const file=f.write(dir+'2026-10-26T09-59-55_pi-id.jsonl',piLog('pi-id'));
+ f.write(dir+'2026-10-26T09-00-00_empty.jsonl',[user()]); // no header yet: not a session
+ f.watcher.tick();
+ const [s,...rest]=f.watcher.sessions();
+ assert.equal(rest.length,0);
+ assert.equal(s.agent,'pi');assert.equal(s.id,'pi-id');assert.equal(s.cwd,'/work/pi-project');
+ assert.equal(s.title,'Parser work');assert.equal(s.prompt,'Fix the parser');
+ assert.equal(s.model,'anthropic/claude-sonnet-5-5');assert.equal(s.status,'tool');assert.match(s.activity,/npm test/);
+ f.advance(1000);
+ f.append(file,[
+  {type:'message',id:'f',parentId:'e',timestamp:new Date(NOW-2000).toISOString(),message:{role:'toolResult',toolCallId:'t1',toolName:'bash',content:[{type:'text',text:'ok'}],isError:false,timestamp:NOW-2000}},
+  {type:'message',id:'g',parentId:'f',timestamp:new Date(NOW-1000).toISOString(),message:{role:'assistant',content:[{type:'text',text:'Fixed.'}],provider:'anthropic',model:'claude-sonnet-5-5',stopReason:'stop',timestamp:NOW-1000}},
+ ]);
+ f.watcher.tick();
+ const done=f.watcher.sessions()[0];
+ assert.equal(done.status,'done');assert.equal(done.reply,'Fixed.');
+ const view=snapshot(f.watcher,{}).sessions.find(x=>x.id==='pi-id');
+ assert.equal(view.agent,'pi');assert.equal(view.resumeCommand,undefined,'Pi needs no OMP profile command');
+});
+test('Pi: a model_change names the model until a reply does, and an empty name clears the title',()=>{
+ const s=newSession('pi',null,'/tmp/pi.jsonl');
+ applyOMP(s,{type:'model_change',provider:'openai',modelId:'gpt-5'});assert.equal(s.model,'openai/gpt-5');
+ applyOMP(s,{type:'model_change',modelId:'local'});assert.equal(s.model,'local');
+ applyOMP(s,{type:'session_info',name:'Named'});assert.equal(s.title,'Named');
+ applyOMP(s,{type:'session_info'});assert.equal(s.title,null);
+ applyOMP(s,message('assistant',{content:[],stopReason:'error'}));assert.equal(s.error,'Pi error');
+});
+test('Pi: session directory overrides',()=>{
+ assert.equal(piDirs({},'/h')[0].dir,path.join('/h','.pi','agent','sessions'));
+ assert.equal(piDirs({PI_CODING_AGENT_DIR:'/x'},'/h')[0].dir,path.resolve('/x','sessions'));
+ assert.equal(piDirs({PI_CODING_AGENT_DIR:'/x',PI_CODING_AGENT_SESSION_DIR:'/y'},'/h')[0].dir,path.resolve('/y'));
+});
+test('Pi: PI_CODING_AGENT_DIR shared with OMP lists each log once',t=>{
+ const shared=path.join(os.tmpdir(),`wmad-pi-shared-${process.pid}`);t.after(()=>fs.rmSync(shared,{recursive:true,force:true}));
+ const f=fixture(t,{env:{PI_CODING_AGENT_DIR:shared}});
+ const log=path.join(shared,'sessions/--p--/one.jsonl');
+ fs.mkdirSync(path.dirname(log),{recursive:true});fs.writeFileSync(log,lines(piLog('shared-id')));fs.utimesSync(log,new Date(NOW),new Date(NOW));
+ f.watcher.tick();
+ assert.deepEqual(Array.from(f.watcher.sessions(),s=>[s.agent,s.id]),[['omp','shared-id']]);
 });

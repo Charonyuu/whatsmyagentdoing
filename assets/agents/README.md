@@ -43,3 +43,5 @@ in `MAGPIE-LICENSE`; trademark ownership remains with the respective brands.
 Monochrome Kimi and xAI marks retain their transparent backgrounds. The UI
 displays them in black on light themes and white on dark themes; the SVG
 geometry is not modified.
+- `pi.svg`: the Pi mark, retrieved 2026-11-06 from
+  https://github.com/earendil-works/pi/blob/main/apps/p2/public/icons/favicon.svg (MIT repository).
