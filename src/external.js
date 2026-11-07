@@ -102,7 +102,7 @@ function opencodeState(message, parts) {
   return { status: 'thinking' };
 }
 
-function opencode(db, since) {
+function opencodeV1(db, since) {
   const rows = db.prepare(`select id, parent_id, title, directory, model, time_created, time_updated
     from session where time_updated >= ? order by time_updated desc`).all(since);
   const recent = db.prepare('select id, data from message where session_id = ? order by time_created desc limit 8');
@@ -137,6 +137,103 @@ function opencode(db, since) {
     }));
   }
   return out;
+}
+
+// OpenCode 2.x keeps its sessions in session_v2 / session_message and no longer
+// writes the session / message / part tables above. Each session_message row is
+// typed: `user`, `assistant` (content blocks: reasoning, text, tool), `idle` (a
+// turn ended, with an outcome of succeeded or failed), plus `model-switched`
+// and `system`, which say nothing about what the agent is doing.
+const OPENCODE_V2_ASKS = new Set(['question']);
+const OPENCODE_V2_OPEN = new Set(['running', 'pending']);
+
+function opencodeV2State(message) {
+  if (!message) return { status: 'idle' };
+  const body = message.body;
+  if (message.type === 'idle') {
+    if (body.outcome === 'failed') {
+      return { status: 'error', error: clean(body.error && (body.error.message || body.error.type)) || 'Turn failed' };
+    }
+    return { status: body.outcome === 'succeeded' ? 'done' : 'idle' };
+  }
+  if (message.type === 'user') return { status: 'thinking' };
+
+  const blocks = Array.isArray(body.content) ? body.content.filter(Boolean) : [];
+  const open = blocks.filter((b) => b.type === 'tool' && b.state && OPENCODE_V2_OPEN.has(b.state.status));
+  if (open.length) {
+    // A tool that asks the user something stays "running" until they answer.
+    const ask = open.find((b) => OPENCODE_V2_ASKS.has(b.name));
+    if (ask) return { status: 'waiting', activity: ask.name };
+    return { status: 'tool', activity: open[open.length - 1].name || 'Tool' };
+  }
+  if (body.finish === 'error') {
+    return { status: 'error', error: clean(body.error && (body.error.message || body.error.type)) || 'Turn failed' };
+  }
+  if (body.finish === 'stop' || body.finish === 'length') return { status: 'done' };
+  // Not finished yet: the newest block says what is being produced. After a
+  // step that ended in tool calls (all finished) the model is reading the results.
+  if (!(body.time && body.time.completed)) {
+    const latest = blocks[blocks.length - 1];
+    if (latest && latest.type === 'text') return { status: 'typing' };
+  }
+  return { status: 'thinking' };
+}
+
+function opencodeV2(db, since) {
+  const rows = db.prepare(`select id, parent_id, title, directory, model, time_created, time_updated
+    from session_v2 where time_updated >= ? order by time_updated desc`).all(since);
+  const recent = db.prepare(`select type, data from session_message
+    where session_id = ? and type in ('user', 'assistant', 'idle')
+    order by time_created desc, seq desc limit 6`);
+  const lastUser = db.prepare(`select type, data from session_message
+    where session_id = ? and type = 'user' order by time_created desc, seq desc limit 1`);
+  const parse = (r) => {
+    try { return { type: r.type, body: JSON.parse(r.data) || {} }; } catch { return null; }
+  };
+  const text = (m) => (Array.isArray(m.body.content) ? m.body.content : [])
+    .filter((b) => b && b.type === 'text' && typeof b.text === 'string').map((b) => b.text).join('\n');
+
+  const out = [];
+  for (const row of rows) {
+    const messages = recent.all(row.id).map(parse).filter(Boolean);
+    const user = parse(lastUser.get(row.id) || {}) || null;
+    const state = opencodeV2State(messages[0]);
+    // The reply is the newest assistant text of the current turn; a turn that has
+    // just started (the newest message is the prompt) has no reply yet.
+    const turn = messages.findIndex((m) => m.type === 'user');
+    const reply = messages.slice(0, turn < 0 ? messages.length : turn)
+      .find((m) => m.type === 'assistant' && text(m));
+    out.push(session('opencode', row.id, {
+      parentId: row.parent_id,
+      cwd: row.directory,
+      title: row.title,
+      model: opencodeModel(row.model),
+      prompt: user ? clean(typeof user.body.text === 'string' ? user.body.text : '') : null,
+      reply: reply ? clean(text(reply)) : null,
+      status: state.status,
+      activity: state.activity,
+      error: state.error,
+      turnStartedAt: user && user.body.time ? user.body.time.created : null,
+      lastEventAt: row.time_updated,
+      startedAt: row.time_created,
+    }));
+  }
+  return out;
+}
+
+// A database can hold both generations: OpenCode 2 copies the sessions of an
+// older install into session_v2 (with their messages) and then only writes
+// there. A session found in both is therefore read from session_v2.
+function opencode(db, since) {
+  const has = (name) => !!db.prepare("select 1 from sqlite_master where type = 'table' and name = ?").get(name);
+  const byId = new Map();
+  if (has('session')) {
+    try { for (const s of opencodeV1(db, since)) byId.set(s.id, s); } catch { /* try the other layout */ }
+  }
+  if (has('session_v2') && has('session_message')) {
+    try { for (const s of opencodeV2(db, since)) byId.set(s.id, s); } catch { /* keep what v1 gave */ }
+  }
+  return [...byId.values()];
 }
 
 // --- hermes ---------------------------------------------------------------
@@ -224,4 +321,4 @@ function notice({ home = os.homedir(), env = process.env, sqlite: available = sq
     + 'their databases are being skipped, other agents are unaffected.';
 }
 
-module.exports = { poll, location, notice, opencodeState, hermesState };
+module.exports = { poll, location, notice, opencodeState, opencodeV2State, hermesState };
