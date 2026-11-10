@@ -33,6 +33,16 @@ If the output also says **"Update available: vA → vB"**, tell the user a new
 version is out and offer to update it (`/myoffice update`, below).
 Requires Node.js 18+; if `node` is missing, say so and stop.
 
+## Skill libraries
+
+Use the **Skill library** in the toolbar to browse installed skills by task. Open a
+book by clicking it or dragging it onto the reading mat. Use the contents and
+page arrows to navigate chapters, or **Raw text** to read the original Markdown.
+
+The **Public library** has its own task desks, a dated collection of trending
+skills, and links to their original listings. It is also available at
+`http://127.0.0.1:<port>/#public-library`.
+
 ## Scenes (3D)
 
 Besides the built-in office there are downloadable 3D scenes (e.g. a pirate

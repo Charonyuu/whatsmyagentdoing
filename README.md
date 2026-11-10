@@ -16,6 +16,21 @@ OMP support: [paths, profiles, Resume and limitations](docs/omp.md).
 
 <sub>Recorded with `--demo` (a made-up team), so no real sessions are shown.</sub>
 
+## Skill libraries
+
+Find the skills on your machine by task. Pick a desk, then click a book or drag it onto the reading mat. Open the contents to jump to a chapter, use the page arrows to read in order, or switch to **Raw text** to see the original Markdown.
+
+![An open skill book with chapter navigation in MyOffice](docs/skill-library-reader.png)
+
+[Watch the demo video](docs/skill-library-demo.mp4)
+
+| Open this | Find this |
+| --- | --- |
+| **Skill library** | Installed Codex and Claude Code skills grouped by task, with search and local source labels. |
+| **Public library** | A separate collection of 24 skills from the November 10, 2026 [skills.sh Trending snapshot](https://skills.sh/trending), plus Impeccable as a staff pick. Desks are organized by task, inspired by [Vibe Atlas](https://github.com/Angelov1314/vibe-atlas). Each book links to its source. |
+
+The recording uses example skills and a fictional team. The local room is available in standard mode. The public room also works in private and demo mode. Choose a free port with `--port` when an open instance uses a different mode.
+
 ## Install
 
 **Easiest: ask your agent.** Paste this into Claude Code or Codex:

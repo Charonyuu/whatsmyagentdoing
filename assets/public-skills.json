@@ -1,0 +1,379 @@
+{
+  "date": "2026-11-10",
+  "atlasDate": "2026-11-03",
+  "categories": [
+    {
+      "id": "devtools",
+      "name": {
+        "zh": "编码与开发工具",
+        "en": "Coding & Developer Tools"
+      },
+      "description": {
+        "zh": "辅助编码、工程协作与问题排查。",
+        "en": "Skills for coding, engineering collaboration, and troubleshooting."
+      },
+      "art": "development",
+      "skills": [
+        {
+          "id": "microsoft-foundry",
+          "name": "Microsoft Foundry",
+          "description": {
+            "zh": "帮助围绕 Microsoft Foundry 开展 AI 应用开发。",
+            "en": "Guides AI application development with Microsoft Foundry."
+          },
+          "rank": 14,
+          "source": "microsoft/azure-skills",
+          "url": "https://www.skills.sh/microsoft/azure-skills/microsoft-foundry"
+        },
+        {
+          "id": "code-review",
+          "name": "Code Review",
+          "description": {
+            "zh": "检查代码改动，指出风险和可改进之处。",
+            "en": "Reviews code changes and highlights risks and opportunities to improve."
+          },
+          "rank": 90,
+          "source": "mattpocock/skills",
+          "url": "https://www.skills.sh/mattpocock/skills/code-review"
+        },
+        {
+          "id": "tdd",
+          "name": "TDD",
+          "description": {
+            "zh": "按测试驱动开发的节奏组织实现。",
+            "en": "Structures implementation around the test-driven development cycle."
+          },
+          "rank": 113,
+          "source": "mattpocock/skills",
+          "url": "https://www.skills.sh/mattpocock/skills/tdd"
+        },
+        {
+          "id": "diagnosing-bugs",
+          "name": "Diagnosing Bugs",
+          "description": {
+            "zh": "定位问题并围绕可复现证据验证修复。",
+            "en": "Finds the cause of a bug and checks a fix against reproducible evidence."
+          },
+          "rank": 121,
+          "source": "mattpocock/skills",
+          "url": "https://www.skills.sh/mattpocock/skills/diagnosing-bugs"
+        },
+        {
+          "id": "systematic-debugging",
+          "name": "Systematic Debugging",
+          "description": {
+            "zh": "按步骤调查故障原因，避免未经验证就改代码。",
+            "en": "Investigates the cause of a failure in steps before changing code."
+          },
+          "rank": 219,
+          "source": "obra/superpowers",
+          "url": "https://www.skills.sh/obra/superpowers/systematic-debugging"
+        }
+      ]
+    },
+    {
+      "id": "design-skills",
+      "name": {
+        "zh": "AI 设计技能与审查",
+        "en": "AI Design Skills & Review"
+      },
+      "description": {
+        "zh": "参考 Vibe Atlas 的设计技能分类，整理界面设计与视觉改进工具。",
+        "en": "Adapted from Vibe Atlas’s design-skills category for interface design and visual refinement."
+      },
+      "art": "design",
+      "skills": [
+        {
+          "id": "design-mobile-apps",
+          "name": "Design Mobile Apps",
+          "description": {
+            "zh": "围绕移动端页面、交互和平台习惯规划应用设计。",
+            "en": "Plans mobile app layouts and interactions around platform conventions."
+          },
+          "rank": 1,
+          "source": "designed-by-ai/skills",
+          "url": "https://www.skills.sh/designed-by-ai/skills/design-mobile-apps"
+        },
+        {
+          "id": "ui-taste",
+          "name": "UI Taste",
+          "description": {
+            "zh": "为界面风格和视觉取舍提供设计方向。",
+            "en": "Provides direction for visual style and interface design decisions."
+          },
+          "rank": 2,
+          "source": "uizze.sh",
+          "url": "https://www.skills.sh/site/uizze.sh/ui-taste"
+        },
+        {
+          "id": "uizze-ui",
+          "name": "Uizze UI",
+          "description": {
+            "zh": "把 Uizze 的界面设计方法用于 UI 构思与制作。",
+            "en": "Applies Uizze’s interface design approach to UI exploration and creation."
+          },
+          "rank": 13,
+          "source": "uizze/uizze",
+          "url": "https://www.skills.sh/uizze/uizze/uizze-ui"
+        },
+        {
+          "id": "frontend-design",
+          "name": "Frontend Design",
+          "description": {
+            "zh": "设计并实现具有清晰视觉方向的前端界面。",
+            "en": "Designs and builds frontend interfaces with a clear visual direction."
+          },
+          "rank": 142,
+          "source": "anthropics/skills",
+          "url": "https://www.skills.sh/anthropics/skills/frontend-design"
+        },
+        {
+          "id": "impeccable",
+          "name": "Impeccable",
+          "description": {
+            "zh": "检查 AI 生成界面的设计问题，改善视觉层次和可用性。",
+            "en": "Uses structured design skills to improve the visual quality and usability of AI-generated interfaces."
+          },
+          "rank": null,
+          "source": "pbakaus/impeccable",
+          "url": "https://github.com/pbakaus/impeccable"
+        }
+      ]
+    },
+    {
+      "id": "motion",
+      "name": {
+        "zh": "动效与程序化视频",
+        "en": "Motion & Programmatic Video"
+      },
+      "description": {
+        "zh": "参考 Vibe Atlas 的动效分类，涵盖视频制作、剪辑与音乐生成。",
+        "en": "Adapted from Vibe Atlas’s motion category for video, editing, and music workflows."
+      },
+      "art": "media",
+      "skills": [
+        {
+          "id": "hyperframes",
+          "name": "Hyperframes",
+          "description": {
+            "zh": "用 HyperFrames 组织基于网页的程序化视频。",
+            "en": "Creates programmatic video workflows with HyperFrames."
+          },
+          "rank": 9,
+          "source": "heygen-com/hyperframes",
+          "url": "https://www.skills.sh/heygen-com/hyperframes/hyperframes"
+        },
+        {
+          "id": "ai-music",
+          "name": "AI Music",
+          "description": {
+            "zh": "围绕 AI 音乐生成整理创作步骤与提示。",
+            "en": "Guides an AI music generation workflow."
+          },
+          "rank": 42,
+          "source": "gencraft-labs/skills",
+          "url": "https://www.skills.sh/gencraft-labs/skills/ai-music"
+        },
+        {
+          "id": "video-edit",
+          "name": "Video Edit",
+          "description": {
+            "zh": "规划视频剪辑与编辑处理步骤。",
+            "en": "Guides video editing workflows."
+          },
+          "rank": 43,
+          "source": "gencraft-labs/skills",
+          "url": "https://www.skills.sh/gencraft-labs/skills/video-edit"
+        },
+        {
+          "id": "remotion-best-practices",
+          "name": "Remotion Best Practices",
+          "description": {
+            "zh": "按 Remotion 的实践组织基于 React 的视频制作。",
+            "en": "Applies Remotion practices to React-based video projects."
+          },
+          "rank": 65,
+          "source": "remotion-dev/skills",
+          "url": "https://www.skills.sh/remotion-dev/skills/remotion-best-practices"
+        }
+      ]
+    },
+    {
+      "id": "writing",
+      "name": {
+        "zh": "文案与内容表达",
+        "en": "Writing & Content"
+      },
+      "description": {
+        "zh": "按技能用途整理写作结构与营销文案。",
+        "en": "Grouped by writing and marketing-copy tasks."
+      },
+      "art": "writing",
+      "skills": [
+        {
+          "id": "writing-shape",
+          "name": "Writing Shape",
+          "description": {
+            "zh": "帮助组织文章的结构与论述顺序。",
+            "en": "Helps shape a piece of writing and arrange its ideas."
+          },
+          "rank": 154,
+          "source": "mattpocock/skills",
+          "url": "https://www.skills.sh/mattpocock/skills/writing-shape"
+        },
+        {
+          "id": "writing-beats",
+          "name": "Writing Beats",
+          "description": {
+            "zh": "用节拍梳理叙事或内容的推进。",
+            "en": "Uses beats to structure how a narrative or piece of content unfolds."
+          },
+          "rank": 155,
+          "source": "mattpocock/skills",
+          "url": "https://www.skills.sh/mattpocock/skills/writing-beats"
+        },
+        {
+          "id": "copywriting",
+          "name": "Copywriting",
+          "description": {
+            "zh": "起草面向产品与营销场景的文案。",
+            "en": "Drafts copy for product and marketing contexts."
+          },
+          "rank": 275,
+          "source": "coreyhaines31/marketingskills",
+          "url": "https://www.skills.sh/coreyhaines31/marketingskills/copywriting"
+        }
+      ]
+    },
+    {
+      "id": "agents",
+      "name": {
+        "zh": "AI Agent 与知识应用",
+        "en": "AI Agents & Knowledge"
+      },
+      "description": {
+        "zh": "参考 Vibe Atlas 的 Agent 与知识分类，涵盖提问、构思和检索。",
+        "en": "Adapted from Vibe Atlas’s agents-and-knowledge category for questioning, ideation, and search."
+      },
+      "art": "research",
+      "skills": [
+        {
+          "id": "grill-me",
+          "name": "Grill Me",
+          "description": {
+            "zh": "通过连续提问澄清想法、假设或计划。",
+            "en": "Clarifies an idea, its assumptions, or a plan through focused questions."
+          },
+          "rank": 84,
+          "source": "mattpocock/skills",
+          "url": "https://www.skills.sh/mattpocock/skills/grill-me"
+        },
+        {
+          "id": "brainstorming",
+          "name": "Brainstorming",
+          "description": {
+            "zh": "以结构化提问发散并收敛可行方案。",
+            "en": "Explores possibilities and narrows them into a workable approach."
+          },
+          "rank": 249,
+          "source": "obra/superpowers",
+          "url": "https://www.skills.sh/obra/superpowers/brainstorming"
+        },
+        {
+          "id": "web-search",
+          "name": "Web Search",
+          "description": {
+            "zh": "搜索网页资料并整理相关信息。",
+            "en": "Searches the web and organizes relevant information."
+          },
+          "rank": 307,
+          "source": "101-skills/superpowers",
+          "url": "https://www.skills.sh/101-skills/superpowers/web-search"
+        }
+      ]
+    },
+    {
+      "id": "productivity",
+      "name": {
+        "zh": "办公与协作",
+        "en": "Work & Collaboration"
+      },
+      "description": {
+        "zh": "整理文档和会议协作类技能。",
+        "en": "Skills for document and meeting workflows."
+      },
+      "art": "productivity",
+      "skills": [
+        {
+          "id": "lark-doc",
+          "name": "Lark Doc",
+          "description": {
+            "zh": "协助创建和处理飞书文档。",
+            "en": "Helps create and work with Lark documents."
+          },
+          "rank": 88,
+          "source": "open.feishu.cn",
+          "url": "https://www.skills.sh/site/open.feishu.cn/lark-doc"
+        },
+        {
+          "id": "lark-meeting",
+          "name": "Lark Meeting",
+          "description": {
+            "zh": "处理飞书会议相关工作流。",
+            "en": "Supports Lark meeting workflows."
+          },
+          "rank": 361,
+          "source": "larksuite/cli",
+          "url": "https://www.skills.sh/larksuite/cli/lark-meeting"
+        }
+      ]
+    },
+    {
+      "id": "automation",
+      "name": {
+        "zh": "工作流与自动化",
+        "en": "Workflows & Automation"
+      },
+      "description": {
+        "zh": "参考 Vibe Atlas 的自动化分类，收录技能发现、浏览器与社区运营流程。",
+        "en": "Adapted from Vibe Atlas’s automation category for skill discovery, browser tasks, and community workflows."
+      },
+      "art": "productivity",
+      "skills": [
+        {
+          "id": "find-skills",
+          "name": "Find Skills",
+          "description": {
+            "zh": "按任务寻找合适的 Agent 技能。",
+            "en": "Finds relevant agent skills for a task."
+          },
+          "rank": 3,
+          "source": "vercel-labs/skills",
+          "url": "https://www.skills.sh/vercel-labs/skills/find-skills"
+        },
+        {
+          "id": "agent-browser",
+          "name": "Agent Browser",
+          "description": {
+            "zh": "通过浏览器自动化完成网页操作。",
+            "en": "Automates browser actions for web tasks."
+          },
+          "rank": 4,
+          "source": "vercel-labs/agent-browser",
+          "url": "https://www.skills.sh/vercel-labs/agent-browser/agent-browser"
+        },
+        {
+          "id": "reddit-automation",
+          "name": "Reddit Automation",
+          "description": {
+            "zh": "辅助组织 Reddit 内容和社区运营流程。",
+            "en": "Helps organize Reddit content and community workflows."
+          },
+          "rank": 48,
+          "source": "flowkit-labs/skills",
+          "url": "https://www.skills.sh/flowkit-labs/skills/reddit-automation"
+        }
+      ]
+    }
+  ]
+}

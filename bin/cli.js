@@ -100,15 +100,21 @@ function openBrowser(url) {
   } catch {}
 }
 
-function alreadyRunning(port) {
+function runningOffice(port) {
   return new Promise((resolve) => {
     const req = http.get({ host: '127.0.0.1', port, path: '/api/ping', timeout: 800 }, (res) => {
       let body = '';
       res.on('data', (c) => (body += c));
-      res.on('end', () => resolve(body.includes('whatsmyagentdoing')));
+      res.on('end', () => {
+        if (!body.includes('whatsmyagentdoing')) { resolve(null); return; }
+        resolve({
+          demo: res.headers['x-whatsmyagentdoing-demo'] === '1',
+          privacy: res.headers['x-whatsmyagentdoing-private'] === '1',
+        });
+      });
     });
-    req.on('error', () => resolve(false));
-    req.on('timeout', () => { req.destroy(); resolve(false); });
+    req.on('error', () => resolve(null));
+    req.on('timeout', () => { req.destroy(); resolve(null); });
   });
 }
 
@@ -161,7 +167,7 @@ async function main() {
       console.log(after === before ? `Already up to date (v${after}).` : `Updated v${before} → v${after}.`);
       // a running dashboard keeps the old code until it restarts
       for (let p = o.port; p <= o.port + 10; p++) {
-        if (await alreadyRunning(p)) { await stopAt(p); console.log(`Restart it with /myoffice (it was on port ${p}).`); }
+        if (await runningOffice(p)) { await stopAt(p); console.log(`Restart it with /myoffice (it was on port ${p}).`); }
       }
     } catch (e) {
       console.error(String(e.message || e));
@@ -201,7 +207,7 @@ async function main() {
   if (o.stop) {
     // It may have moved to a later port if the default was taken.
     const ports = [];
-    for (let p = o.port; p <= o.port + 10; p++) if (await alreadyRunning(p)) ports.push(p);
+    for (let p = o.port; p <= o.port + 10; p++) if (await runningOffice(p)) ports.push(p);
     for (const p of ports) await stopAt(p);
     console.log(ports.length ? `Stopped ${ports.map((p) => `http://localhost:${p}`).join(', ')}` : 'Not running.');
     return;
@@ -223,7 +229,13 @@ async function main() {
   }
 
   const query = o.scene ? `/?view=office&quality=high&scene=${encodeURIComponent(o.scene)}` : '';
-  if (await alreadyRunning(o.port)) {
+  const running = await runningOffice(o.port);
+  if (running) {
+    if ((o.privacy && running.privacy !== true) || (o.demo && running.demo !== true)) {
+      console.error(`MyOffice on port ${o.port} is running without the requested mode. Use --port with a free port.`);
+      process.exitCode = 1;
+      return;
+    }
     const url = `http://localhost:${o.port}${query}`;
     console.log(`Already running at ${url}`);
     await printUpdateHint();
@@ -250,20 +262,21 @@ async function main() {
     },
   });
 
+  server.once('listening', () => {
+    const url = `http://localhost:${server.address().port}`;
+    const n = watcher.sessions().length;
+    const openUrl = url + query;
+    const what = o.demo ? 'demo team' : `${n} session${n === 1 ? '' : 's'} in the last ${o.hours}h`;
+    console.log(`whatsmyagentdoing v${updater.localVersion()} → ${url}  (${what}, Ctrl+C to stop)`);
+    printUpdateHint();
+    if (o.open) openBrowser(openUrl);
+  });
   const listen = (port, tries) => {
     server.once('error', (err) => {
       if (err.code === 'EADDRINUSE' && tries > 0) listen(port + 1, tries - 1);
       else { console.error(err.message); process.exit(1); }
     });
-    server.listen(port, '127.0.0.1', () => {
-      const url = `http://localhost:${port}`;
-      const n = watcher.sessions().length;
-      const openUrl = url + query;
-      const what = o.demo ? 'demo team' : `${n} session${n === 1 ? '' : 's'} in the last ${o.hours}h`;
-      console.log(`whatsmyagentdoing v${updater.localVersion()} → ${url}  (${what}, Ctrl+C to stop)`);
-      printUpdateHint();
-      if (o.open) openBrowser(openUrl);
-    });
+    server.listen(port, '127.0.0.1');
   };
   listen(o.port, 10);
 }

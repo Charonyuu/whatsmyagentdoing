@@ -12,6 +12,8 @@ const STATIC = {
   '/office3d.js': ['office3d.js', 'text/javascript; charset=utf-8'],
   '/i18n.js': ['i18n.js', 'text/javascript; charset=utf-8'],
   '/popout.js': ['popout.js', 'text/javascript; charset=utf-8'],
+  '/library.js': ['library.js', 'text/javascript; charset=utf-8'],
+  '/library.css': ['library.css', 'text/css; charset=utf-8'],
 };
 const TYPES = { '.js': 'text/javascript; charset=utf-8', '.glb': 'model/gltf-binary', '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml', '.json': 'application/json' };
 // 3D models, served as-is (3D view only).
@@ -20,6 +22,7 @@ const scenes = require('./scenes');
 const updater = require('./update');
 const { ompResumeCommand } = require('./omp');
 const { dayKey } = require('./parsers');
+const { createLibrary } = require('./library');
 
 function serveFile(res, root, rel) {
   const file = path.normalize(path.join(root, rel));
@@ -120,7 +123,7 @@ function snapshot(watcher, opts) {
   return { now, lang: opts.demo ? null : promptLanguage(raw), sessions, summary: summary(sessions, now) };
 }
 
-function createServer(watcher, opts, { onShutdown, onRestart } = {}) {
+function createServer(watcher, opts, { onShutdown, onRestart, library = createLibrary() } = {}) {
   const clients = new Set();
   let last = '';
 
@@ -149,8 +152,17 @@ function createServer(watcher, opts, { onShutdown, onRestart } = {}) {
     const url = new URL(req.url, 'http://localhost');
     if (STATIC[url.pathname]) {
       const [file, type] = STATIC[url.pathname];
-      res.writeHead(200, { 'content-type': type, 'cache-control': 'no-store' });
-      fs.createReadStream(path.join(PUBLIC, file)).pipe(res);
+      if (url.pathname === '/' && (opts.demo || opts.privacy)) {
+        fs.readFile(path.join(PUBLIC, file), 'utf8', (error, html) => {
+          if (error) { res.writeHead(500).end(); return; }
+          const protectedHtml = html.replace(/<body(\s[^>]*)?>/i, (tag) => tag.replace(/>$/, ' data-local-library-disabled="true">'));
+          res.writeHead(200, { 'content-type': type, 'cache-control': 'no-store' });
+          res.end(protectedHtml);
+        });
+      } else {
+        res.writeHead(200, { 'content-type': type, 'cache-control': 'no-store' });
+        fs.createReadStream(path.join(PUBLIC, file)).pipe(res);
+      }
     } else if (Object.keys(MOUNTS).some((m) => url.pathname.startsWith(m))) {
       const m = Object.keys(MOUNTS).find((k) => url.pathname.startsWith(k));
       let rel;
@@ -183,6 +195,33 @@ function createServer(watcher, opts, { onShutdown, onRestart } = {}) {
         (x) => { res.writeHead(200, { 'content-type': 'application/json' }); res.end(JSON.stringify({ ok: true, id: x.id })); },
         (e) => { res.writeHead(400, { 'content-type': 'application/json' }); res.end(JSON.stringify({ ok: false, error: String(e.message || e) })); },
       );
+    } else if (url.pathname === '/api/library' || url.pathname === '/api/library/skill') {
+      if (req.method !== 'GET') { res.writeHead(405, { allow: 'GET' }).end(); return; }
+      const headers = {
+        'content-type': 'application/json; charset=utf-8',
+        'cache-control': 'no-store',
+        'x-content-type-options': 'nosniff',
+        'cross-origin-resource-policy': 'same-origin',
+      };
+      if (opts.demo || opts.privacy) {
+        res.writeHead(403, headers);
+        res.end(JSON.stringify({ error: 'Local skill library is unavailable in demo or private mode.' }));
+        return;
+      }
+      try {
+        let status = 200;
+        let body;
+        if (url.pathname === '/api/library') {
+          body = JSON.stringify({ categories: library.catalog() });
+        } else {
+          const skill = library.getSkill(url.searchParams.get('id'));
+          if (!skill) status = 404;
+          body = JSON.stringify(skill ? { skill } : { error: 'Skill not found.' });
+        }
+        res.writeHead(status, headers).end(body);
+      } catch {
+        res.writeHead(500, headers).end(JSON.stringify({ error: 'Could not read skill library.' }));
+      }
     } else if (url.pathname === '/api/transcript') {
       // --private hides prompts and replies everywhere, so it hides the conversation too.
       const key = url.searchParams.get('key') || '';
@@ -221,7 +260,11 @@ function createServer(watcher, opts, { onShutdown, onRestart } = {}) {
         (e) => { res.writeHead(400, { 'content-type': 'application/json' }); res.end(JSON.stringify({ ok: false, error: String(e.message || e) })); },
       );
     } else if (url.pathname === '/api/ping') {
-      res.writeHead(200, { 'content-type': 'application/json' });
+      res.writeHead(200, {
+        'content-type': 'application/json',
+        'x-whatsmyagentdoing-demo': opts.demo ? '1' : '0',
+        'x-whatsmyagentdoing-private': opts.privacy ? '1' : '0',
+      });
       res.end(JSON.stringify({ app: 'whatsmyagentdoing' }));
     } else if (url.pathname === '/events') {
       res.writeHead(200, {
