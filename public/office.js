@@ -202,10 +202,11 @@
   // ---------------------------------------------------------------- office
 
   class Office {
-    constructor(root, { onHover, label, onFrame, showAgent = true, compact = false } = {}) {
+    constructor(root, { onHover, label, subLabel, onFrame, showAgent = true, compact = false } = {}) {
       this.root = root;
       this.onHover = onHover || (() => {});
       this.label = label || ((s) => s.project || s.agent);
+      this.subLabel = subLabel || (() => '');
       this.onFrame = onFrame;
       this.showAgent = showAgent;
       this.compact = compact;
@@ -1350,10 +1351,10 @@
       c.font = font(600, 10);
 
       const badge = this.showAgent && AGENT_BADGES[s.agent];
-      const pill = (text, fg, bg, yy, alpha = 1, identify = false) => {
+      const pill = (text, fg, bg, yy, alpha = 1, identify = false, maxW = 118) => {
         c.globalAlpha = alpha;
         let tx = text;
-        while (c.measureText(tx).width > 118 && tx.length > 2) tx = tx.slice(0, -2) + '…';
+        while (c.measureText(tx).width > maxW && tx.length > 2) tx = tx.slice(0, -2) + '…';
         const extra = badge && identify ? 26 : 0;
         const w = c.measureText(tx).width + 12 + extra;
         const height = extra ? 22 : 16;
@@ -1434,7 +1435,15 @@
 
       const hover = this.hoverKey === p.key;
       if (!s.subagent || hover) {
-        pill(this.label(s), pal.text, pal.tagBg, top - 11, p.mode === 'work' || hover ? 1 : 0.7, true);
+        const alpha = p.mode === 'work' || hover ? 1 : 0.7;
+        pill(this.label(s), pal.text, pal.tagBg, top - 11, alpha, true);
+        // The session title sits in a smaller, quieter tag above the name.
+        const sub = this.subLabel(s);
+        if (sub) {
+          c.font = font(500, 9);
+          pill(sub, pal.text, pal.tagBg, top - 11 - (badge ? 11 : 8) - 9, alpha * 0.85, false, 150);
+          c.font = font(600, 10);
+        }
       } else if (badge) {
         this.agentBadge(badge, x, top - 11);
       }
