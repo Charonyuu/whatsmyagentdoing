@@ -429,6 +429,7 @@
             <label class="tog"><span data-t="subagents"></span><input type="checkbox" role="switch" id="showSub"></label>
             <label class="tog" id="idleToggle"><span data-t="showIdle"></span><input type="checkbox" role="switch" id="showIdle"></label>
             <label class="tog" id="agentBadgeToggle"><span data-t="showAgent"></span><input type="checkbox" role="switch" id="showAgent"></label>
+            <label class="tog" id="titleToggle"><span data-t="showTitle"></span><input type="checkbox" role="switch" id="showTitle"></label>
             <label class="tog" id="soundToggle"><span data-t="sound"></span><input type="checkbox" role="switch" id="sound"></label>
             <label class="tog" id="notifyToggle"><span data-t="notify"></span><input type="checkbox" role="switch" id="notify"></label>
           </div>
@@ -508,7 +509,7 @@ const store = (() => {
   return { get, set };
 })();
 
-const PREF_DEFAULTS = { view: 'office', quality: 'mid', scene: 'office', agents: [], showSub: false, showIdle: false, showAgent: true, sound: false, notify: true, side: true, lang: 'auto' };
+const PREF_DEFAULTS = { view: 'office', quality: 'mid', scene: 'office', agents: [], showSub: false, showIdle: false, showAgent: true, showTitle: true, sound: false, notify: true, side: true, lang: 'auto' };
 function validAgentId(v) {
   return typeof v === 'string' && v !== 'all' && /^[a-zA-Z][a-zA-Z0-9_-]{0,63}$/.test(v) && !Object.hasOwn(Object.prototype, v);
 }
@@ -855,6 +856,7 @@ document.getElementById('viewSeg').addEventListener('click', (e) => {
 const showSub = document.getElementById('showSub');
 const showIdle = document.getElementById('showIdle');
 const showAgent = document.getElementById('showAgent');
+const showTitle = document.getElementById('showTitle');
 showSub.addEventListener('change', () => { state.showSub = showSub.checked; store.set('showSub', state.showSub); renderNow(); });
 showIdle.addEventListener('change', () => { state.showIdle = showIdle.checked; store.set('showIdle', state.showIdle); renderNow(); });
 const soundBox = document.getElementById('sound');
@@ -863,6 +865,7 @@ soundBox.addEventListener('change', () => {
   if (state.sound) chime('done'); // a preview, and the click unlocks audio for later alerts
 });
 showAgent.addEventListener('change', () => { state.showAgent = showAgent.checked; store.set('showAgent', state.showAgent); syncControls(); render(); });
+showTitle.addEventListener('change', () => { state.showTitle = showTitle.checked; store.set('showTitle', state.showTitle); });
 
 const notifyBtn = document.getElementById('notify');
 function syncControls() {
@@ -876,7 +879,9 @@ function syncControls() {
   showIdle.checked = state.showIdle;
   soundBox.checked = state.sound;
   showAgent.checked = state.showAgent;
+  showTitle.checked = state.showTitle;
   document.getElementById('agentBadgeToggle').style.display = view === 'office' ? '' : 'none';
+  document.getElementById('titleToggle').style.display = view === 'office' ? '' : 'none';
   popout?.sync(PIP, view);
   // On only when both the switch and the browser allow it; blocked shows how to unblock.
   const perm = window.Notification ? Notification.permission : 'unsupported';
@@ -924,6 +929,7 @@ const officeOpts = {
   compact: PIP,
   onFrame: (renderer) => popout?.drawPreview(renderer),
   label: (s) => (s.agent === 'omp' && s.subagent && s.title) || s.project || AGENT_NAME[s.agent] || s.agent,
+  subLabel: (s) => (state.showTitle && s.title && s.title !== officeOpts.label(s) ? s.title : ''),
   onHover(s, at, click) {
     // In full screen a click opens the agent in the side panel instead of pinning a card.
     if (click && state.full && s) { hideTip(); openDetail(s.key); return; }
