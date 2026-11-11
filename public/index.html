@@ -440,7 +440,7 @@
   <p class="pip-error" id="pipError" role="alert" hidden></p>
   <div class="pip-preview" id="pipPreview" hidden>
     <p data-t="pipVideoHint"></p>
-    <video id="pipVideo" controls autoplay muted playsinline aria-label="Office video preview"></video>
+    <video id="pipVideo" controls autoplay muted playsinline data-a="pipVideo"></video>
     <button class="btn" id="videoPipBtn" data-t="pip" hidden></button>
     <button class="btn" id="closePreview" data-t="pipStop"></button>
   </div>
@@ -449,7 +449,7 @@
     <div class="legend" id="legend"></div>
     <div class="legend" id="agentLegend" hidden></div>
   </div>
-  <aside class="side" id="side" aria-label="Agents">
+  <aside class="side" id="side" aria-labelledby="sideTitle">
     <div class="side-pane" id="sideList">
       <div class="side-head"><b id="sideTitle"></b><span class="side-count" id="sideCount"></span>
         <button class="icon-btn" id="sideHide"><svg class="ui-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5L21 12l-6.5 6.5M3 12h17"/></svg></button></div>
