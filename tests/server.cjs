@@ -35,3 +35,15 @@ test('silent active sessions are flagged as stuck, with minutes, until they time
   assert.equal(by.e.stuck, 0, 'waiting for you is not stuck');
   assert.equal(by.f.status, 'idle'); assert.equal(by.f.stuck, 0);
 });
+
+test('Russian prompts select the Russian UI', () => {
+  const { snapshot } = require('../src/server');
+  const prompts = [
+    'Проверь, почему сессии OMP пропали из офиса.',
+    'Открой настройки и включи уведомления.',
+    'Please check the README and run the tests.',
+  ];
+  const sessions = prompts.map((prompt, i) => ({ agent: 'codex', id: String(i), prompt, status: 'idle' }));
+  const data = snapshot({ sessions: () => sessions }, { privacy: false });
+  assert.equal(data.lang, 'ru');
+});

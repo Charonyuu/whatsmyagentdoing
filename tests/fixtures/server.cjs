@@ -56,6 +56,16 @@ async function main() {
   try {
     const scenario = process.argv[2];
     if (scenario === 'assets' || scenario === 'scenes') {
+      if (scenario === 'scenes') {
+        const installed = path.join(USER_DIR, 'pirate');
+        fs.mkdirSync(installed, { recursive: true });
+        fs.writeFileSync(path.join(installed, 'manifest.json'), '{"name":{"en":"Pirate Cove"},"version":1}');
+        const catalog = await request('/api/scenes');
+        assert.equal(catalog.status, 200);
+        const scenes = JSON.parse(catalog.body);
+        assert.equal(scenes.installed.find(s => s.id === 'pirate').name.ru, 'Пиратская бухта');
+        assert.equal(scenes.available.find(s => s.id === 'cafe').name.ru, 'Кафе');
+      }
       const prefixes = scenario === 'assets' ? ['/assets/'] : ['/scenes/', '/scenes/fixture/'];
       for (const prefix of prefixes) {
         for (const suffix of ['%', '%2', '%GG', '%E0%A4', '%FF']) {

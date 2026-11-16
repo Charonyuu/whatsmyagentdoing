@@ -53,7 +53,7 @@ Each session updates in real time:
 | ✅ Done | turn finished, with the last reply |
 | ■ Interrupted / ❗ Error / – Idle | |
 
-The UI speaks English, 繁體中文, 简体中文, 日本語, 한국어, Español, Français, Deutsch and Português. By default it uses the language you write your prompts in (falling back to your browser's); pick one from the language menu in the toolbar to override.
+The UI speaks English, 繁體中文, 简体中文, 日本語, 한국어, Español, Français, Deutsch, Português and Русский. By default it uses the language you write your prompts in (falling back to your browser's); pick one from the language menu in the toolbar to override.
 
 In the agent panel, sessions are grouped into **Needs you → Working → Finished**, with a live timer for the current turn, a copy button for the resume command (`claude --resume …` / `codex resume …` / `copilot --resume …`), optional browser notifications when an agent finishes, and a toolbar filter to show any mix of agents (or all of them), plus subagents and idle sessions. The tab title shows how many agents are working.
 

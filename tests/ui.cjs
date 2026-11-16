@@ -70,7 +70,8 @@ async function drawnLogos(target) {
   vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../public/i18n.js'), 'utf8'), translations);
   const keys = Object.keys(translations.window.I18N.en).sort();
   for (const lang of Object.values(translations.window.I18N)) assert.deepEqual(Object.keys(lang).sort(), keys);
-  check('all nine languages provide every UI string');
+  assert.equal(translations.window.i18nFromBrowser(['ru-RU', 'en-US']), 'ru');
+  check('all locales provide every UI string and ru-RU maps to Russian');
   browser=await chromium.launch({headless:process.env.WMAD_HEADED !== '1',channel:'chrome',ignoreDefaultArgs:['--disable-background-timer-throttling','--disable-backgrounding-occluded-windows','--disable-renderer-backgrounding'],args:['--window-size=1280,960']});
   const context=await browser.newContext({viewport:{width:1280,height:960},locale:'en-US'});
   await context.addInitScript(sessions=>{
@@ -85,6 +86,19 @@ async function drawnLogos(target) {
   check('full screen with the agent panel is the default');
   assert.equal(await page.locator('#fullBtn').count(),0,'there is no way back to the old layout');
   assert.equal(await page.locator('h1 [data-t]').innerText(),"What's my agent doing");
+  await openSettings(page);
+  await page.click('#langMenu > summary');
+  await page.getByRole('option', { name: 'Русский', exact: true }).click();
+  assert.equal(await page.locator('html').getAttribute('lang'), 'ru');
+  assert.equal(await page.locator('h1 [data-t]').innerText(), 'Чем заняты мои агенты');
+  assert.equal(await page.locator('#viewSeg [data-v=office]').innerText(), 'Офис');
+  assert.equal(await page.getByRole('complementary', { name: 'Агенты', exact: true }).count(), 1);
+  await openSettings(page);
+  await page.click('#langMenu > summary');
+  await page.click('#langList [data-lang="auto"]');
+  await page.keyboard.press('Escape');
+  assert.equal(await page.locator('html').getAttribute('lang'), 'en');
+  check('the language menu switches the office to Russian and back to automatic');
   assert.equal(await page.evaluate(()=>state.showSub),false,'subagents stay hidden by default for every provider');
   await openSettings(page);await page.check('#showSub');await page.keyboard.press('Escape');
   const ompChild={key:'omp:child',id:'child',agent:'omp',project:'omp-project',cwd:'/demo/omp-project',title:'Worker > Child',status:'thinking',subagent:true,parentId:'real-omp-id',resumeCommand:null,lastEventAt:Date.now(),turnStartedAt:Date.now()};

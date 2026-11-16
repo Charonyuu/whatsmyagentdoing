@@ -12,7 +12,8 @@
         "es": "Salón recreativo neón",
         "fr": "Salle d'arcade néon",
         "de": "Neon-Spielhalle",
-        "pt": "Fliperama neon"
+        "pt": "Fliperama neon",
+        "ru": "Неоновый зал игровых автоматов"
       },
       "credits": "Models: Kenney Mini Arcade, Furniture Kit (CC0)",
       "size": 116098,
@@ -31,7 +32,8 @@
         "es": "Cafetería",
         "fr": "Café",
         "de": "Café",
-        "pt": "Café"
+        "pt": "Café",
+        "ru": "Кафе"
       },
       "credits": "Models: Kenney Furniture Kit, Food Kit (CC0)",
       "size": 98208,
@@ -51,7 +53,8 @@
         "es": "Castillo",
         "fr": "Château",
         "de": "Burg",
-        "pt": "Castelo"
+        "pt": "Castelo",
+        "ru": "Замок"
       },
       "credits": "Models: Kenney Castle Kit, Food Kit, Pirate Kit, Furniture Kit (CC0)",
       "size": 165298,
@@ -71,7 +74,8 @@
         "es": "Cabaña navideña",
         "fr": "Chalet de Noël",
         "de": "Weihnachtshütte",
-        "pt": "Cabana de Natal"
+        "pt": "Cabana de Natal",
+        "ru": "Рождественский домик"
       },
       "credits": "Models: Kenney Holiday Kit, Furniture Kit (CC0)",
       "size": 294828,
@@ -90,7 +94,8 @@
         "es": "Cementerio embrujado",
         "fr": "Cimetière hanté",
         "de": "Spukfriedhof",
-        "pt": "Cemitério assombrado"
+        "pt": "Cemitério assombrado",
+        "ru": "Лощина с привидениями"
       },
       "credits": "Models: Kenney Graveyard Kit, Furniture Kit (CC0)",
       "icon": "🎃",
@@ -110,7 +115,8 @@
         "es": "Cala pirata",
         "fr": "Crique des pirates",
         "de": "Piratenbucht",
-        "pt": "Enseada pirata"
+        "pt": "Enseada pirata",
+        "ru": "Пиратская бухта"
       },
       "credits": "Models: Kenney Pirate Kit (CC0)",
       "size": 140841,
@@ -130,7 +136,8 @@
         "es": "Estación espacial",
         "fr": "Station spatiale",
         "de": "Raumstation",
-        "pt": "Estação espacial"
+        "pt": "Estação espacial",
+        "ru": "Космическая станция"
       },
       "credits": "Models: Kenney Space Station Kit, Space Kit (CC0)",
       "size": 140442,

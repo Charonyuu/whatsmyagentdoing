@@ -3,7 +3,7 @@
 // Guess the UI language from what the user actually types to their agents.
 // Returns a code from SUPPORTED, or null when there isn't enough text.
 
-const SUPPORTED = ['en', 'zh-TW', 'zh-CN', 'ja', 'ko', 'es', 'fr', 'de', 'pt'];
+const SUPPORTED = ['en', 'zh-TW', 'zh-CN', 'ja', 'ko', 'es', 'fr', 'de', 'pt', 'ru'];
 
 // Characters that differ between Traditional and Simplified Chinese.
 const TRAD = '們這個說會來時為麼發對後還開過們國學實現點頭樣讓進與東車問題當經動種長門關應這給從點'.split('');
@@ -21,7 +21,7 @@ const STOP = {
 };
 
 function guessLanguage(texts, minWeight = 40) {
-  let han = 0, kana = 0, hangul = 0, latin = 0, trad = 0, simp = 0;
+  let han = 0, kana = 0, hangul = 0, latin = 0, cyrillic = 0, russian = 0, trad = 0, simp = 0;
   const words = [];
   for (const t of texts) {
     if (!t) continue;
@@ -34,6 +34,10 @@ function guessLanguage(texts, minWeight = 40) {
         if (TRAD_SET.has(ch)) trad++;
         else if (SIMP_SET.has(ch)) simp++;
       } else if ((c >= 0x41 && c <= 0x5a) || (c >= 0x61 && c <= 0x7a) || (c >= 0xc0 && c <= 0x24f)) latin++;
+      else if (/\p{Script=Cyrillic}/u.test(ch)) {
+        cyrillic++;
+        if (/[а-яё]/iu.test(ch)) russian++;
+      }
     }
     // Skip code-ish tokens (paths, flags, identifiers) for word counts.
     for (const w of t.toLowerCase().split(/[^a-zà-ÿ]+/)) if (w.length > 1 && w.length < 12) words.push(w);
@@ -41,8 +45,10 @@ function guessLanguage(texts, minWeight = 40) {
   // A CJK character carries roughly a word's worth of meaning; weigh it up
   // so English identifiers sprinkled in Chinese prompts don't win.
   const cjk = han + kana + hangul;
-  if (cjk * 4 + latin < minWeight) return null;
-  if (cjk * 4 > latin) {
+  const cjkWeight = cjk * 4;
+  if (cjkWeight + latin + russian < minWeight) return null;
+  if (cyrillic > cjkWeight && cyrillic > latin) return russian === cyrillic ? 'ru' : null;
+  if (cjkWeight > latin) {
     if (kana > cjk * 0.1) return 'ja';
     if (hangul > cjk * 0.3) return 'ko';
     return simp > trad ? 'zh-CN' : 'zh-TW';

@@ -167,8 +167,12 @@ function createServer(watcher, opts, { onShutdown, onRestart } = {}) {
       else serveFile(res, dir, rest.join('/'));
     } else if (url.pathname === '/api/scenes') {
       const cat = scenes.catalog();
-      const icon = (x) => x.icon || (cat.find((c) => c.id === x.id) || {}).icon || '🗺️';
-      const have = scenes.installed().map((x) => ({ ...x, icon: icon(x) }));
+      const have = scenes.installed().map((x) => {
+        const entry = cat.find((c) => c.id === x.id);
+        // Existing scene packs can predate translations in the current catalog.
+        const name = entry ? { ...entry.name, ...x.name } : x.name;
+        return { ...x, name, icon: x.icon || entry?.icon || '🗺️' };
+      });
       const ids = new Set(have.map((x) => x.id));
       res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
       res.end(JSON.stringify({
