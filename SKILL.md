@@ -18,7 +18,7 @@ If it is already running, the same command just reopens the browser tab.
 To **update** it — `/myoffice update`, or the user asks to update / upgrade —
 run `node "<base directory>/bin/cli.js" --update` (not in the background),
 report the version it printed, then start it again as above. The page also
-shows the version in the corner and an "Update" button when a new one is out.
+updates itself when a new version is out, and shows an "Update" button if that fails.
 
 To **close** it — `/myoffice stop`, or the user asks to stop / close / shut the
 office down — run (not in the background):
@@ -30,7 +30,8 @@ node "<base directory>/bin/cli.js" --stop
 and say it's stopped.
 Then tell the user, in one line, that the office is open at the printed URL.
 If the output also says **"Update available: vA → vB"**, tell the user a new
-version is out and offer to update it (`/myoffice update`, below).
+version is out; the page installs it on its own once it opens (or run
+`/myoffice update`, below).
 Requires Node.js 18+; if `node` is missing, say so and stop.
 
 ## Scenes (3D)

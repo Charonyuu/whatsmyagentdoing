@@ -106,7 +106,7 @@ All of them are read-only. Paths, environment overrides and per-agent details: [
 
 Running it again while it's up just reopens the tab.
 
-**Updates:** the page shows an **Update** button when a newer version is out (it checks this repo's `package.json` about every half hour; set `WMAD_NO_UPDATE_CHECK=1` to turn that off). The button, `--update` or `/myoffice update` runs `git pull` in the install folder and restarts the dashboard.
+**Updates:** it keeps itself up to date. The page checks this repo's `package.json` about every half hour; when a newer version is out it runs `git pull --ff-only` in the install folder and restarts the dashboard. If that pull fails (say you changed files in the clone), an **Update** button stays on the page instead. `--update` or `/myoffice update` does the same from the command line. Set `WMAD_NO_UPDATE_CHECK=1` to turn checking and updating off.
 
 ## Privacy
 

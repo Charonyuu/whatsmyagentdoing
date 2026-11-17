@@ -6,7 +6,7 @@
     en: {
       settings: "Settings", scene: "Scene", agents: "Agents", language: "Language",
       showAgent: "Agent badges",
-      showTitle: "Session titles",
+      showTitle: "Session titles", titlesOff: "Off", titlesAll: "All",
       pip: "Pop out",
       pipClose: "Close pop-out",
       pipOn: "The dashboard is open in the pop-out window.",
@@ -31,7 +31,7 @@
     'zh-TW': {
       settings: "設定", scene: "場景", agents: "顯示哪些 Agent", language: "語言",
       showAgent: "Agent 標記",
-      showTitle: "對話標題",
+      showTitle: "對話標題", titlesOff: "關閉", titlesAll: "全部",
       pip: "子母畫面",
       pipClose: "關閉子母畫面",
       pipOn: "儀表板正在子母畫面視窗中顯示。",
@@ -56,7 +56,7 @@
     'zh-CN': {
       settings: "设置", scene: "场景", agents: "显示哪些 Agent", language: "语言",
       showAgent: "Agent 标记",
-      showTitle: "对话标题",
+      showTitle: "对话标题", titlesOff: "关闭", titlesAll: "全部",
       pip: "画中画",
       pipClose: "关闭画中画",
       pipOn: "仪表板正在画中画窗口中显示。",
@@ -81,7 +81,7 @@
     ja: {
       settings: "設定", scene: "シーン", agents: "エージェント", language: "言語",
       showAgent: "エージェントの印",
-      showTitle: "セッションのタイトル",
+      showTitle: "セッションのタイトル", titlesOff: "オフ", titlesAll: "すべて",
       pip: "ポップアウト",
       pipClose: "ポップアウトを閉じる",
       pipOn: "ダッシュボードはポップアウトウィンドウに表示中です。",
@@ -106,7 +106,7 @@
     ko: {
       settings: "설정", scene: "장면", agents: "에이전트", language: "언어",
       showAgent: "에이전트 표시",
-      showTitle: "세션 제목",
+      showTitle: "세션 제목", titlesOff: "끄기", titlesAll: "전체",
       pip: "팝아웃",
       pipClose: "팝아웃 닫기",
       pipOn: "대시보드가 팝아웃 창에 표시되고 있어요.",
@@ -131,7 +131,7 @@
     es: {
       settings: "Ajustes", scene: "Escenario", agents: "Agentes", language: "Idioma",
       showAgent: "Insignias de agentes",
-      showTitle: "Títulos de sesión",
+      showTitle: "Títulos de sesión", titlesOff: "No", titlesAll: "Todas",
       pip: "Ventana flotante",
       pipClose: "Cerrar ventana flotante",
       pipOn: "El panel se muestra en la ventana flotante.",
@@ -156,7 +156,7 @@
     fr: {
       settings: "Réglages", scene: "Scène", agents: "Agents", language: "Langue",
       showAgent: "Badges des agents",
-      showTitle: "Titres des sessions",
+      showTitle: "Titres des sessions", titlesOff: "Non", titlesAll: "Toutes",
       pip: "Fenêtre flottante",
       pipClose: "Fermer la fenêtre flottante",
       pipOn: "Le tableau de bord est affiché dans la fenêtre flottante.",
@@ -181,7 +181,7 @@
     de: {
       settings: "Einstellungen", scene: "Szene", agents: "Agents", language: "Sprache",
       showAgent: "Agent-Abzeichen",
-      showTitle: "Sitzungstitel",
+      showTitle: "Sitzungstitel", titlesOff: "Aus", titlesAll: "Alle",
       pip: "Mini-Fenster",
       pipClose: "Mini-Fenster schließen",
       pipOn: "Das Dashboard wird im Mini-Fenster angezeigt.",
@@ -206,7 +206,7 @@
     pt: {
       settings: "Configurações", scene: "Cenário", agents: "Agentes", language: "Idioma",
       showAgent: "Identificação dos agentes",
-      showTitle: "Títulos das sessões",
+      showTitle: "Títulos das sessões", titlesOff: "Não", titlesAll: "Todas",
       pip: "Janela flutuante",
       pipClose: "Fechar janela flutuante",
       pipOn: "O painel está aberto na janela flutuante.",
@@ -231,7 +231,7 @@
     ru: {
       settings: 'Настройки', scene: 'Сцена', agents: 'Агенты', language: 'Язык',
       showAgent: 'Значки агентов',
-      showTitle: 'Заголовки сессий',
+      showTitle: 'Заголовки сессий', titlesOff: "Выкл", titlesAll: "Все",
       pip: 'Отдельное окно',
       pipClose: 'Закрыть отдельное окно',
       pipOn: 'Офис открыт в отдельном окне.',

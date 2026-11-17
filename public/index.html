@@ -429,7 +429,7 @@
             <label class="tog"><span data-t="subagents"></span><input type="checkbox" role="switch" id="showSub"></label>
             <label class="tog" id="idleToggle"><span data-t="showIdle"></span><input type="checkbox" role="switch" id="showIdle"></label>
             <label class="tog" id="agentBadgeToggle"><span data-t="showAgent"></span><input type="checkbox" role="switch" id="showAgent"></label>
-            <label class="tog" id="titleToggle"><span data-t="showTitle"></span><input type="checkbox" role="switch" id="showTitle"></label>
+            <div class="tog" id="titleToggle"><span data-t="showTitle"></span><span class="seg" id="titleSeg"><button data-v="off" data-t="titlesOff"></button><button data-v="needs" data-t="needsYou"></button><button data-v="all" data-t="titlesAll"></button></span></div>
             <label class="tog" id="soundToggle"><span data-t="sound"></span><input type="checkbox" role="switch" id="sound"></label>
             <label class="tog" id="notifyToggle"><span data-t="notify"></span><input type="checkbox" role="switch" id="notify"></label>
           </div>
@@ -509,7 +509,7 @@ const store = (() => {
   return { get, set };
 })();
 
-const PREF_DEFAULTS = { view: 'office', quality: 'mid', scene: 'office', agents: [], showSub: false, showIdle: false, showAgent: true, showTitle: true, sound: false, notify: true, side: true, lang: 'auto' };
+const PREF_DEFAULTS = { view: 'office', quality: 'mid', scene: 'office', agents: [], showSub: false, showIdle: false, showAgent: true, showTitle: 'needs', sound: false, notify: true, side: true, lang: 'auto' };
 function validAgentId(v) {
   return typeof v === 'string' && v !== 'all' && /^[a-zA-Z][a-zA-Z0-9_-]{0,63}$/.test(v) && !Object.hasOwn(Object.prototype, v);
 }
@@ -518,6 +518,8 @@ function validPreference(k, v) {
   if (typeof PREF_DEFAULTS[k] === 'boolean') return typeof v === 'boolean';
   if (k === 'view') return ['office', 'list'].includes(v);
   if (k === 'quality') return ['mid', 'high'].includes(v);
+  // An old on/off value fails this and falls back to the default.
+  if (k === 'showTitle') return ['off', 'needs', 'all'].includes(v);
   // Which agents to show; none selected means all of them.
   if (k === 'agents') return Array.isArray(v) && v.length <= 32 && v.every(validAgentId);
   if (k === 'lang') return v === 'auto' || Object.hasOwn(I18N, v);
@@ -856,7 +858,6 @@ document.getElementById('viewSeg').addEventListener('click', (e) => {
 const showSub = document.getElementById('showSub');
 const showIdle = document.getElementById('showIdle');
 const showAgent = document.getElementById('showAgent');
-const showTitle = document.getElementById('showTitle');
 showSub.addEventListener('change', () => { state.showSub = showSub.checked; store.set('showSub', state.showSub); renderNow(); });
 showIdle.addEventListener('change', () => { state.showIdle = showIdle.checked; store.set('showIdle', state.showIdle); renderNow(); });
 const soundBox = document.getElementById('sound');
@@ -865,7 +866,10 @@ soundBox.addEventListener('change', () => {
   if (state.sound) chime('done'); // a preview, and the click unlocks audio for later alerts
 });
 showAgent.addEventListener('change', () => { state.showAgent = showAgent.checked; store.set('showAgent', state.showAgent); syncControls(); render(); });
-showTitle.addEventListener('change', () => { state.showTitle = showTitle.checked; store.set('showTitle', state.showTitle); });
+document.getElementById('titleSeg').addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  state.showTitle = b.dataset.v; store.set('showTitle', state.showTitle); syncControls();
+});
 
 const notifyBtn = document.getElementById('notify');
 function syncControls() {
@@ -879,7 +883,7 @@ function syncControls() {
   showIdle.checked = state.showIdle;
   soundBox.checked = state.sound;
   showAgent.checked = state.showAgent;
-  showTitle.checked = state.showTitle;
+  document.querySelectorAll('#titleSeg button').forEach((b) => b.classList.toggle('on', b.dataset.v === state.showTitle));
   document.getElementById('agentBadgeToggle').style.display = view === 'office' ? '' : 'none';
   document.getElementById('titleToggle').style.display = view === 'office' ? '' : 'none';
   popout?.sync(PIP, view);
@@ -929,7 +933,7 @@ const officeOpts = {
   compact: PIP,
   onFrame: (renderer) => popout?.drawPreview(renderer),
   label: (s) => (s.agent === 'omp' && s.subagent && s.title) || s.project || AGENT_NAME[s.agent] || s.agent,
-  subLabel: (s) => (state.showTitle && s.title && s.title !== officeOpts.label(s) ? s.title : ''),
+  subLabel: (s) => (s.title && s.title !== officeOpts.label(s) && (state.showTitle === 'all' || (state.showTitle === 'needs' && (s.status === 'waiting' || s.status === 'error'))) ? s.title : ''),
   onHover(s, at, click) {
     // In full screen a click opens the agent in the side panel instead of pinning a card.
     if (click && state.full && s) { hideTip(); openDetail(s.key); return; }
@@ -1085,8 +1089,14 @@ function renderVersion() {
     }, 1000);
   };
 }
+// A newer version installs itself (the same pull and restart as the Update button), once per page;
+// a failed pull leaves the button for a manual try. WMAD_NO_UPDATE_CHECK=1 turns checking off.
+let autoUpdated = false;
 function loadVersion() {
-  fetch('/api/version', { cache: 'no-store' }).then((r) => r.json()).then((v) => { verInfo = v; renderVersion(); }).catch(() => {});
+  fetch('/api/version', { cache: 'no-store' }).then((r) => r.json()).then((v) => {
+    verInfo = v; renderVersion();
+    if (!PIP && !autoUpdated && v.updateAvailable && v.canUpdate) { autoUpdated = true; document.getElementById('updBtn')?.click(); }
+  }).catch(() => {});
 }
 loadVersion();
 setInterval(loadVersion, 30 * 60 * 1000);
