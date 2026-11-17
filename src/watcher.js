@@ -384,7 +384,7 @@ class Watcher extends EventEmitter {
           // A log over the replay limit stays too big, so don't decode it again soon.
           this.failed.set(c.file, now + (e?.tooLarge ? 60000 : DSH_REPLAY_MS));
           if (!this.dshWarned) {
-            console.error('DSH: log decoding failed; keeping the last readable state and retrying. See the zstd requirements and size limit in README.');
+            console.error('DSH: log decoding failed; keeping the last readable state and retrying. See the zstd requirements and size limit in docs/agents.md.');
             this.dshWarned = true;
           }
         } else {
