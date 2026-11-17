@@ -8,7 +8,7 @@
 
 OMP support: [paths, profiles, Resume and limitations](docs/omp.md).
 
-![The 3D office: agents at their desks, off-duty ones wandering around](docs/office-3d.gif)
+https://github.com/user-attachments/assets/d29fac22-a4d8-4cca-8252-6fd34c7ce713
 
 | Medium (2D) | List |
 |---|---|
